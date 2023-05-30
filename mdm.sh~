@@ -1,0 +1,389 @@
+#!/usr/bin/env sh
+# shellcheck disable=SC2039
+# set color
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+COL_NC='\033[0m' # No Color
+COL_LIGHT_YELLOW='\033[1;33m'
+INFO="[${COL_LIGHT_YELLOW}~${COL_NC}]"
+OVER="\\r\\033[K"
+
+# set msg
+msg_info() {
+  printf "${INFO}  %s ${COL_LIGHT_YELLOW}...${COL_NC}" "${1}" 1>&2
+  sleep 3
+}
+
+msg_ok() {
+  printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
+}
+
+msg_err() {
+  printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
+  exit 1
+}
+msg_over() {
+  printf "${OVER}%s" "  " 1>&2
+}
+
+# 调试开关
+if [ "${MDM_DEBUG}" = "true" ]; then
+  set -ex
+  msg_ok "MDM 调试模式开启."
+  msg_over
+fi
+
+IFSSet() {
+  ifsBak=$IFS
+  IFS='
+'
+}
+
+IFSRestore() {
+  IFS=$ifsBak
+}
+
+findOSPATH() {
+  IFSSet
+  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\- Data|System|private|macOS Base System")
+
+  if [ -z "${OSPATH}" ]; then
+    msg_err "未找到系统盘."
+  fi
+
+  if [ "$(echo "${OSPATH}" | wc -l)" -gt 1 ]; then
+    msg_info "找到多个系统盘, 常见的系统启动盘为: Macintosh HD, 请选择你的系统盘"
+    msg_over
+    # shellcheck disable=SC2039
+    select variable in ${OSPATH}; do
+      if [ -n "${variable}" ]; then
+        tempPath="${variable%/*}"
+        tempPath2="${tempPath##*/}"
+        printf "  "
+        msg_info "选择了 ${tempPath2} 目录"
+        OSPATH="${tempPath}"
+        IFSRestore
+        break
+      else
+        msg_info "输入错误."
+      fi
+    done
+  else
+    OSPATH="${OSPATH%/*}"
+#    OSPATH="${OSPATH##*/}"
+  fi
+
+  IFSRestore
+}
+
+checkUser() {
+  IFSSet
+
+  # shellcheck disable=SC2010
+  #  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\- Data|System|macOS Base System")
+  Users=$(ls "${OSPATH}/Users" | grep -vE "Shared|Guest|Rooted|\.localized|\.DS_Store")
+  if [ -z "${Users}" ]; then
+    msg_ok "当前是新机模式! 将跳过清理监管软件和配置文件"
+    NEW_MACHINE=true
+    msg_over
+  fi
+  if [ "$(echo "${Users}" | wc -l)" -gt 1 ]; then
+    msg_info "找到多个用户, 请选择你的用户名称:"
+    msg_over
+    # shellcheck disable=SC2039
+    select user in ${Users}; do
+      if [ -n "${user}" ]; then
+        printf "  "
+        msg_info "选择了 ${user} 用户"
+        msg_over
+        Users="${user}"
+        IFSRestore
+        break
+      else
+        msg_info "输入错误."
+        msg_over
+      fi
+    done
+  fi
+
+  IFSRestore
+}
+
+setHosts() {
+  msg_info "正在屏蔽监管锁"
+  msg_over
+  IFSSet
+  Hosts=$(find -L "/Volumes" -iname "hosts" -type f -maxdepth 4 -follow 2>&1 | grep -vE "\- Data|System|private")
+
+  if [ -z "${Hosts}" ]; then
+    msg_ok "当前是新机模式! 将跳过 HOSTS 屏蔽"
+    msg_over
+  fi
+
+  for file in ${Hosts}; do
+
+    if [[ "$(awk 'END {print}' "${file}")" != "" ]]; then
+      tee -a "${file}" >/dev/null <<-EOF
+
+EOF
+    fi
+
+#    if [[ "$(grep -c "^0.0.0.0 iprofiles.apple.com" "${file}")" -eq '0' ]]; then
+#      tee -a "${file}" >/dev/null <<-EOF
+#0.0.0.0 iprofiles.apple.com
+#EOF
+#    fi
+
+#    if [[ "$(grep -c "^0.0.0.0 mdmenrollment.apple.com" "${file}")" -eq '0' ]]; then
+#      tee -a "${file}" >/dev/null <<-EOF
+#0.0.0.0 mdmenrollment.apple.com
+#EOF
+#    fi
+
+#    if [[ "$(grep -c "^0.0.0.0 deviceenrollment.apple.com" "${file}")" -eq '0' ]]; then
+#      tee -a "${file}" >/dev/null <<-EOF
+#0.0.0.0 deviceenrollment.apple.com
+#EOF
+#    fi
+
+    if [[ "$(grep -c "^0.0.0.0 gdmf.apple.com" "${file}")" -eq '0' ]]; then
+      tee -a "${file}" >/dev/null <<-EOF
+0.0.0.0 gdmf.apple.com
+EOF
+    fi
+
+#    if [[ "$(grep -c "^0.0.0.0 albert.apple.com" "${file}")" -eq '0' ]]; then
+#      tee -a "${file}" >/dev/null <<-EOF
+#0.0.0.0 albert.apple.com
+#EOF
+#    fi
+
+#    if [[ "$(grep -c "^0.0.0.0 configuration.apple.com" "${file}")" -eq '0' ]]; then
+#      tee -a "${file}" >/dev/null <<-EOF
+#0.0.0.0 configuration.apple.com
+#EOF
+#    fi
+  done
+
+  msg_ok "屏蔽监管接口完成!"
+  msg_over
+  IFSRestore
+}
+
+cleanMdm() {
+  ## 检查 监管软件概要文件夹
+  if [ "$(basename "${MDMPath}")" != "ConfigurationProfiles" ]; then
+    msg_err "未找到监管软件概要文件夹, 请联系管理员修复脚本"
+  fi
+
+  msg_info "正在清理监管软件概要文件夹"
+  msg_over
+
+  ## 获取用户许可
+  printf "${INFO}%s" "  " 1>&2
+  # shellcheck disable=SC2039
+  read -p "请问您是否需要用到 苹果描述文件? (y/n 默认: n): " -n 1 -r -t 10 AppleDescriptions
+  msg_over
+  msg_info "正在清理"
+  msg_over
+
+  ## 清理监管软件概要文件夹
+  deleteFile "${MDMPath}/.profilesAreInstalled"
+  deleteFile "${MDMPath}/Store"
+  deleteFile "${MDMPath}/Settings"
+  #  deleteFile "${OSPATH}/var/db/.AppleSetupDone"
+  deleteFile "${LibraryPath}/Keychains/apsd.keychain"
+  deleteFile "${LibraryPath}/Keychains/System.keychain"
+  deleteFile "${LibraryPath}/Preferences/com.apple.wifi.known-networks.plist"
+
+  if [ "${AppleDescriptions}" != "y" ]; then
+    touch "${MDMPath}/.profilesAreInstalled"
+    touch "${MDMPath}/Store"
+    touch "${MDMPath}/Settings"
+    chmod -R 444 "${MDMPath}"
+  fi
+
+  msg_ok "清理监管软件概要文件完成"
+  msg_over
+}
+
+# 检查是否存在
+findAndDelete() {
+  IFSSet
+  #   if filename is not empty
+  filePath=$1
+  maxDepth=$2
+  fileName=$3
+  if [ -n "${filePath}" ] && [ -n "${fileName}" ] && [ -n "${maxDepth}" ]; then
+    for a in $(find -L "${filePath}" -iname "*${fileName}*" -maxdepth "${maxDepth}" -follow 2>&1); do
+      msg_info "正在清理 $1"
+      msg_over
+      deleteFile "$a"
+      msg_ok "清理 ${a##*/} 完成"
+      msg_over
+    done
+  else
+    msg_err "参数错误: filePath: ${filePath} maxDepth: ${maxDepth} fileName: ${fileName}"
+  fi
+  IFSRestore
+}
+
+cleanMdmAgent() {
+  ## 删除 监管软件子程序 产生的系统文件
+  msg_info "清除监管子程序依赖"
+  msg_over
+  findAndDelete "${LibraryPath}/LaunchDaemons" 1 "mosyle"
+  findAndDelete "${LibraryPath}/LaunchDaemons" 1 "tinyapp"
+  findAndDelete "${LibraryPath}/LaunchDaemons" 1 "jamf"
+  findAndDelete "${LibraryPath}/LaunchDaemons" 1 "jamfsoftware"
+  findAndDelete "${LibraryPath}/LaunchDaemons" 1 "com.apple.ManagedClient"
+
+  findAndDelete "${LibraryPath}/Application Support" 1 "mosyle"
+  findAndDelete "${LibraryPath}/Application Support" 1 "tinyapp"
+  findAndDelete "${LibraryPath}/Application Support" 1 "jamf"
+  findAndDelete "${LibraryPath}/Application Support" 1 "jamfsoftware"
+
+  findAndDelete "${UserLibraryPath}/Preferences" 1 "mosyle"
+  findAndDelete "${UserLibraryPath}/Preferences" 1 "tinyapp"
+  findAndDelete "${UserLibraryPath}/Preferences" 1 "jamf"
+  findAndDelete "${UserLibraryPath}/Preferences" 1 "jamfsoftware"
+
+  findAndDelete "${OSPATH}/Applications" 1 "tiny"
+  findAndDelete "${OSPATH}/Applications" 1 "mosyle"
+  findAndDelete "${OSPATH}/Applications" 1 "jamf"
+  findAndDelete "${OSPATH}/Applications" 1 "jamfsoftware"
+  findAndDelete "${OSPATH}/Applications" 1 "Self-Service"
+  findAndDelete "${OSPATH}/Applications" 1 "Falcon"
+
+  findAndDelete "${LibraryPath}/LaunchAgents" 1 "mosyle"
+  findAndDelete "${LibraryPath}/LaunchAgents" 1 "tinyapp"
+  findAndDelete "${LibraryPath}/LaunchAgents" 1 "jamf"
+  findAndDelete "${LibraryPath}/LaunchAgents" 1 "jamfsoftware"
+  findAndDelete "${LibraryPath}/LaunchAgents" 1 "mdmclient"
+  findAndDelete "${LibraryPath}/LaunchAgents" 1 "com.apple.ManagedClient"
+
+  findAndDelete "${OSPATH}/var/db/receipts" 1 "mosyle"
+  findAndDelete "${OSPATH}/var/db/receipts" 1 "tinyapp"
+  findAndDelete "${OSPATH}/var/db/receipts" 1 "jamf"
+  findAndDelete "${OSPATH}/var/db/receipts" 1 "jamfsoftware"
+  findAndDelete "${OSPATH}/var/db/receipts" 1 "launchAgent"
+  findAndDelete "${OSPATH}/var/db/receipts" 1 "falcon"
+  findAndDelete "${OSPATH}/var/db/receipts" 1 "com.disney"
+
+  msg_ok "清除监管子程序依赖完成, 若有新型监管程序子依赖,请联系管理更新程序."
+  msg_over
+}
+
+deleteFile() {
+  file="$1"
+  if [ "${file}" = "" ]; then
+    msg_err "文件路径不能为空."
+  fi
+  #  (
+  #    sudo osascript <<EOF
+  #tell application "Finder"
+  #  posix path of ((delete posix file "${file}") as unicode text)
+  #end tell
+  #EOF
+  #  ) >/dev/null 2>&1
+  #  osascript -e "tell application \"Finder\" to delete posix file \"${file}\"" >/dev/null 2>&1
+  #  if [ "${OSTYPE}" = "normal" ]; then
+  #    (
+  #      osascript <<EOF
+  #tell application "Finder"
+  #  posix path of ((delete posix file "${file}") as unicode text)
+  #end tell
+  #EOF
+  #    ) >/dev/null 2>&1
+  #  else
+  mv "${file}" "${OSPATH}/Users/${Users}/.Trash" >/dev/null 2>&1
+  #  fi
+}
+
+disableSip() {
+  msg_info "正在关闭系统完整性保护, 请注意输入提示输入 y 和 密码"
+  sleep 2
+  msg_over
+  sh -c "csrutil disable"
+  printf "  "
+}
+
+checkSip() {
+  if [ "$(csrutil status | grep disabled)" = "" ]; then
+    case $OSTYPE in
+    "normal")
+      msg_err "请先前往恢复模式 关闭系统完整性保护."
+      ;;
+    "recovery")
+      disableSip
+      ;;
+    *)
+      msg_err "未知的系统类型, 请联系管理员修复脚本."
+      ;;
+    esac
+  else
+    case $OSTYPE in
+    "normal")
+      msg_info "系统完整性保护已关闭."
+      msg_over
+      ;;
+    "recovery")
+      msg_info "当前系统完整性保护已关闭."
+      msg_over
+      ;;
+    *)
+      msg_err "未知的系统类型, 请联系管理员修复脚本."
+      ;;
+    esac
+  fi
+}
+
+# 调试开关
+if [ "${MDM_DEBUG}" = "true" ]; then
+  set -ex
+  msg_ok "MDM 调试模式开启."
+  msg_over
+fi
+
+# 清理 WiFi 信息
+#nvram -c
+
+# 检查当前运行环境
+if type open >/dev/null 2>&1; then
+  msg_ok "当前是桌面模式."
+  msg_over
+  OSTYPE="normal"
+else
+  msg_ok "当前是恢复模式."
+  msg_over
+  OSTYPE="recovery"
+  findOSPATH
+fi
+
+findOSPATH # 查找系统盘路径
+checkUser  # 查找用户
+
+MDMPath="${OSPATH}/var/db/ConfigurationProfiles"
+LibraryPath="${OSPATH}/Library"
+UserLibraryPath="${OSPATH}/Users/${Users}/Library"
+
+if [ -z "${NEW_MACHINE}" ]; then
+  setHosts # 设置hosts
+fi
+
+# 如果没有关闭 SIP 模式，就不进入主程序
+checkSip
+# 再次检查 SIP 模式
+checkSip
+msg_ok "系统完整性检查完毕."
+msg_over
+cleanMdm
+
+if [ -n "${Users}" ]; then
+  cleanMdmAgent
+fi
+
+if [ "${OSTYPE}" = "recovery" ]; then
+  msg_info "即将重启电脑."
+  msg_over
+fi
