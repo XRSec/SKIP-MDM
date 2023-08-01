@@ -73,8 +73,8 @@ func main() {
 	r.Use(gin.LoggerWithWriter(logFile))
 	r.Use(curlOnly())
 	r.GET("/", func(c *gin.Context) {
-		// c.File("index.html")
-		c.Abort()
+		c.File("index.html")
+		//c.Abort()
 		return
 	})
 	r.GET("/getLatestID", func(c *gin.Context) {
@@ -113,8 +113,8 @@ func main() {
 			goto error
 		}
 		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			c.Redirect(http.StatusFound, "https://mdms.eu.org/mdm"+"-darwin-"+arch)
-			//c.File("mdm" + "-darwin-" + arch)
+			//c.Redirect(http.StatusFound, "https://mdms.eu.org/mdm"+"-darwin-"+arch)
+			c.File("mdm" + "-darwin-" + arch)
 			// 更新用户信息
 			viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
 			viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
@@ -129,6 +129,7 @@ func main() {
 	})
 	r.GET("/add", func(c *gin.Context) {
 		var serialNumber = c.Query("serial_number")
+		serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
 		var ps = c.Query("ps")
 		var auth = false
 		var msg = ""
@@ -164,6 +165,7 @@ func main() {
 	})
 	r.GET("/del", func(c *gin.Context) {
 		var serialNumber = c.Query("serial_number")
+		serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
 		ps := c.Query("ps")
 		var auth = false
 		var msg = ""

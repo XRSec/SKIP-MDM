@@ -38,6 +38,7 @@ var (
 	LibraryPath     string // /Volumes/Macintosh HD/Library/
 	UserLibraryPath string // /Volumes/Macintosh HD/Users/admin/Library/
 	SN              = flag.String("sn", "", "Serial Number")
+	menuAll         bool
 	Debug           = false
 )
 
@@ -59,6 +60,11 @@ func init() {
 	if testDebug == "true" {
 		Debug = true
 		msgOk("Debug 模式已开启")
+	}
+	testMenuAll := os.Getenv("menu_all")
+	if testMenuAll == "true" {
+		menuAll = true
+		msgOk("Menu All 模式已开启")
 	}
 }
 
@@ -571,145 +577,236 @@ func privacyDns() (client *http.Client) {
 	return client
 }
 
+func menuDisableSip() {
+	msgInfo("正在禁用系统完整性保护!")
+	if OSTYPE {
+		msgFatal("请在恢复模式下运行!", nil)
+	} else {
+		disableSip()
+	}
+	os.Exit(0)
+}
+func menuEnableSip() {
+	msgInfo("正在启用系统完整性保护!")
+	if OSTYPE {
+		msgFatal("请在恢复模式下运行!", nil)
+	} else {
+		enableSip()
+	}
+	os.Exit(0)
+}
+
+func menuCleanMDM() {
+	msgOk("正在完整清理监管!")
+	cleanMdm()
+	os.Exit(0)
+}
+
+func menuBypassMacos13Step1() {
+	msgInfo("正在准备macOS13绕过工作 1!")
+	if OSTYPE {
+		msgFatal("请在恢复模式下运行!", nil)
+	} else {
+		findOSPATH()
+		msgInfo("正在修改 root 用户密码")
+		msgInfo("请输入新的 root 用户密码: ")
+		execCmd(false, "dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root")
+		msgLast(1)
+		msgOk("重置完成, 请记住这个密码，创建用户时需要!")
+		msgOk("在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！")
+		msgOk("新建用户类型为管理员，操作完成后进入恢复模式，选择 「macOS13绕过步骤2」")
+		msgOk("请重启电脑！")
+		//msgInfo("正在创建新用户")
+		//fmt.Printf("   请设置你的用户名: ")
+		//var userName string
+		//if _, err := fmt.Scanln(&userName); err != nil {
+		//	msgFatal("输入错误!")
+		//}
+		//msgLast(1)
+		//msgOk("用户名: " + userName)
+		//// 生成介于 1000 和 2000 之间的随机数
+		//uid := rand.Intn(2000-1000+1) + 1000
+		//msgInfo("请注意输入密码!")
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UserShell", "/bin/zsh")
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", userName)
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", strconv.Itoa(uid))
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/"+userName)
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
+		//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName)
+		//msgLast(1)
+		//disableSip()
+	}
+	os.Exit(0)
+}
+
+func menuBypassMacos13Step2() {
+	msgInfo("正在准备macOS13绕过工作 2")
+	if OSTYPE {
+		msgFatal("请在恢复模式下运行!", nil)
+	} else {
+		findOSPATH()
+		msgInfo("正在完善macOS13的安装工作")
+		execCmd(false, "touch", OSPATH+"private/var/db/.AppleSetupDone")
+		disableSip()
+		msgOk("请重新启动,进入系统后请执行「禁用root用户登录」")
+	}
+	os.Exit(0)
+}
+
+func menuDisableRoot() {
+	msgInfo("禁用root用户登录!")
+	if !OSTYPE {
+		msgFatal("请在桌面模式下运行!", nil)
+	} else {
+		msgInfo("正在禁用root用户登录!")
+		findOSPATH()
+		checkUser()
+		fmt.Printf("请输入您的用户名密码: ")
+		var idstr string
+		if _, err := fmt.Scanln(&idstr); err != nil {
+			msgLast(1)
+			msgFatal("输入错误!", err)
+		} else {
+			msgLast(1)
+		}
+		output, err := exec.Command("dsenableroot", "-d", "-u", User, "-p", idstr).Output()
+		if err != nil {
+			msgFatal("禁用root用户登录失败!", err)
+		}
+		if strings.Contains(string(output), "Successfully") {
+			msgOk("禁用root用户登录成功! 请执行「完整清理监管(更多人选择)」")
+		} else {
+			msgFatal("禁用root用户登录失败! 请检查密码是否正确: ["+idstr+"]", nil)
+		}
+		//msgLast(3)
+	}
+	os.Exit(0)
+}
+
+func menuAddHosts() {
+	msgInfo("正在屏蔽Apple服务.")
+	findOSPATH()
+	SetHosts(true)
+	msgOk("屏蔽Apple服务完成.")
+	os.Exit(0)
+}
+
+func menuCleanHosts() {
+	msgInfo("正在清除屏蔽的Apple服务.")
+	findOSPATH()
+	SetHosts(false)
+	msgOk("清除屏蔽的Apple服务完成.")
+	os.Exit(0)
+}
+
+func menuExit() {
+	msgInfo("正在退出!")
+	os.Exit(0)
+}
+
+func menuDeleteAppleDone() {
+	msgInfo("正在删除Apple安装锁文件.")
+	findOSPATH()
+	checkUser()
+	findAndDelete(OSPATH+"var/db/", ".AppleSetupDone")
+	msgOk("删除Apple安装锁文件完成. 重启进入Hello安装页面")
+	os.Exit(0)
+}
+
 func mainShell() {
 	fmt.Println()
 	msgOk("欢迎使用 MDM 助手! (正在测试阶段)")
 	var idNum int
 	fmt.Println("   可供选择:")
-	options := []string{
-		"禁用系统完整性保护", "启用系统完整性保护",
-		"完整清理监管(更多人选择)",
-		"macOS13绕过步骤1", "macOS13绕过步骤2", "禁用root用户登录",
-		"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple相关)",
-		"删除Apple安装锁文件(开机进入Hello页面)",
-		"退出操作"}
+	var options []string
+	if menuAll {
+		options = []string{
+			"禁用系统完整性保护", "启用系统完整性保护",
+			"完整清理监管(更多人选择)",
+			"macOS13绕过步骤1", "macOS13绕过步骤2", "禁用root用户登录",
+			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple相关)",
+			"删除Apple安装锁文件(开机进入Hello页面)",
+			"退出操作"}
+	} else if OSTYPE {
+		options = []string{
+			"完整清理监管(更多人选择)",
+			"禁用root用户登录",
+			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple相关)",
+			"删除Apple安装锁文件(开机进入Hello页面)",
+			"退出操作"}
+	} else {
+		options = []string{
+			"禁用系统完整性保护", "启用系统完整性保护",
+			"macOS13绕过步骤1", "macOS13绕过步骤2",
+			"删除Apple安装锁文件(开机进入Hello页面)",
+			"退出操作"}
+	}
+
 	for i, option := range options {
 		fmt.Printf("    %d. %s\n", i+1, option)
 	}
 	fmt.Printf("   请选择你需要的操作: ")
 	_, _ = fmt.Scanln(&idNum)
 
-	msgLast(12)
+	if menuAll {
+		msgLast(12)
+	} else {
+		if idNum > 6 {
+			msgInfo("恭喜你发现了新大陆!")
+		}
+		msgLast(8)
+	}
 	switch idNum {
 	case 1:
-		msgInfo("正在禁用系统完整性保护!")
 		if OSTYPE {
-			msgFatal("请在恢复模式下运行!", nil)
+			menuCleanMDM()
 		} else {
-			disableSip()
+			menuDisableSip()
 		}
-		os.Exit(0)
 	case 2:
-		msgInfo("正在启用系统完整性保护!")
 		if OSTYPE {
-			msgFatal("请在恢复模式下运行!", nil)
+			menuDisableRoot()
 		} else {
-			enableSip()
+			menuEnableSip()
 		}
-		os.Exit(0)
 	case 3:
-		msgOk("正在完整清理监管!")
-		cleanMdm()
-		os.Exit(0)
+		if menuAll {
+			menuCleanMDM()
+		} else if OSTYPE {
+			menuAddHosts()
+		} else {
+			menuBypassMacos13Step1()
+		}
 	case 4:
-		msgInfo("正在准备macOS13绕过工作 1!")
-		if OSTYPE {
-			msgFatal("请在恢复模式下运行!", nil)
+		if menuAll {
+			menuBypassMacos13Step1()
+		} else if OSTYPE {
+			menuCleanHosts()
 		} else {
-			findOSPATH()
-			msgInfo("正在修改 root 用户密码")
-			msgInfo("请输入新的 root 用户密码: ")
-			execCmd(false, "dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root")
-			msgLast(1)
-			msgOk("重置完成, 请记住这个密码，创建用户时需要!")
-			msgOk("在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！")
-			msgOk("新建用户类型为管理员，操作完成后进入恢复模式，选择 「macOS13绕过步骤2」")
-			msgOk("请重启电脑！")
-			//msgInfo("正在创建新用户")
-			//fmt.Printf("   请设置你的用户名: ")
-			//var userName string
-			//if _, err := fmt.Scanln(&userName); err != nil {
-			//	msgFatal("输入错误!")
-			//}
-			//msgLast(1)
-			//msgOk("用户名: " + userName)
-			//// 生成介于 1000 和 2000 之间的随机数
-			//uid := rand.Intn(2000-1000+1) + 1000
-			//msgInfo("请注意输入密码!")
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UserShell", "/bin/zsh")
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", userName)
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", strconv.Itoa(uid))
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/"+userName)
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
-			//execCmd("dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName)
-			//msgLast(1)
-			//disableSip()
+			menuBypassMacos13Step2()
 		}
-		os.Exit(0)
 	case 5:
-		msgInfo("正在准备macOS13绕过工作 2")
-		if OSTYPE {
-			msgFatal("请在恢复模式下运行!", nil)
+		if menuAll {
+			menuBypassMacos13Step2()
 		} else {
-			findOSPATH()
-			msgInfo("正在完善macOS13的安装工作")
-			execCmd(false, "touch", OSPATH+"private/var/db/.AppleSetupDone")
-			disableSip()
-			msgOk("请重新启动,进入系统后请执行「禁用root用户登录」")
+			menuDeleteAppleDone()
 		}
-		os.Exit(0)
 	case 6:
-		msgInfo("禁用root用户登录!")
-		if !OSTYPE {
-			msgFatal("请在桌面模式下运行!", nil)
+		if menuAll {
+			menuDisableRoot()
 		} else {
-			msgInfo("正在禁用root用户登录!")
-			findOSPATH()
-			checkUser()
-			fmt.Printf("请输入您的用户名密码: ")
-			var idstr string
-			if _, err := fmt.Scanln(&idstr); err != nil {
-				msgLast(1)
-				msgFatal("输入错误!", err)
-			} else {
-				msgLast(1)
-			}
-			output, err := exec.Command("dsenableroot", "-d", "-u", User, "-p", idstr).Output()
-			if err != nil {
-				msgFatal("禁用root用户登录失败!", err)
-			}
-			if strings.Contains(string(output), "Successfully") {
-				msgOk("禁用root用户登录成功! 请执行「完整清理监管(更多人选择)」")
-			} else {
-				msgFatal("禁用root用户登录失败! 请检查密码是否正确: ["+idstr+"]", nil)
-			}
-			//msgLast(3)
+			menuExit()
 		}
-		os.Exit(0)
 	case 7:
-		msgInfo("正在屏蔽Apple服务.")
-		findOSPATH()
-		SetHosts(true)
-		msgOk("屏蔽Apple服务完成.")
-		os.Exit(0)
+		menuAddHosts()
 	case 8:
-		msgInfo("正在清除屏蔽的Apple服务.")
-		findOSPATH()
-		SetHosts(false)
-		msgOk("清除屏蔽的Apple服务完成.")
-		os.Exit(0)
+		menuCleanHosts()
 	case 9:
-		msgInfo("正在删除Apple安装锁文件.")
-		findOSPATH()
-		checkUser()
-		findAndDelete(OSPATH+"var/db/", ".AppleSetupDone")
-		msgOk("删除Apple安装锁文件完成. 重启进入Hello安装页面")
-		os.Exit(0)
+		menuDeleteAppleDone()
 	case 10:
-		msgInfo("正在退出!")
-		os.Exit(0)
+		menuExit()
 	default:
 		msgErr("输入错误!", nil)
 	}
