@@ -1,15 +1,16 @@
 all:
-	@rm -rf server/serial_number.json
+	@open smb://192.168.0.88
+	@#rm -rf server/serial_number.json
 	@rm -rf server/logs
 	@rm -rf mdm-darwin-*
 	@xgo --targets=darwin/amd64,darwin/arm64 ./mdm
 	@mv mdm-darwin-* server/
 	@#xgo --targets=darwin/amd64,darwin/arm64 -ldflags="-extldflags -static" ./mdm
-	@scp server/* n6000s:/docker/MDM/
-	@scp Makefile n6000s:/docker/MDM/
-	@scp main/index.html n6000s:/docker/MDM/
-	@scp n6000s:/docker/MDM/serial_number.json server/
-	@ssh n6000s "docker restart mdm"
+	@cp server/* /Volumes/vm-1/Dcoker_Data/MDM/
+	@cp Makefile /Volumes/vm-1/Dcoker_Data/MDM/
+	@cp main/index.html /Volumes/vm-1/Dcoker_Data/MDM/
+	@cp /Volumes/vm-1/Dcoker_Data/MDM/serial_number.json server/
+	@#ssh ubsn "docker restart mdm"
 	@rm -rf server/mdm-darwin-*
 	@gits by Makefile
 	@echo "all done"
