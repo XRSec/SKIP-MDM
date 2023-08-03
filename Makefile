@@ -1,5 +1,6 @@
 all:
-	@open smb://192.168.0.88
+	@open smb://192.168.0.88/docker/Docker_Data/MDM
+	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; sleep 3; done
 	@rm -rf server/serial_number.json
 	@rm -rf server/logs
 	@rm -rf mdm-darwin-*
@@ -10,14 +11,15 @@ all:
 	@#scp Makefile n6000s:/docker/MDM/
 	@#scp main/index.html n6000s:/docker/MDM/
 	@#scp n6000s:/docker/MDM/serial_number.json server/
-	@#ssh n6000s "docker restart mdm"
-	@cp server/* /Volumes/docker/Docker_Data/MDM/
-	@cp Makefile /Volumes/docker/Docker_Data/MDM/
-	@cp main/index.html /Volumes/docker/Docker_Data/MDM/
-	@cp /Volumes/docker/Docker_Data/MDM/serial_number.json server/
+
+	@cp -rv server/* /Volumes/MDM*/
+	@cp -v Makefile /Volumes/MDM*/
+	@cp -v main/index.html /Volumes/MDM*/
+	@cp -v /Volumes/MDM*/serial_number.json server/
+
 	@#ssh ubsn "docker restart mdm"
 	@rm -rf server/mdm-darwin-*
-	@gits by Makefile
+	@#gits by Makefile
 	@echo "all done"
 
 run:

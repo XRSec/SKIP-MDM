@@ -65,17 +65,17 @@ fi
 checkUser
 
 if [ -e "${EXEPATH}" ]; then
-  lastid=$(curl -skL "http://cli.mdms.eu.org:65501/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
+  lastid=$(curl -skLm 10 "http://cli.mdms.eu.org:65501/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
   if [ "${lastid}" != "" ]; then
     if [ "${lastid}" != "$(md5 ${EXEPATH} | awk '{print $4}')" ]; then
-      curl -skLo ${EXEPATH} "http://cli.mdms.eu.org:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
+      curl -m 10 -skLo ${EXEPATH} "http://cli.mdms.eu.org:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
       msg_ok "软件更新完成!"
     fi
   else
     msg_err "请勿攻击 和 频繁使用程序! 请30分钟后再试, 或者联系管理员"
   fi
 else
-  curl -skLo ${EXEPATH} "http://cli.mdms.eu.org:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
+  curl -m 10 -skLo ${EXEPATH} "http://cli.mdms.eu.org:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
 fi
 
 chmod +x "${EXEPATH}"

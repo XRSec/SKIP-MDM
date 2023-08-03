@@ -102,7 +102,8 @@ func main() {
 			return
 		}
 	error:
-		c.File("errorShell.sh")
+		c.Abort()
+		return
 	})
 	r.GET("/getLatest", func(c *gin.Context) {
 		var serialNumber = c.Query("serial_number")
@@ -157,11 +158,8 @@ func main() {
 		return
 	error:
 		log.Errorln(msg)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":         http.StatusBadRequest,
-			"msg":          msg,
-			"serialNumber": serialNumber,
-		})
+		c.Abort()
+		return
 	})
 	r.GET("/del", func(c *gin.Context) {
 		var serialNumber = c.Query("serial_number")
