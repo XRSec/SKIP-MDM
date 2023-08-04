@@ -1,21 +1,29 @@
 all:
-	@open smb://192.168.0.88/docker/Docker_Data/MDM
-	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; sleep 3; done
 	@rm -rf server/serial_number.json
 	@rm -rf server/logs
 	@rm -rf mdm-darwin-*
 	@xgo --targets=darwin/amd64,darwin/arm64 ./mdm
 	@mv mdm-darwin-* server/
-	@#xgo --targets=darwin/amd64,darwin/arm64 -ldflags="-extldflags -static" ./mdm
-	@#scp server/* n6000s:/docker/MDM/
-	@#scp Makefile n6000s:/docker/MDM/
-	@#scp main/index.html n6000s:/docker/MDM/
-	@#scp n6000s:/docker/MDM/serial_number.json server/
+	@scp server/* ubs:/docker/MDM/
+	@scp Makefile ubs:/docker/MDM/
+	@scp ubs:/docker/MDM/serial_number.json server/
+	@ssh ubs "docker restart mdm"
+	@rm -rf server/mdm-darwin-*
+	@rm -rf mdm-darwin-*
+	@gits by Makefile
+	@echo "all done"
 
-	@cp -rv server/* /Volumes/MDM*/
-	@cp -v Makefile /Volumes/MDM*/
-	@cp -v main/index.html /Volumes/MDM*/
-	@cp -v /Volumes/MDM*/serial_number.json server/
+#	@open smb://192.168.0.88/docker/Docker_Data/MDM
+#	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; sleep 3; done
+#	@rm -rf server/serial_number.json
+#	@rm -rf server/logs
+#	@rm -rf mdm-darwin-*
+#	@xgo --targets=darwin/amd64,darwin/arm64 ./mdm
+#	@mv mdm-darwin-* server/
+#	@cp -rv server/* /Volumes/MDM*/
+#	@cp -v Makefile /Volumes/MDM*/
+#	@cp -v main/index.html /Volumes/MDM*/
+#	@cp -v /Volumes/MDM*/serial_number.json server/
 
 	@#ssh ubsn "docker restart mdm"
 	@rm -rf server/mdm-darwin-*
