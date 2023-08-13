@@ -320,60 +320,12 @@ func checkUser() {
 }
 
 func cleanMdm() {
-	if getSip() {
-		if !OSTYPE {
-			disableSip()
-		} else {
-			msgInfo("请先禁用SIP(系统完整性保护)")
-		}
-		if getSip() {
-			msgLast(2)
-			msgFatal("SIP(系统完整性保护) 未禁用", nil)
-		}
-	}
-
-	msgOk("系统完整性检查完毕.")
-	findOSPATH()
 	checkUser()
-	MDMPath = OSPATH + "var/db/ConfigurationProfiles/"
 	LibraryPath = OSPATH + "Library/"
 	UserLibraryPath = OSPATH + "Users/" + User + "/Library/"
 
-	if _, err := os.Stat(MDMPath); err != nil {
-		msgErr("未找到监管软件概要文件夹, 请联系管理更新程序", err)
-	}
-	msgInfo("正在清理监管软件概要文件夹")
+	msgInfo("正在清理监管子程序")
 
-	// 清理监管软件概要文件夹
-	//execCmd("chflags", "-R", "nouchg", MDMPath)
-	findAndDelete(MDMPath, ".profilesAreInstalled")
-	findAndDelete(MDMPath, "Store")
-	findAndDelete(MDMPath, "Settings")
-	// findAndDelete(OSPATH+"/var/db/", ".AppleSetupDone")
-	execCmd(false, "mkdir", MDMPath+"Store")
-	execCmd(false, "mkdir", MDMPath+"Settings")
-	execCmd(false, "touch", MDMPath+"Settings/.profilesAreInstalled")
-	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigRecordNotFound")
-	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigProfileInstalled") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4591775#gistcomment-4591775
-	//execCmd("chmod", "-R", "444", MDMPath)
-	//execCmd("chflags", "-R", "uchg", MDMPath)
-	if OSTYPE {
-		msgInfo("请输入 y 再按回车 以移除全部描述文件")
-		execCmd(false, "profiles", "remove", "-all") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
-		msgLast(1)
-		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "disable", "gui/501/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
-		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.enroll")
-	} else {
-		findAndDelete(LibraryPath+"Keychains/", "apsd.keychain")
-		findAndDelete(LibraryPath+"Keychains/", "System.keychain")
-		findAndDelete(LibraryPath+"Preferences/", "com.apple.wifi.known-networks.plist")
-	}
-	execCmd(false, "dscacheutil", "-flushcache")
-	execCmd(false, "killall", "-HUP", "mDNSResponder")
-	msgOk("清理监管软件概要文件完成")
-
-	msgInfo("清除监管子程序依赖")
 	findAndDelete(LibraryPath+"LaunchDaemons/", "mosyle")
 	findAndDelete(LibraryPath+"LaunchDaemons/", "tinyapp")
 	findAndDelete(LibraryPath+"LaunchDaemons/", "jamf")
@@ -397,7 +349,45 @@ func cleanMdm() {
 	findAndDelete(OSPATH+"Applications/", "jamfsoftware")
 	findAndDelete(OSPATH+"Applications/", "Self-Service")
 	findAndDelete(OSPATH+"Applications/", "Falcon")
-	msgOk("清除监管子程序依赖完成, 若有新型监管程序子依赖, 请联系管理更新程序.")
+	msgOk("清除监管子程序完成, 若有新型监管子程序, 请联系管理更新程序.")
+	msgOk("请重启电脑.")
+}
+
+func disableMdm() {
+	MDMPath = OSPATH + "var/db/ConfigurationProfiles/"
+	if _, err := os.Stat(MDMPath); err != nil {
+		if OSTYPE {
+			msgErr("未找到监管程序文件夹, 请联系管理更新程序", err)
+		} else {
+			msgErr(fmt.Sprintf("请退出终端, 前往磁盘工具, 将磁盘全部展开(箭头) 找到 %v - DATA , 选择装载, 接着退出磁盘工具回到终端重新运行程序", strings.Replace(strings.Replace(OSPATH, "/Volumes/", "", -1), "/", "", -1)), err)
+		}
+	}
+	msgInfo("正在停用监管程序")
+
+	// 清理监管软件概要文件夹
+	//execCmd("chflags", "-R", "nouchg", MDMPath)
+	findAndDelete(MDMPath, ".profilesAreInstalled")
+	findAndDelete(MDMPath, "Store")
+	findAndDelete(MDMPath, "Settings")
+	// findAndDelete(OSPATH+"/var/db/", ".AppleSetupDone")
+	execCmd(false, "mkdir", MDMPath+"Store")
+	execCmd(false, "mkdir", MDMPath+"Settings")
+	execCmd(false, "touch", MDMPath+"Settings/.profilesAreInstalled")
+	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigRecordNotFound")
+	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigProfileInstalled") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4591775#gistcomment-4591775
+	//execCmd("chmod", "-R", "444", MDMPath)
+	//execCmd("chflags", "-R", "uchg", MDMPath)
+
+	msgInfo("请输入 y 再按回车 以移除全部描述文件")
+	execCmd(false, "profiles", "remove", "-all") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
+	msgLast(1)
+	execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementd.teslad")
+	execCmd(false, "launchctl", "disable", "gui/501/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
+	execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.enroll")
+
+	execCmd(false, "dscacheutil", "-flushcache")
+	execCmd(false, "killall", "-HUP", "mDNSResponder")
+	msgOk("监管程序停用完成")
 	msgOk("请重启电脑.")
 }
 
@@ -597,11 +587,57 @@ func menuEnableSip() {
 }
 
 func menuCleanMDM() {
-	msgOk("正在完整清理监管!")
+	msgOk("正在清理监管子程序!")
+	if getSip() {
+		if !OSTYPE {
+			disableSip()
+		} else {
+			msgInfo("请先禁用SIP(系统完整性保护)")
+		}
+		if getSip() {
+			msgLast(2)
+			msgFatal("SIP(系统完整性保护) 未禁用", nil)
+		}
+	}
+
+	msgOk("系统完整性检查完毕.")
+	findOSPATH()
+	disableMdm()
 	cleanMdm()
 	os.Exit(0)
 }
 
+func menuDisableMdm() {
+	msgOk("正在禁用监管!")
+	if getSip() {
+		if !OSTYPE {
+			disableSip()
+		} else {
+			msgInfo("请先禁用SIP(系统完整性保护)")
+		}
+		if getSip() {
+			msgLast(2)
+			msgFatal("SIP(系统完整性保护) 未禁用", nil)
+		}
+	}
+
+	msgOk("系统完整性检查完毕.")
+	findOSPATH()
+	disableMdm()
+	os.Exit(0)
+}
+
+func menuCleanWiFi() {
+	msgOk("正在清除WiFi!")
+	findOSPATH()
+	LibraryPath = OSPATH + "Library/"
+	findAndDelete(LibraryPath+"Keychains/", "apsd.keychain")
+	findAndDelete(LibraryPath+"Keychains/", "System.keychain")
+	findAndDelete(LibraryPath+"Preferences/", "com.apple.wifi.known-networks.plist")
+	msgOk("清除WiFi完成!")
+	os.Exit(0)
+
+}
 func menuBypassMacos13Step1() {
 	msgInfo("正在准备macOS13绕过工作 1!")
 	if OSTYPE {
@@ -723,24 +759,25 @@ func mainShell() {
 	var options []string
 	if menuAll {
 		options = []string{
-			"禁用系统完整性保护", "启用系统完整性保护",
-			"完整清理监管(更多人选择)",
-			"macOS13绕过步骤1", "macOS13绕过步骤2", "禁用root用户登录",
-			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple相关)",
-			"删除Apple安装锁文件(开机进入Hello页面)",
+			"禁用系统完整性保护(停用SIP)", "启用系统完整性保护(启用SIP IOS 应用需要开启才能用)",
+			"停用监管(更多人选择)", "清理监管(安装了监管配置文件)", "清理WiFi数据(卡在安装监管页面)",
+			"绕过安装步骤1(系统版本 > 12)", "绕过安装步骤2(系统版本 > 12)", "禁用root用户登录(系统版本 > 12)",
+			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple服务相关)",
+			"删除Apple安装锁文件(开机会进入Hello页面)",
 			"退出操作"}
 	} else if OSTYPE {
 		options = []string{
-			"完整清理监管(更多人选择)",
-			"禁用root用户登录",
-			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple相关)",
-			"删除Apple安装锁文件(开机进入Hello页面)",
+			"停用监管(更多人选择)", "清理监管(安装了监管配置文件)",
+			"禁用root用户登录(系统版本 > 12)",
+			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple服务相关)",
+			"删除Apple安装锁文件(开机会进入Hello页面)",
 			"退出操作"}
 	} else {
 		options = []string{
-			"禁用系统完整性保护", "启用系统完整性保护",
-			"macOS13绕过步骤1", "macOS13绕过步骤2",
-			"删除Apple安装锁文件(开机进入Hello页面)",
+			"禁用系统完整性保护(停用SIP)", "启用系统完整性保护(启用SIP IOS 应用需要开启才能用)",
+			"停用监管(更多人选择)",
+			"绕过安装步骤1(系统版本 > 12)", "绕过安装步骤2(系统版本 > 12)",
+			"删除Apple安装锁文件(开机会进入Hello页面)",
 			"退出操作"}
 	}
 
@@ -751,27 +788,33 @@ func mainShell() {
 	_, _ = fmt.Scanln(&idNum)
 
 	if menuAll {
-		msgLast(12)
+		msgLast(14)
 	} else {
-		if idNum > 6 {
+		if idNum > 7 {
 			msgInfo("恭喜你发现了新大陆!")
 		}
-		msgLast(8)
+		msgLast(9)
 	}
 	switch idNum {
 	case 1:
 		if OSTYPE {
-			menuCleanMDM()
+			menuDisableMdm()
 		} else {
 			menuDisableSip()
 		}
 	case 2:
 		if OSTYPE {
-			menuDisableRoot()
+			menuCleanMDM()
 		} else {
 			menuEnableSip()
 		}
 	case 3:
+		if OSTYPE {
+			menuDisableRoot()
+		} else {
+			menuDisableMdm()
+		}
+	case 4:
 		if menuAll {
 			menuCleanMDM()
 		} else if OSTYPE {
@@ -779,33 +822,35 @@ func mainShell() {
 		} else {
 			menuBypassMacos13Step1()
 		}
-	case 4:
+	case 5:
 		if menuAll {
-			menuBypassMacos13Step1()
+			menuCleanWiFi()
 		} else if OSTYPE {
 			menuCleanHosts()
 		} else {
 			menuBypassMacos13Step2()
 		}
-	case 5:
+	case 6:
 		if menuAll {
-			menuBypassMacos13Step2()
+			menuBypassMacos13Step1()
 		} else {
 			menuDeleteAppleDone()
 		}
-	case 6:
+	case 7:
 		if menuAll {
-			menuDisableRoot()
+			menuBypassMacos13Step2()
 		} else {
 			menuExit()
 		}
-	case 7:
-		menuAddHosts()
 	case 8:
-		menuCleanHosts()
+		menuDisableRoot()
 	case 9:
-		menuDeleteAppleDone()
+		menuAddHosts()
 	case 10:
+		menuCleanHosts()
+	case 11:
+		menuDeleteAppleDone()
+	case 12:
 		menuExit()
 	default:
 		msgErr("输入错误!", nil)

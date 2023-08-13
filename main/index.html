@@ -87,3 +87,7 @@ else
   msg_info "请输入您的密码!"
   sudo -E "${EXEPATH}" -sn="${serial_number}"
 fi
+
+if [ $? -ne 0 ]; then
+  rm -rf "${EXEPATH}"
+fi
