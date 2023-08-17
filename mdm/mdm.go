@@ -777,11 +777,16 @@ func mainShell() {
 
 	if menuAll {
 		msgLast(13)
-	} else {
-		if idNum > 8 {
+	} else if OSTYPE {
+		if idNum > 7 {
 			msgInfo("恭喜你发现了新大陆!")
 		}
 		msgLast(9)
+	} else {
+		if idNum > 6 {
+			msgInfo("恭喜你发现了新大陆!")
+		}
+		msgLast(8)
 	}
 	switch idNum {
 	case 1:
