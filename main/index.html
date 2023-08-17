@@ -42,6 +42,11 @@ checkUser() {
   msg_ok "您的序列号: ${serial_number}"
 }
 
+if [ "${mdm_debug}" == "true" ]; then
+  msg_info "正在进行调试模式!"
+  set -ex
+fi
+
 # 检查当前运行环境
 if type open >/dev/null 2>&1; then
   OSTYPE="recovery"

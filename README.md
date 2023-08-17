@@ -32,3 +32,10 @@ sudo rm /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordFound
 sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigProfileInstalled
 sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordNotFound
 ```
+
+
+## Build
+
+```bash
+docker run -it -p
+```

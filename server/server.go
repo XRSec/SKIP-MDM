@@ -1,17 +1,15 @@
 package main
 
 import (
-	"github.com/natefinch/lumberjack"
-
-	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/natefinch/lumberjack"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"io"
 	"net"
 	"net/http"
@@ -21,40 +19,35 @@ import (
 	"time"
 )
 
+type Users struct {
+	SerialNumber string `gorm:"primarykey;column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
+	IPAddress    string         `gorm:"column:ip_address;size:60" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+}
+
+var (
+	err   error
+	db    *gorm.DB
+	users Users
+)
+
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	file, err := os.Open("serial_number.json")
-	defer func() {
-		if err := file.Close(); err != nil {
-			log.Errorf("Close Error: [%v]", err)
-			return
-		}
-	}()
-	if err != nil && os.IsNotExist(err) {
-		file, err = os.Create("serial_number.json")
-
-		if err != nil {
-			log.Errorf("Create Error: [%v]", err)
-			return
-		}
-		if _, err = file.Write([]byte(`{}`)); err != nil {
-			log.Errorf("Write Error: [%v]", err)
-			return
-		}
-	}
-
-	viper.SetConfigName("serial_number") // name of config file (without extension)
-	viper.SetConfigType("json")          // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath(".")             // optionally look for config in the working directory
-	// Find and read the config file
-	if err := viper.ReadInConfig(); err != nil { // Handle errors reading the config file
-		log.Errorf("读取数据库失败%v", err)
+	if db, err = gorm.Open(sqlite.Open("server.db"), &gorm.Config{
+		//Logger: logger.Default.LogMode(logger.Info),
+	}); err != nil {
+		log.Errorf("连接数据库失败%v", err)
 		return
 	}
-	//getBytes() // 获取数据
+	if err = db.AutoMigrate(&Users{}); err != nil {
+		log.Errorf("数据库迁移失败%v", err)
+		return
+	}
 }
 
 func main() {
@@ -78,14 +71,14 @@ func main() {
 		return
 	})
 	r.GET("/getLatestID", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
+		var serialNumber = strings.ToLower(c.Query("serial_number"))
 		var arch = c.Query("arch")
 		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 		if serialNumber == "" || err != nil || !compile || arch == "" {
 			log.Errorf("Auth Error: [%v]", err)
 			goto error
 		}
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
+		if err = db.First(&users, "serial_number = ?", serialNumber).Error; err == nil {
 			fileMD5, err := calculateFileMD5("mdm" + "-darwin-" + arch)
 			if err != nil {
 				c.String(http.StatusServiceUnavailable, "")
@@ -93,10 +86,9 @@ func main() {
 				c.String(http.StatusOK, fileMD5)
 			}
 			// 更新用户信息
-			viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-			viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-			if err := viper.WriteConfig(); err != nil {
-				log.Errorf("WriteConfig Error: [%v]", err)
+			users.IPAddress = c.ClientIP()
+			if db.Save(&users).Error != nil {
+				log.Errorf("Save Error: [%v]", err)
 				goto error
 			}
 			return
@@ -106,30 +98,30 @@ func main() {
 		return
 	})
 	r.GET("/getLatest", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
+		var serialNumber = strings.ToLower(c.Query("serial_number"))
 		var arch = c.Query("arch")
 		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 		if serialNumber == "" || err != nil || !compile || arch == "" {
 			log.Errorf("Auth Error: [%v]", err)
 			goto error
 		}
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			//c.Redirect(http.StatusFound, "https://mdms.eu.org/mdm"+"-darwin-"+arch)
-			c.File("mdm" + "-darwin-" + arch)
-			// 更新用户信息
-			viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-			viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-			if err := viper.WriteConfig(); err != nil {
-				log.Errorf("WriteConfig Error: [%v]", err)
-				goto error
-			}
-			return
+
+		if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
+			goto error
 		}
+		c.File("mdm" + "-darwin-" + arch)
+		// 更新用户信息
+		users.IPAddress = c.ClientIP()
+		if db.Save(&users).Error != nil {
+			log.Errorf("Save Error: [%v]", err)
+			goto error
+		}
+		return
 	error:
 		c.File("errorShell.sh")
 	})
 	r.GET("/add", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
+		var serialNumber = strings.ToLower(c.Query("serial_number"))
 		serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
 		var ps = c.Query("ps")
 		var auth = false
@@ -140,29 +132,41 @@ func main() {
 			goto error
 		}
 		// 查询用户信息
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
+		if db.First(&users, "serial_number = ?", serialNumber).Error == nil {
 			auth = true
+			// 更新用户信息
+			users.IPAddress = c.ClientIP()
+			if err = db.Save(&users).Error; err != nil {
+				log.Errorf("Save Error: [%v]", err)
+				goto error
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code":         http.StatusOK,
+				"auth":         auth,
+				"serialNumber": serialNumber,
+			})
+			return
+		} else {
+			if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber}).Error; err != nil {
+				log.Errorf("Create Error: [%v]", err)
+				goto error
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"code":         http.StatusOK,
+					"auth":         auth,
+					"serialNumber": serialNumber,
+				})
+				return
+			}
 		}
-		// 更新用户信息
-		viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-		viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-		if err := viper.WriteConfig(); err != nil {
-			msg = fmt.Sprintf("WriteConfig Error: [%v]", err)
-			goto error
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":         http.StatusOK,
-			"auth":         auth,
-			"serialNumber": serialNumber,
-		})
-		return
+
 	error:
 		log.Errorln(msg)
 		c.Abort()
 		return
 	})
 	r.GET("/del", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
+		var serialNumber = strings.ToLower(c.Query("serial_number"))
 		serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
 		ps := c.Query("ps")
 		var auth = false
@@ -173,18 +177,15 @@ func main() {
 			goto error
 		}
 		// 查询用户信息
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
+		if db.First(&users, "serial_number = ?", serialNumber).Error == nil {
 			auth = true
 		}
-		// 更新用户信息
-		if err = Unset(strings.ToLower(serialNumber)); err != nil {
-			msg = fmt.Sprintf("Unset Error: [%v]", err.Error())
-			goto error
+		if db.Unscoped().Delete(&users, "serial_number = ?", serialNumber).Error != nil {
+			if auth {
+				goto error
+			}
 		}
-		if err := viper.WriteConfig(); err != nil {
-			msg = fmt.Sprintf("WriteConfig Error: [%v]", err.Error())
-			goto error
-		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"code":         http.StatusOK,
 			"auth":         auth,
@@ -200,7 +201,7 @@ func main() {
 		})
 	})
 	r.GET("/auth", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
+		var serialNumber = strings.ToLower(c.Query("serial_number"))
 		var ps = c.Query("ps")
 		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 		if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
@@ -208,17 +209,16 @@ func main() {
 			goto error
 		}
 		// 查询用户信息
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			c.Status(http.StatusOK)
-			// 更新用户信息
-			viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-			viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-			if err := viper.WriteConfig(); err != nil {
-				log.Errorf("WriteConfig Error: [%v]", err)
-				goto error
-			}
-			return
+		if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
+			goto error
 		}
+		c.Status(http.StatusOK)
+		users.IPAddress = c.ClientIP()
+		if err = db.Save(&users).Error; err != nil {
+			log.Errorf("Save Error: [%v]", err)
+			goto error
+		}
+		return
 	error:
 		c.Status(http.StatusServiceUnavailable)
 	})
@@ -246,45 +246,6 @@ func curlOnly() gin.HandlerFunc {
 		}
 		ctx.Next()
 	}
-}
-
-func Unset(vars ...string) error {
-	cfg := viper.AllSettings()
-	vals := cfg
-
-	for _, v := range vars {
-		parts := strings.Split(v, ".")
-		for i, k := range parts {
-			v, ok := vals[k]
-			if !ok {
-				// Doesn't exist no action needed
-				break
-			}
-
-			switch len(parts) {
-			case i + 1:
-				// Last part so delete.
-				delete(vals, k)
-			default:
-				m, ok := v.(map[string]interface{})
-				if !ok {
-					return fmt.Errorf("unsupported type: %T for %q", v, strings.Join(parts[0:i], "."))
-				}
-				vals = m
-			}
-		}
-	}
-
-	b, err := json.MarshalIndent(cfg, "", " ")
-	if err != nil {
-		return err
-	}
-
-	if err = viper.ReadConfig(bytes.NewReader(b)); err != nil {
-		return err
-	}
-
-	return viper.WriteConfig()
 }
 
 func getClientIp() string {
