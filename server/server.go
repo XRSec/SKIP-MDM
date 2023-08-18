@@ -222,6 +222,10 @@ func main() {
 	error:
 		c.Status(http.StatusServiceUnavailable)
 	})
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+		return
+	})
 	r.NoRoute(func(c *gin.Context) {
 		c.Abort()
 		return

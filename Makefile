@@ -3,13 +3,14 @@ ubs:
 	@rm -rf server/logs
 	@rm -rf mdm-darwin-*
 	@xgo --targets=darwin/amd64,darwin/arm64 ./mdm
-	@scp mdm-darwin-* ubs:/docker/MDM/
+	@xgo --targets=linux/amd64 -ldflags="-extldflags -static" ./server
+	@scp mdm-*-* ubs:/docker/MDM/
 	@scp server/* ubs:/docker/MDM/
 	@scp Makefile ubs:/docker/MDM/
 	@scp main/index.html ubs:/docker/MDM/
 	@scp ubs:/docker/MDM/server.db server/
 	@ssh ubs "docker restart mdm"
-	@rm -rf mdm-darwin-*
+	@rm -rf mdm-*-*
 	@#gits by Makefile
 	@echo "all done"
 
@@ -28,15 +29,9 @@ ikuai:
 	@echo "all done"
 
 serve:
-	@rm -rf dist
-	@mkdir dist
 	@xgo --targets=linux/amd64 -ldflags="-extldflags -static" ./server
-	@cp main/index.html dist/
-	@mv mdm-linux-amd64 dist/server
-	@cp server/* dist/
 	@docker build -f server/Dockerfile.ext -t mdm .
 	@docker save mdm > mdm.tar
-	@rm -rf dist
 
 run:
 	@docker rm -f mdm
@@ -45,8 +40,17 @@ run:
 build:
 	@docker build -t mdm .
 
+build.ext:
+	@docker build -t mdm -f Dockerfile.ext .
+
 logs:
 	@docker logs -f mdm
 
 dev:
 	@cd mdm;CGO_ENABLED=0 go build -a -ldflags "-extldflags -static" mdm.go
+
+fail2ban:
+	@cp gin_filter.conf /etc/fail2ban/filter.d/gin.conf
+	@cp gin_action.conf /etc/fail2ban/action.d/gin.conf
+	@cp gin_jail.conf /etc/fail2ban/jail.d/gin.conf
+	@systemctl restart fail2ban

@@ -38,6 +38,7 @@ var (
 	LibraryPath     string // /Volumes/Macintosh HD/Library/
 	UserLibraryPath string // /Volumes/Macintosh HD/Users/admin/Library/
 	SN              = flag.String("sn", "", "Serial Number")
+	DefaultRun      = flag.Bool("d", false, "Default Disable MDM")
 	menuAll         bool
 	Debug           = false
 )
@@ -261,6 +262,10 @@ func findOSPATH() {
 	} else if len(newLines) == 1 {
 		OSPATH = newLines[0]
 	} else if len(newLines) > 1 {
+		if *DefaultRun {
+			OSPATH = newLines[0]
+			return
+		}
 		for i, path := range newLines {
 			fmt.Printf("    %d. %s\n", i+1, path)
 		}
@@ -381,9 +386,9 @@ func disableMdm() {
 		checkDiskEncryption()
 		// 清理监管软件概要文件夹
 		//execCmd("chflags", "-R", "nouchg", MDMPath)
-		findAndDelete(MDMPath, ".profilesAreInstalled")
-		findAndDelete(MDMPath, "Store")
-		findAndDelete(MDMPath, "Settings")
+		execCmd(false, "rm", "-rf", MDMPath+".profilesAreInstalled")
+		execCmd(false, "rm", "-rf", MDMPath+"Store")
+		execCmd(false, "rm", "-rf", MDMPath+"Settings")
 		// findAndDelete(OSPATH+"/var/db/", ".AppleSetupDone")
 		execCmd(false, "mkdir", MDMPath+"Store")
 		execCmd(false, "mkdir", MDMPath+"Settings")
@@ -850,6 +855,11 @@ func mainShell() {
 
 func main() {
 	getSN()
+	if *DefaultRun {
+		execCmd(false, "touch", "/opt/mdm.log")
+		menuDisableMdm()
+		os.Exit(0)
+	}
 	for {
 		mainShell()
 	}
