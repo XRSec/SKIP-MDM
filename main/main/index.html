@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title class="title">MDM Auth</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 98vh;
+        }
+
+        .container {
+            position: relative;
+            height: auto;
+            background: #e3e3e3;
+            width: 380px;
+        }
+
+        form {
+            margin: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        label {
+            display: inline-block; /* 设置为内联块元素 */
+            text-align: right; /* 右对齐文本 */
+            width: 45%; /* 根据实际情况设置宽度 */
+        }
+
+
+        input[type="text"],
+        input[type="password"] {
+            width: 45%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+
+        input[type="submit"] {
+            padding: 5px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #menu {
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            background-color: #f2f2f2;
+            padding: 5px 0;
+        }
+
+        #menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #menu li {
+            width: 25%;
+            display: inline-block;
+            padding: 5px 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        #menu li.active {
+            background-color: #ccc;
+        }
+
+        #loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .code {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px;
+            position: relative;
+            /*background-color: #f5f5f5;*/
+            font-size: 20px;
+        }
+
+        code {
+            font-family: Consolas, monospace;
+            color: #555;
+            text-align: left; /* 右对齐文本 */
+            white-space: pre-wrap;
+            line-height: 1.5;
+            tab-size: 4;
+            border-radius: 5px;
+            overflow: auto;
+            font-size: 16px;
+        }
+
+        button {
+            position: absolute;
+            right: 5px;
+            font-size: 15px;
+            background-color: #008CBA;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        @media screen and (orientation: portrait) and (max-device-width: 900px) and (max-device-height: 1200px), screen and (orientation: landscape) and (max-device-width: 1200px) and (max-device-height: 900px) {
+            body {
+                height: 98vh;
+                font-size: 35px;
+                touch-action: manipulation;
+                -webkit-user-select: none; /* Chrome, Safari, Opera */
+                -moz-user-select: none; /* Firefox */
+                -ms-user-select: none; /* IE/Edge */
+                user-select: none; /* Non-prefixed version, currently supported by most modern browsers */
+            }
+
+            .container {
+                width: 50vh;
+            }
+
+            label {
+                font-size: 20px;
+            }
+
+            input[type="text"],
+            input[type="password"] {
+                font-size: 20px;
+                width: 33%;
+            }
+
+            input[type="submit"] {
+                padding: 5px 20px;
+                font-size: 25px;
+            }
+
+            #menu li {
+                font-size: 20px;
+            }
+        }
+
+    </style>
+    <script>
+        let dictionary = {
+            "zh-CN": {
+                "title": "MDM 验证",
+                "auth": "验证权限",
+                "add": "添加授权",
+                "language": "English",
+                "serial_number": "序列号: ",
+                "submit": "提交",
+                "card_id": "卡密卡号: ",
+                "password": "卡密密码: ",
+                "copyText": "点击复制",
+                "add_success": "序列号添加授权成功!",
+                "sn_no_pair": "序列号长度必须在8-14位之间！",
+                "pass_no_pair": "密码长度为15位！",
+                "card_no_pair": "卡号长度必须在5-10位之间！",
+                "auth_error": "验证失败，请确认您有权限！",
+                "auth_ok": "验证成功！",
+            },
+            "en": {
+                "title": "MDM Auth",
+                "auth": "Auth",
+                "add": "Add",
+                "language": "中文",
+                "serial_number": "Serial Number: ",
+                "submit": "Submit",
+                "card_id": "Card ID: ",
+                "password": "Password: ",
+                "copyText": "Copy",
+                "add_success": "Serial number added authorization successfully!",
+                "sn_no_pair": "Serial number length must be between 8-14 digits！",
+                "pass_no_pair": "Password length is 15 digits！",
+                "card_no_pair": "Card number length must be between 5-10 digits！",
+                "auth_error": "Authentication failed, please make sure you have permission!",
+                "auth_ok": "Authentication succeeded!",
+            }
+        };
+
+        function showLoadingSpinner() {
+            let container = document.getElementById('loading-container');
+            container.style.display = 'flex';
+
+            // 禁用滚动
+            document.body.style.overflow = 'hidden';
+
+            // 禁用其他交互元素
+            let interactiveElements = document.querySelectorAll('button, input, select');
+            for (let i = 0; i < interactiveElements.length; i++) {
+                interactiveElements[i].disabled = true;
+            }
+        }
+
+        function hideLoadingSpinner() {
+            let container = document.getElementById('loading-container');
+            container.style.display = 'none';
+
+            // 启用滚动
+            document.body.style.overflow = 'auto';
+
+            // 启用其他交互元素
+            let interactiveElements = document.querySelectorAll('button, input, select');
+            for (let i = 0; i < interactiveElements.length; i++) {
+                interactiveElements[i].disabled = false;
+            }
+        }
+
+        function copyText() {
+            // 获取要复制的文本
+            let text = document.getElementById("copyText").innerText;
+
+            // 创建一个临时输入框元素
+            let tempInput = document.createElement("input");
+            tempInput.type = "text";
+            tempInput.value = text;
+
+            // 将临时输入框元素添加到页面中
+            document.body.appendChild(tempInput);
+
+            // 选中临时输入框中的文本
+            tempInput.select();
+
+            // 执行复制命令
+            document.execCommand("copy");
+
+            // 移除临时输入框元素
+            document.body.removeChild(tempInput);
+
+            // 弹出复制成功的提示
+            alert("Copied：" + text);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            let menuItems = document.querySelectorAll('#menu li');
+            let forms = document.querySelectorAll('form');
+
+            // 默认显示第一个表单
+            forms[0].style.display = 'block';
+
+            // 切换菜单
+            menuItems.forEach(function (item, index) {
+                item.addEventListener('click', function () {
+                    if (item.className === "language") {
+                        return
+                    }
+                    menuItems.forEach(function (item) {
+                        item.classList.remove('active');
+                    });
+
+                    this.classList.add('active');
+
+                    forms.forEach(function (form) {
+                        form.style.display = 'none';
+                    });
+
+                    forms[index].style.display = 'block';
+                });
+            });
+            // 授权验证
+            document.querySelector('#form1').addEventListener('submit', function (e) {
+                e.preventDefault();
+                showLoadingSpinner()
+                let serial_number = document.querySelector('#serial_number').value;
+                if (serial_number.length < 8 || serial_number.length > 14) {
+                    alert(dictionary[document.documentElement.lang]["sn_no_pair"])
+                    hideLoadingSpinner()
+                    return
+                }
+                // 进行授权验证
+                let xhr = new XMLHttpRequest();
+                xhr.open("GET", `https://cli.mdms.eu.org:65501/auth?serial_number=${serial_number}`, false);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        let response = {}
+                        try {
+                            response = JSON.parse(xhr.responseText);
+                            if (response?.code !== 200) {
+                                alert(response?.msg)
+                            } else {
+                                alert(dictionary[document.documentElement.lang]["auth_ok"])
+                                document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
+                            }
+                        } catch (error) {
+                            alert('JSON Parsing error:' + error)
+                        }
+                    } else {
+                        alert(dictionary[document.documentElement.lang]["auth_error"])
+                    }
+                    hideLoadingSpinner()
+                };
+                xhr.send();
+            });
+            document.querySelector('#form2').addEventListener('submit', function (e) {
+                e.preventDefault();
+                showLoadingSpinner()
+                let cardID = document.querySelector('#card_id').value;
+                let password = document.querySelector('#password').value;
+                let serial_number = document.querySelector('#serial_number1').value;
+                if (cardID.length < 5 || cardID.length > 10) {
+                    alert(dictionary[document.documentElement.lang]["card_no_pair"])
+                    hideLoadingSpinner()
+                    return
+                }
+                if (password.length !== 15) {
+                    alert(dictionary[document.documentElement.lang]["pass_no_pair"])
+
+                    hideLoadingSpinner()
+                    return
+                }
+                if (serial_number.length < 8 || serial_number.length > 14) {
+                    alert(dictionary[document.documentElement.lang]["sn_no_pair"]);
+                    hideLoadingSpinner()
+                    return
+                }
+
+                // 进行授权验证
+                let xhr = new XMLHttpRequest();
+                xhr.open("GET", `https://cli.mdms.eu.org:65501/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4) {
+                        let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
+                        if (response?.code !== 200) {
+                            alert(response?.msg)
+                        } else {
+                            alert(dictionary[document.documentElement.lang]["add_success"])
+                            document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
+                        }
+                    }
+                    hideLoadingSpinner()
+                };
+                xhr.send();
+            });
+        });
+
+        function toggleLanguage() {
+            let language = document.documentElement.lang;
+            let button = document.getElementsByClassName("language");
+            let submitButtons = document.getElementsByClassName("submit");
+
+
+            if (language === "zh-CN") {
+                // 切换到英文
+                document.documentElement.lang = "en";
+                for (let key in dictionary["zh-CN"]) {
+                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                        elementsByClassNameKey.innerHTML = dictionary["en"][key];
+                    }
+                }
+                button.textContent = "中文";
+                // 修改提交按钮的文本为英文
+                for (let i = 0; i < submitButtons.length; i++) {
+                    submitButtons[i].value = "Submit";
+                }
+            } else {
+                // 切换到中文
+                document.documentElement.lang = "zh-CN";
+                for (let key in dictionary["zh-CN"]) {
+                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                        elementsByClassNameKey.innerHTML = dictionary["zh-CN"][key];
+                    }
+                }
+                button.textContent = "English";
+                // 修改提交按钮的文本为中文
+                for (let i = 0; i < submitButtons.length; i++) {
+                    submitButtons[i].value = "提交";
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <div id="menu">
+        <ul>
+            <li class="active auth">验证权限</li>
+            <li class="add">添加授权</li>
+            <li class="language" onclick="toggleLanguage()">English</li>
+        </ul>
+    </div>
+    <form id="form1">
+        <label class="serial_number" for="serial_number">序列号：</label>
+        <input type="text" id="serial_number" name="serial_number"><br>
+        <input class="submit" type="submit" value="提交">
+    </form>
+    <form id="form2">
+        <label class="card_id" for="card_id">卡密卡号：</label>
+        <input type="text" id="card_id" name="card_id"><br>
+
+        <label class="password" for="password">卡密密码：</label>
+        <input type="text" id="password" name="password"><br>
+
+        <label class="serial_number" for="serial_number1">序列号：</label>
+        <input type="text" id="serial_number1" name="serial_number"><br>
+
+        <input class="submit" type="submit" value="提交">
+    </form>
+    <div class="code">
+        <code id="copyText">bash &lt;(curl -L mdms.eu.org)</code>
+        <button class="copyText" onclick="copyText()">点击复制</button>
+    </div>
+    <div id="loading-container" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+</div>
+</body>
+</html>

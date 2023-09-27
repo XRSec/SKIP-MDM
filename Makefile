@@ -15,7 +15,7 @@ ubs:
 	@echo "all done"
 
 ikuai:
-	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; open smb://192.168.0.88/docker/Docker_Data/MDM; sleep 10; done
+	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; open smb://192.168.0.88/docker/MDM; sleep 3; done
 	@rm -rf server/server.db
 	@rm -rf server/logs
 	@rm -rf mdm-darwin-*
@@ -23,15 +23,22 @@ ikuai:
 	@cp mdm-darwin-* /Volumes/MDM*/
 	@cp -rv server/* /Volumes/MDM*/
 	@cp -v Makefile /Volumes/MDM*/
-	@cp -v main/index.html /Volumes/MDM*/
+	@cp -rv main /Volumes/MDM*/
 	@cp -v /Volumes/MDM*/server.db server/
 	@rm -rf mdm-darwin-*
 	@echo "all done"
 
 serve:
+	@while true; do if ls /Volumes/ | grep -q "^docker"; then break; fi; open smb://192.168.0.88/docker; sleep 3; done
 	@xgo --targets=linux/amd64 -ldflags="-extldflags -static" ./server
 	@docker build -f server/Dockerfile.ext -t mdm .
 	@docker save mdm > mdm.tar
+	@mv mdm.tar /Volumes/docker*/
+	@rm mdm-linux-*
+	@read -p "请删除您的容器 并 输入您的 iKuai Token：" -r token; \
+	curl 'http://192.168.0.88/Action/call' -X 'POST' -H "Cookie: login=1; sess_key=$${token}; username=xrsec" --data-binary '{"func_name":"docker_image","action":"IMPORT","param":{"filepath":"vm/Docker_Data/mdm.tar"}}'; \
+	curl 'http://192.168.0.88/Action/call' -X 'POST' -H "Cookie: login=1; sess_key=$${token}; username=xrsec" --data-binary '{"func_name":"docker_container","action":"add","param":{"name":"MDM","interface":"doc_lan","image":"mdm:latest","memory":268435456,"auto_start":1,"mounts":"/vm/Docker_Data/letsencrypt/data/archive/cli.mdms.eu.org:/certs,/vm/Docker_Data/MDM:/app","cmd":"","env":"","ip6addr":"","ipaddr":"172.17.0.2"}}'
+	@rm -fv /Volumes/docker*/mdm.tar
 
 run:
 	@docker rm -f mdm
@@ -41,7 +48,7 @@ build:
 	@docker build -t mdm .
 
 build.ext:
-	@docker build -t mdm -f Dockerfile.ext .
+	@docker build -t mdm -f server/Dockerfile.ext .
 
 logs:
 	@docker logs -f mdm
