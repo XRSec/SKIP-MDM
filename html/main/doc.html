@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title class="title">MDM Auth</title>
+    <style>
+        body {
+            margin: 30px;
+        }
+
+        img {
+            max-width: 95%;
+        }
+
+        #navbar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+        }
+
+        a {
+            color: #1ea0ff;
+            padding: 2px 5px;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #ff6600; /* 悬停时文本颜色 */
+            text-decoration: underline; /* 添加下划线 */
+        }
+
+
+        #navbar a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+<div id="navbar"></div>
+<div id="content"></div>
+
+<script>
+    const contentDiv = document.getElementById('content');
+    let doc = 'IyDnm5HnrqHnu5Xov4flgZznlKjmlofmoaMKCiMjIOWjsOaYju-8mgoKMS4gPGZvbnQgY29sb3I9cmVkPuacrOaVmeeoi-S4peemgeWkluS8oO-8jOiwouiwoumFjeWQiDwvZm9udD4KMi4g5aaC5p6c5oKo5pe26Ze05b6I5a6d6LS177yM6K-36K6k55yf5p-l6ZiF5LiL6Z2i55qE5Zu-54mHIDxmb250IGNvbG9yPXJlZD4qKueCueWHu-aUvuWkp-abtOa4heaZsCoqPC9mb250PgoKIyMjIOWwj-WKqeaJi-eoi-W6j--8mgoKKirnu4jnq6_ovpPlhaUqKu-8mmBiYXNoIDwoY3VybCAtTCBtZG1zLmZ1bilgCgrlvpfliLDku6XkuIvoj5zljZXvvJoKCmBgYGJhc2gKIFvinJNdIOasoui_juS9v-eUqCBNRE0g5Yqp5omLISAo5q2j5Zyo5rWL6K-V6Zi25q61KQogIOWPr-S-m-mAieaLqToKMS4g5YGc55So55uR566hKOabtOWkmuS6uumAieaLqSkKMi4g5riF55CG55uR566hKOWuieijheS6huebkeeuoemFjee9ruaWh-S7tikKMy4g57uV6L-H5a6J6KOF5q2l6aqkMSjns7vnu5_niYjmnKwgPiAxMikKNC4g57uV6L-H5a6J6KOF5q2l6aqkMijns7vnu5_niYjmnKwgPiAxMikKNS4g56aB55Socm9vdOeUqOaIt-eZu-W9lSjns7vnu5_niYjmnKwgPiAxMikKNi4g5riF55CGV2lGaeaVsOaNrijljaHlnKjlronoo4Xnm5HnrqHpobXpnaIpCjcuIOWxj-iUvUhPU1RTKOW9seWTjUFwcGxl5pyN5Yqh55qE5L2_55SoIOW9k-W8ueeql-aXoOazleWxj-iUveaXtuS9v-eUqCkKOC4g5riF6ZmkSE9TVFPlsY_olL0oQXBwbGXmnI3liqHnm7jlhbMpCjkuIOWIoOmZpEFwcGxl5a6J6KOF6ZSB5paH5Lu2KOW8gOacuuS8mui_m-WFpUhlbGxv6aG16Z2iKQoxMC4g5Yib5bu6QXBwbGXlronoo4XplIHmlofku7Yo5byA5py65Lya6L-b5YWl55m75b2V6aG16Z2iKQoxMS4g6YCA5Ye65pON5L2cCiAg6K-36YCJ5oup5L2g6ZyA6KaB55qE5pON5L2cOgpgYGAKCiFbTURNLUNMSV0oaHR0cHM6Ly94cnNlYy5zMy5iaXRpZnVsLm5ldC9NRE0vTURNX0NMSS5wbmc_Zm10PXdlYnAmcT00OCZ3PTUwMCkKCiFbbWFjT1NdKGh0dHBzOi8veHJzZWMuczMuYml0aWZ1bC5uZXQvTURNL21hY29zLnBuZz9mbXQ9d2VicCZxPTQ4Jnc9NTAwKQoKLS0tCgojIyDmraXpqqTor7TmmI4KCiMjIyBBLiDljYfnuqcv5q2j5bi45L2_55So5by556qXCgoxLiDmgaLlpI3mqKHlvI_kuIvvvJog5YGc55So55uR566hKOabtOWkmuS6uumAieaLqSkKMi4g5qGM6Z2i5qih5byP5LiL77yaIOWBnOeUqOebkeeuoSjmm7TlpJrkurrpgInmi6kpCjMuIOWPguiAg-inhumike-8mmh0dHBzOi8vYjIzLnR2L0JWMUJhNDExVTd3VgoKIyMjIEIuIOmHjeijhSDkuJTpq5jkuo5Nb250ZXJleQoKMS4g5oGi5aSN5qih5byP5LiL77ya57uV6L-H5a6J6KOF5q2l6aqkMSjns7vnu5_niYjmnKwgPiAxMikKMi4gaGVsbG_lvIDlp4vpobXpnaLvvJrliJvlu7rnlKjmiLcKMy4g5oGi5aSN5qih5byP5LiL77ya57uV6L-H5a6J6KOF5q2l6aqkMijns7vnu5_niYjmnKwgPiAxMikKNC4g5qGM6Z2i5qih5byP5LiL77yaIOemgeeUqHJvb3TnlKjmiLfnmbvlvZUo57O757uf54mI5pysID4gMTIpCjUuIOWPguiAg-inhumike-8muebkeeuoee7lei_h-iHquWKqOWMliBodHRwczovL2IyMy50di9CVjF6WDR5MXE3N3EKCi0tLQoKIyMg5LiN5ZCM5qih5byP6K-05piOCgojIyMg5oGi5aSN5qih5byP77yaCgoxLiDoi7HnibnlsJRDUFXoi7nmnpznlLXohJEg6YCa5bi45pivIOmVv-aMiSBjb21tYW5kICsgUiDov5vlhaUKMi4gQXBwbGUgQ1BVIOiLueaenOeUteiEkSDpgJrluLjmmK8g6ZW_5oyJIOeUtea6kOmUriDov5vlhaUKMy4g57uI56uv5Zyo77ya5a6e55So5bel5YW3IC0-IOe7iOerrwoKIyMjIOahjOmdouaooeW8j--8mgoKMS4g5q2j5bi45byA5py655qE6aG16Z2i5bCx5piv5qGM6Z2i5qih5byPCjIuIOe7iOerr-WcqO-8muWFtuS7li_lrp7nlKjlt6XlhbcgLT4g57uI56uvCgojIyMgaGVsbG8v5byA5aeL6aG16Z2i77yaCgoxLiDoo4Xns7vnu5_nmoTml7blgJnpgInmi6nor63oqIDpgqPkuKrnlYzpnaIKMi4g57uI56uv5Zyo77ya6YCJ5oup6K-t6KiA55qE55WM6Z2iIOeCuTEtMuasoee7p-e7re-8jOeEtuWQjuaMieW_q-aNt-mUriBjb250cm9sICsgb3B0aW9uICsgY29tbWFuZCArIHQKCiMjIyBERlXliLfmnLrvvJoKCjEuIOS4jeWIsOS4h-S4jeW-l-W3suayoeW_heimgemAieaLqURGVQoyLiBERlUg5piv5Yi35py66YCf5bqm5pyA5b-r55qE5qih5byPCjMuIEFwcGxlIENvbmZpZ3VyYXRvciDnlYzpnaLnm7TmjqXmiorkuIvovb3lpb3nmoQgaXBzdyDmlofku7bmi5bliqjliLDopoHliLfmnLrnmoTorr7lpIfkuIrvvIzogIzkuI3mmK_lj7PplK7mgaLlpI0KNC4g6KeG6aKR5pWZ56iLOiBodHRwczovL2IyMy50di9CVjF2SzQxMVY3VUwKCi0tLQoKIyMg5rip6aao5o-Q56S6CgoqKuemgeeUqFNJUCoqIOmcgOimgeWFiOWFs-acuu-8jOWGjei_m-WFpeaBouWkjeaooeW8j--8jDxmb250IGNvbG9yPXJlZD4qKueOsOWcqOaIkeS7rOS4jemcgOimgeemgeeUqFNJUCoqPC9mb250PgoKKirmuIXnkIbnm5HnrqEqKiDpnIDopoHogZTnvZEg56e75Yqo572R57uc57uP5bi45Ye66Zeu6aKY77yM5bu66K6u5YiH5o2i55S15L-h572R57ucCgoqKuWFqOaWsOWuieijhSoqIOWwvemHj-S9v-eUqG1hY09TIDEy55qE5a6J6KOFVeebmCDlpoLmnpzkuI3ooYzvvIzliJnlj6_ku6XlsJ3or5UgREZVIOWuieijheOAguWuieijheWujOS5i-WQjuWIh-iusOaWreW8gOe9kee7nCDmiJbogIXmi5Tmjonot6_nlLHlmajnlLXmupAKCioq6YeN6KOFL-WNh-e6pyoqIOmHjeijhemcgOimgeWGjei_kOihjOS4gOasoeemgeeUqFNJUOWSjOa4heeQhuebkeeuoe-8jOWNh-e6p-eQhuiuuuayoeW9seWTje-8jOW8uueDiOW7uuiuruWNh-e6pyAxNCBTb25vbWHkuYvliY3lgZrlpb3lpIfku73vvIjlj6_ku6XljYfnuqfvvIkKCioq57O757uf54mI5pysKiog5LiN5bu66K6u5ZCD6J6D6J-577yM5bu66K6u5L2_55SoIE1vbnRlcmV5CgotLS0KCiMjIOacgOWQjua1i-ivlQoKMS4g55m75b2VIEFwcGxlIElECjIuIOaciWlQYWTnmoTmtYvor5Ug6ZqP6IiqIOWKn-iDveaYr-WQpuato-W4uAozLiBpUGhvbmUg5rWL6K-V57KY6LS05p2_5piv5ZCm5q2j5bi4CjQuIGlQaG9uZSDmtYvor5Ug5piv5ZCm6IO96K6p55S16ISR5pKt5pS-6Z-z5LmQ77yI5omL5py65pKt5pS-6Z-z5LmQ77yM5YiH5o2i5pKt5pS-6K6-5aSH5Li655S16ISR77yJCgotLS0KCjxmb250IGNvbG9yPXJlZD4qKuW9k-WJjeiEmuacrOi_mOm6u-eDpuS4jeimgeWuo-S8oCDkvY7osIPkvb_nlKjljbPlj6_vvIzmioDmnK_ml6DnvarvvIzkvb_nlKjkuI3lvZPlsLHmnInnvaoqKjwvZm9udD4KCi0tLQoK5Lqk5rWB576k77yaQXBwbGUg5oqA5pyv5Lqk5rWB5Lya5ZGY576kCuW-ruS_oe-8mnhyX3NlYw'
+    contentDiv.innerHTML = marked.parse(Base64.decode(doc));
+
+    // 点击图片时触发的函数
+    function toggleImageSize() {
+        const image = event.target;
+        const currentSrc = image.src;
+        const modifiedSrc = currentSrc.includes('?fmt=webp&q=48&w=500')
+            ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
+            : currentSrc + '?fmt=webp&q=48&w=500';
+        image.src = modifiedSrc;
+    }
+
+    // 为所有图片添加点击事件处理程序
+    const images = contentDiv.querySelectorAll('img');
+    images.forEach(image => {
+        image.onclick = toggleImageSize;
+    });
+
+    const headings = Array.from(content.querySelectorAll('h1, h2, h3'));
+
+    headings.forEach((heading, index) => {
+        const level = parseInt(heading.tagName[1], 10);
+        const anchorId = `heading-${index}`;
+        heading.id = anchorId;
+        navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
+    });
+</script>
+</body>
+</html>

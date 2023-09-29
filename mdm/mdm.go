@@ -38,6 +38,7 @@ var (
 	OSTYPE          = false                    // true: normal false: recovery
 	OSPATH          = "/Volumes/Macintosh HD/" //Volumes/Macintosh HD/
 	User            = ""
+	UID             = "501"
 	NewMachine      = false
 	MDMPath         string // /Volumes/Macintosh HD/var/db/ConfigurationProfiles/
 	LibraryPath     string // /Volumes/Macintosh HD/Library/
@@ -219,6 +220,7 @@ func init() {
 	if err != nil {
 		msgFatal("无法获取当前用户信息", err)
 	}
+
 	if currentUser.Username != "root" {
 		msgFatal("请使用root用户运行", err)
 	}
@@ -244,10 +246,6 @@ func init() {
 	if *supplier {
 		msgOk("Supplier 模式已开启")
 	}
-}
-
-func translate(key string) string {
-	return i18n[Language][key]
 }
 
 // # set msg
@@ -413,7 +411,7 @@ func deleteFile(source string) bool {
 	fn := filepath.Base(source)
 	fn1 := fn + "_" + strconv.FormatInt(time.Now().Unix(), 10)
 	destination := OSPATH + "Users/" + User + "/.Trash/" + fn1
-	if User == "" || NewMachine {
+	if User == "" || NewMachine || !OSTYPE {
 		if err := os.RemoveAll(source); err != nil {
 			if *Debug {
 				msgErr(fmt.Sprintf("删除文件失败: %v err: %v", fn, handleError(err)), err)
@@ -422,15 +420,15 @@ func deleteFile(source string) bool {
 			}
 			return false
 		}
-		return true
-	}
-	if err := os.Rename(source, destination); err != nil {
-		if *Debug {
-			msgErr(fmt.Sprintf("删除文件失败: %v err: %v", fn, handleError(err)), err)
-		} else {
-			msgErr(fmt.Sprintf("删除文件失败 err: %v", handleError(err)), err)
+	} else {
+		if err := os.Rename(source, destination); err != nil {
+			if *Debug {
+				msgErr(fmt.Sprintf("删除文件失败: %v err: %v", fn, handleError(err)), err)
+			} else {
+				msgErr(fmt.Sprintf("删除文件失败 err: %v", handleError(err)), err)
+			}
+			return false
 		}
-		return false
 	}
 	return true
 }
@@ -564,7 +562,7 @@ func checkDiskEncryption() {
 		if OSTYPE {
 			msgErr("未找到监管程序文件夹, 请联系管理更新程序", nil)
 		} else {
-			msgErr(fmt.Sprintf("请退出终端, 前往磁盘工具, 将磁盘全部展开(箭头) 找到 %v - DATA , 选择装载, 接着退出磁盘工具回到终端重新运行程序", strings.Replace(strings.Replace(OSPATH, "/Volumes/", "", -1), "/", "", -1)), nil)
+			msgFatal(fmt.Sprintf("请退出终端, 前往磁盘工具, 将磁盘全部展开(箭头) 找到 %v - DATA , 选择装载, 接着退出磁盘工具回到终端重新运行程序", strings.Replace(strings.Replace(OSPATH, "/Volumes/", "", -1), "/", "", -1)), nil)
 		}
 	}
 }
@@ -573,6 +571,7 @@ func disableMdm() {
 	msgInfo("正在停用监管程序")
 	checkDiskEncryption()
 	SetHosts(true, getMdmDomain())
+	menuAddHosts()
 
 	if OSTYPE {
 		// 唤醒监管程序 好像会占用文件
@@ -605,13 +604,21 @@ func disableMdm() {
 	//execCmd("chflags", "-R", "uchg", MDMPath)
 
 	if OSTYPE {
+		targetUser, err := user.Lookup(User)
+		if err != nil {
+			msgErr("无法获取用户信息", err)
+		}
+		if targetUser != nil {
+			UID = targetUser.Uid
+		}
+
 		execCmd(false, "dscacheutil", "-flushcache")
 		execCmd(false, "killall", "-HUP", "mDNSResponder")
 		msgInfo("请输入 y 再按回车 以移除全部描述文件")
 		execCmd(false, "profiles", "remove", "-all") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
 		msgLast(1)
 		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "disable", "gui/501/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
+		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
 		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.enroll")
 		msgOk("监管程序停用完成")
 	} else {
@@ -770,7 +777,7 @@ func getSN() {
 	}
 	if !strings.EqualFold(*SN, tmpSN) {
 		httpClient := privacyDns()
-		req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.eu.org:65501/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.fun:65501/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
 		if err != nil {
 			msgFatal("创建请求失败", err)
 		}
@@ -795,7 +802,7 @@ func getSN() {
 
 func AuthSN() {
 	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.eu.org:65501/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.fun:65501/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
 	if err != nil {
 		msgFatal("网络请求失败", err)
 	}
@@ -948,10 +955,9 @@ func menuBypassMacos13Step1() {
 func menuSupplier() {
 	msgInfo("当前是供应商特供模式")
 	findOSPATH()
-	checkUser()
-	disableMdm()
 	cleanMdm()
-	if User != "" && !OSTYPE {
+	disableMdm()
+	if User == "" && !OSTYPE {
 		msgInfo("正在创建新用户")
 		userName := "apple"
 		userPass := "123456"
@@ -1066,7 +1072,7 @@ func menuTouchAppleDone() {
 	findOSPATH()
 	checkDiskEncryption()
 	execCmd(false, "touch", OSPATH+"var/db/"+".AppleSetupDone")
-	msgOk("删除Apple安装锁文件完成. 重启进入Hello安装页面")
+	msgOk("创建Apple安装锁文件完成. 重启进入桌面!")
 	//os.Exit(0)
 }
 

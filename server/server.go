@@ -15,6 +15,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -36,8 +37,9 @@ type Cards struct {
 }
 
 var (
-	err error
-	db  *gorm.DB
+	err   error
+	db    *gorm.DB
+	shell = "bash <(curl -kL https://cli.mdms.fun:65501)"
 )
 
 func init() {
@@ -78,15 +80,15 @@ func main() {
 	//r.Use(curlOnly())
 	// 添加中间件处理 CORS
 	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "https://mdms.eu.org")
+		handleRequest(c)
 		c.Next()
 	})
 	r.GET("/", func(c *gin.Context) {
-		c.File("main/index.html")
+		c.File("html/exec/index.html")
 		return
 	})
 	r.GET("/main", func(c *gin.Context) {
-		c.File("main/main/index.html")
+		c.File("html/main/index.html")
 		return
 	})
 	r.GET("/getLatestID", func(c *gin.Context) {
@@ -175,8 +177,8 @@ func main() {
 
 			totalLines := len(lines)
 			startIndex := 0
-			if totalLines > 15 {
-				startIndex = totalLines - 15
+			if totalLines > 25 {
+				startIndex = totalLines - 25
 			}
 			var logs string
 			for i := startIndex; i < totalLines; i++ {
@@ -213,10 +215,10 @@ func main() {
 		if serialNumber == "" || cardId == "" || password == "" || err != nil || !compile || !compile1 || !compile2 {
 			if ps != "" && serialNumber != "" && compile && decodeHash(serialNumber, ps) {
 				// 判断序列号是否存在
-				users.CardType = 1
 				if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 					// 序列号不存在则创建
-					if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: card_type}).Error; err != nil {
+					users.CardType = 1
+					if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: users.CardType}).Error; err != nil {
 						msg = fmt.Sprintf("Create Error: [%v]", err)
 						goto error
 					}
@@ -225,15 +227,17 @@ func main() {
 						"code":          http.StatusOK,
 						"auth":          auth,
 						"serial_number": serialNumber,
-						"card_type":     card_type,
+						"card_type":     users.CardType,
+						"shell":         shell,
 					})
 					return
 				} else {
 					// 序列号存在则更新
 					// 序列号权限更新判断
-					if users.CardType != card_type && card_type > users.CardType {
+					if users.CardType == 1 {
 						auth = true
 					}
+					users.CardType = 1
 					// 更新用户信息
 					users.IPAddress = c.ClientIP()
 					if err = db.Save(&users).Error; err != nil {
@@ -244,7 +248,7 @@ func main() {
 						"code":          http.StatusOK,
 						"auth":          auth,
 						"serial_number": serialNumber,
-						"card_type":     card_type,
+						"card_type":     users.CardType,
 					})
 					return
 				}
@@ -298,6 +302,7 @@ func main() {
 			"auth":          auth,
 			"serial_number": serialNumber,
 			"card_type":     card_type,
+			"shell":         shell,
 		})
 		return
 	error:
@@ -351,12 +356,12 @@ func main() {
 		var msg = ""
 		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 		if serialNumber == "" || err != nil || !compile {
-			log.Errorf("Auth Error: [%v]", err)
+			msg = "auth_error"
 			goto error
 		}
 		// 查询用户信息
 		if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
-			msg = "Authentication failed, please make sure you have permission!"
+			msg = "auth_error"
 			goto error
 		}
 		if users.CardType == 0 {
@@ -366,7 +371,7 @@ func main() {
 
 			// 判断时间差是否大于1天
 			if duration.Hours() > 24 {
-				msg = "Temporary permissions, use permissions for more than one day"
+				msg = "time_error"
 				goto error
 			}
 		}
@@ -374,7 +379,7 @@ func main() {
 			"code":          http.StatusOK,
 			"serial_number": serialNumber,
 			"card_type":     users.CardType,
-			"shell":         "bash <(curl -L https://cli.mdms.eu.org:65501)",
+			"shell":         shell,
 		})
 		users.IPAddress = c.ClientIP()
 		if err = db.Save(&users).Error; err != nil {
@@ -401,11 +406,51 @@ func main() {
 		return
 	})
 
-	if err := r.RunTLS(":33659", "/certs/cert.pem", "/certs/privkey.pem"); err != nil {
+	if err := r.RunTLS(":33659", "/certs/cert1.pem", "/certs/privkey1.pem"); err != nil {
 		log.Errorf("Run Error: [%v]", err)
 		return
 	}
+	//if err := r.Run(":33659"); err != nil {
+	//	log.Errorf("Run Error: [%v]", err)
+	//	return
+	//}
+}
 
+func handleRequest(c *gin.Context) {
+	// 从请求头中获取Origin或Referer
+	origin := c.Request.Header.Get("Origin")
+	referer := c.Request.Header.Get("Referer")
+	var urlString string
+
+	if origin != "" {
+		urlString = origin
+	} else if referer != "" {
+		urlString = referer
+	} else {
+		return
+	}
+
+	parsedURL, err := url.Parse(urlString)
+	if err != nil {
+		return
+	}
+
+	if strings.HasPrefix(urlString, "http://") {
+		urlString = "http://" + parsedURL.Hostname()
+	} else if strings.HasPrefix(urlString, "https://") {
+		urlString = "https://" + parsedURL.Hostname()
+	} else {
+		return
+	}
+
+	if port := parsedURL.Port(); port != "" {
+		urlString += ":" + port
+	}
+
+	if parsedURL.Hostname() == "mdms.fun" || parsedURL.Hostname() == "auth.mdms.fun" || parsedURL.Hostname() == "mdms.eu.org" || parsedURL.Hostname() == "auth.mdms.eu.org" || parsedURL.Hostname() == "localhost" {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
+	}
+	c.Writer.Header().Set("Vary", "Origin")
 }
 
 func curlOnly() gin.HandlerFunc {
