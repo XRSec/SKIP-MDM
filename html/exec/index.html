@@ -119,10 +119,10 @@ if [[ "${OSTYPE}" == "normal" ]]; then
   "${exePATH}" -sn="${serial_number}" "$@"
 else
   read -p "${dict[$language+15]}" -r passwd
+  msgLast 1
   echo "${passwd}" | sudo -S dscacheutil -flushcache
   sudo killall -HUP mDNSResponder
   sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
-  msgLast 5
   sudo -E "${exePATH}" -sn="${serial_number}" "$@"
 fi
 

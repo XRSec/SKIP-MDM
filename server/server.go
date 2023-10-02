@@ -100,21 +100,28 @@ func main() {
 			log.Errorf("Auth Error: [%v]", err)
 			goto error
 		}
-		if err = db.First(&users, "serial_number = ?", serialNumber).Error; err == nil {
-			fileMD5, err := calculateFileMD5("mdm" + "-darwin-" + arch)
-			if err != nil {
-				c.String(http.StatusServiceUnavailable, "")
-			} else {
-				c.String(http.StatusOK, fileMD5)
-			}
-			// 更新用户信息
-			users.IPAddress = c.ClientIP()
-			if db.Save(&users).Error != nil {
-				log.Errorf("Save Error: [%v]", err)
+		if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
+			goto error
+		}
+		if users.CardType == 0 {
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", users.Model.CreatedAt.String())
+			duration := time.Now().Sub(targetTime) // 计算时间差
+			if duration.Hours() > 24 {             // 判断时间差是否大于1天
 				goto error
 			}
-			return
 		}
+		if fileMD5, err := calculateFileMD5("mdm" + "-darwin-" + arch); err != nil {
+			c.String(http.StatusServiceUnavailable, "")
+		} else {
+			c.String(http.StatusOK, fileMD5)
+		}
+		// 更新用户信息
+		users.IPAddress = c.ClientIP()
+		if db.Save(&users).Error != nil {
+			log.Errorf("Save Error: [%v]", err)
+			goto error
+		}
+		return
 	error:
 		c.Abort()
 		return
@@ -131,6 +138,13 @@ func main() {
 
 		if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
 			goto error
+		}
+		if users.CardType == 0 {
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", users.Model.CreatedAt.String())
+			duration := time.Now().Sub(targetTime) // 计算时间差
+			if duration.Hours() > 24 {             // 判断时间差是否大于1天
+				goto error
+			}
 		}
 		c.File("mdm" + "-darwin-" + arch)
 		// 更新用户信息
@@ -365,7 +379,8 @@ func main() {
 			goto error
 		}
 		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999-07:00", users.Model.CreatedAt.String())
+			// 2023-10-02 08:21:35.72515647 +0000 UTC
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", users.Model.CreatedAt.String())
 			// 计算时间差
 			duration := time.Now().Sub(targetTime)
 
@@ -406,13 +421,13 @@ func main() {
 		return
 	})
 
+	// 启动 HTTPS 服务器
+	fmt.Printf("Starting HTTPS server on :33659...\n")
 	if err := r.RunTLS(":33659", "/certs/cert1.pem", "/certs/privkey1.pem"); err != nil {
-		log.Errorf("Run Error: [%v]", err)
-		return
+		fmt.Printf("HTTPS server error: %v\n", err)
 	}
 	//if err := r.Run(":33659"); err != nil {
-	//	log.Errorf("Run Error: [%v]", err)
-	//	return
+	//	fmt.Printf("HTTPS server error: %v\n", err)
 	//}
 }
 

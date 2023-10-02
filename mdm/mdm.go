@@ -51,7 +51,177 @@ var (
 )
 
 var i18n = map[string]map[string]string{
-	"en": {},
+	"en": {
+		// init
+		"cant_get_user_info":   "Unable to get current user information",
+		"please_use_root":      "Please use root user to run",
+		"debug_mode_opened":    "Debug mode is on",
+		"menu_all_mode_opened": "Menu All mode is on",
+		"supplier_mode_opened": "Supplier mode is on",
+
+		// disableSip
+		"disabled_sip":         "Disabling SIP (System Integrity Protection) state...",
+		"disabled_sip_1":       "If prompted [y/n] enter y and enter",
+		"disabled_sip_2":       "The user fills in your user name,[password] please enter the password and enter",
+		"disabled_sip_run_err": "Disable SIP run failed",
+		"disabled_sip_err":     "Failed to disable SIP",
+		"re_goto_recovery":     "Please enter the system normally first, then click shutdown, and then enter the recovery mode.",
+		"disabled_sip_ok":      "Disable SIP run successfully",
+		// enableSip
+		"enabled_sip":         "Enabling SIP (System Integrity Protection) status...",
+		"enabled_sip_run_err": "Enable SIP run failed",
+		"enabled_sip_err":     "Failed to enable SIP",
+		"enabled_sip_run_ok":  "Enable SIP run successfully",
+
+		// getSip
+		"get_sip":          "Querying SIP (System Integrity Protection) status",
+		"get_sip_1":        "Dual system may not judge correctly!",
+		"get_sip_run_err":  "Query SIP running failed",
+		"get_sip_disabled": "SIP (System Integrity Protection) is disabled.",
+		"get_sip_enabled":  "SIP (System Integrity Protection) enabled",
+
+		// execCmd
+		"exec_cmd_run_err": "Run Failed",
+
+		// findAndDelete
+		"read_dir_err": "Failed to read directory",
+
+		// deleteFile
+		"delete_file_err": "Failed to delete file",
+
+		// findOSPATH
+		"find_os_path_err": "Failed to find system path",
+		"find_os_path_1":   "System disk not found.",
+		"find_os_path_2":   "Find multiple system disks, the common system startup disk is: Macintosh HD, please select your system disk:",
+		"in_put_err":       "Input error!",
+		"os_path":          "System Path: ",
+
+		// checkUser
+		"check_user": "   Multiple users found, please select your user: ",
+		"user_name":  "User Name: ",
+
+		// cleanMdm
+		"cleaning_mdm":    "Clearing regulatory subroutines",
+		"cleaned_mdm":     "Clear regulatory subroutine completed, if there is a new regulatory subroutine, please contact the management update program.",
+		"reboot_by_clean": "Please restart the computer.",
+
+		// checkDiskEncryption
+		"cant_find_mdm":   "Admin folder not found, please contact Admin Updater",
+		"disk_encryption": "Please exit the terminal, go to disk utility, expand all disks (arrow) to find% v-DATA, select mount, then exit disk utility and return to the terminal to rerun the program",
+
+		// disableMdm
+		"disabling_mdm":           "Deactivating the regulatory process",
+		"delete_mdm_file_err":     "Failed to delete supervision file, please restart and enter recovery mode to disable supervision",
+		"delete_mdm_database_err": "Failed to delete supervision database, please restart and enter recovery mode to disable supervision",
+		"get_user_info_err":       "Unable to get user information",
+		"in_put_y":                "Please enter y and press Enter to remove all profiles",
+		"disabled_mdm_ok":         "Deactivation of regulatory procedures completed",
+		"reboot_by_disable":       "Please restart the computer. Run the program again in desktop mode and choose to disable supervision (more people choose)",
+
+		// SetHosts
+		"cant_open_hosts":   "Unable to open hosts file:",
+		"close_hosts_err":   "Failed to close hosts file:",
+		"cant_create_temp":  "Unable to create temporary file:",
+		"write_temp_err":    "Failed to write temporary file:",
+		"close_temp_err":    "Failed to close temporary file:",
+		"replace_hosts_err": "Failed to replace/etc/hosts file:",
+
+		// getLanguage
+		"create_request_err":  "Failed to create request",
+		"network_request_err": "Network request failed",
+		"closes_body_err":     "Failed to close Body",
+		"read_data_err":       "Failed to read packet",
+
+		// getSN
+		"input_sn":      "Please enter the serial number",
+		"sn_not_pair":   "Serial numbers do not match",
+		"get_auth_err":  "Failed to obtain authorization!",
+		"sn_not_pair_1": "Serial number does not match, no damage, please contact the administrator",
+
+		// AuthSN
+		"decode_date_err": "Parsing packet failed",
+
+		// menuDisableSip
+		"disabling_sip":   "Disabling System Integrity Protection!",
+		"not_work_normal": "Please run in recovery mode!",
+
+		// menuEnableSip
+		"enabling_sip": "Enabling System Integrity Protection!",
+
+		// menuCleanMdm
+		"cleaning_mdm_agent": "Clearing regulatory subroutines",
+
+		// menuCleanWiFi
+		"cleaning_wifi": "Cleaning up Wi Fi",
+		"cleaned_wifi":  "Clean up Wi Fi complete",
+
+		// menuBypassMacos13Step1
+		"bypassing_macos_13_step_1": "Preparing for mac OS 13 Bypass Work 1!",
+		"changing_root_password":    "Changing root password (do not use spaces)",
+		"input_root_password":       "   Please set root password: ",
+		"root_password":             "ROOT PASSWORD: ",
+		"reste_root_password_ok":    "The reset is complete. Please remember this password. You need to create a user.!",
+		"reboot_by_bypass":          "On the start page, press the control command option t, open the terminal, click the apple logo in the upper left corner, open the settings (Setting), find users and groups, create users, the administrator user name is root, and the password is the password just set!",
+		"reboot_by_bypass_1":        "The new user type is administrator. After the operation is completed, enter the recovery mode and select (macOS13 bypass step 2)",
+
+		// menuSupplier
+		"supplier_mode_now": "Currently, it is the special supplier mode.",
+		"creating_user":     "Creating user",
+		"password":          "PASSWORD: ",
+		"supplier_mode_ok":  "Dear supplier, the regulatory process is complete.!",
+
+		// menuByPassMacos13Step2
+		"bypassing_macos_13_step_2":  "Preparing for mac OS 13 Bypass Work 2!",
+		"perfecting_macos13_install": "Perfecting the installation of mac OS 13",
+		"reboot_by_step2":            "Please restart and execute after entering the system (disable root user login)",
+
+		// menuDisableRoot
+		"disabling_root":        "Disabling root login",
+		"run_normal":            "Please run in desktop mode",
+		"input_your_password":   "Please enter your password: ",
+		"disable_root_err":      "Failed to disable root login!",
+		"disable_root_err_pass": "Failed to disable root login! Please check if the password is correct: ",
+		"disable_root_ok":       "Disabled root user login successful! Please perform (complete clean-up supervision (more people choose))",
+
+		// menuAddHosts
+		"adding_hosts": "Blocking Apple services",
+		"added_hosts":  "Blocking Apple Service Complete",
+
+		// menuCleanHosts
+		"cleaning_hosts": "Cleaning up blocking Apple services",
+		"cleaned_hosts":  "Cleanup Shield Apple Service Complete",
+
+		// menuDeleteAppleDone
+		"deleting_apple_done": "Removing Apple Setup Done",
+		"deleted_apple_done":  "Delete Apple installation lock file complete. Restart to enter Hello installation page",
+
+		// menuTouchAppleDone
+		"touching_apple_done": "Creating Apple Setup Done",
+		"touched_apple_done":  "The creation of the Apple installation lock file is complete. Restart to enter the Hello installation page.",
+
+		// menuNewMachine
+		"new_machine": "The current is the new machine mode! The Apple server will be blocked. If there is an exception, please select: Clear HOSTS shield (Apple service related).",
+
+		// menuExit
+		"exiting": "EXITING...",
+
+		// mainShell
+		"menu_welcome":      "Welcome to the MDM Assistant! (In Testing Phase)",
+		"choose_options":    "   AVAILABLE FOR SELECTION:",
+		"disable_mdm":       "Disable MDM/DEP (More People Choose)",
+		"clean_mdm":         "Clean MDM_Agent (Installed Profile)",
+		"bypass_install_1":  "Bypass Installation Step 1 (macOS version > 12)",
+		"bypass_install_2":  "Bypass Installation Step 2 (macOS version > 12)",
+		"disable_root":      "Disable Root Account (macOS version > 12)",
+		"clean_wifi":        "Clean up Wi-Fi data (stuck in install supervision page)",
+		"add_hosts":         "Blocking Apple MDM/DEP HOSTS",
+		"clean_hosts":       "Clear HOSTS Shielding (Apple service related)",
+		"delete_apple_lock": "Delete Apple Install Lock (Go to Hello Page)",
+		"touch_apple_lock":  "Create Apple Install Lock (Go to Login Page)",
+		"exit":              "Exit Operation",
+		"choose_menu":       "   Select one: ",
+		"new_menu":          "Congratulations on discovering a new continent!",
+	},
 	"zh": {
 		// init
 		"cant_get_user_info":   "无法获取当前用户信息",
@@ -91,7 +261,7 @@ var i18n = map[string]map[string]string{
 		"delete_file_err": "删除文件失败",
 
 		// findOSPATH
-		"find_os_path_err": "正在查找系统路径",
+		"find_os_path_err": "查找系统路径失败",
 		"find_os_path_1":   "未找到系统盘.",
 		"find_os_path_2":   "找到多个系统盘, 常见的系统启动盘为: Macintosh HD, 请选择你的系统盘: ",
 		"in_put_err":       "输入错误!",
@@ -114,6 +284,7 @@ var i18n = map[string]map[string]string{
 		"disabling_mdm":           "正在停用监管程序",
 		"delete_mdm_file_err":     "删除监管文件失败, 请重启进入恢复模式停用监管",
 		"delete_mdm_database_err": "删除监管数据库失败, 请重启进入恢复模式停用监管",
+		"get_user_info_err":       "无法获取用户信息",
 		"in_put_y":                "请输入 y 再按回车 以移除全部描述文件",
 		"disabled_mdm_ok":         "监管程序停用完成",
 		"reboot_by_disable":       "请重启电脑. 在桌面模式再次运行程序, 选择 停用监管(更多人选择)",
@@ -143,7 +314,7 @@ var i18n = map[string]map[string]string{
 
 		// menuDisableSip
 		"disabling_sip":   "正在禁用系统完整性保护!",
-		"not_work_normol": "请在恢复模式下运行!",
+		"not_work_normal": "请在恢复模式下运行!",
 
 		// menuEnableSip
 		"enabling_sip": "正在启用系统完整性保护!",
@@ -160,7 +331,7 @@ var i18n = map[string]map[string]string{
 		"changing_root_password":    "正在修改 root 用户密码 (不要使用空格)",
 		"input_root_password":       "   请设置root密码: ",
 		"root_password":             "root密码: ",
-		"rested_root_password":      "重置完成, 请记住这个密码，创建用户时需要!",
+		"reste_root_password_ok":    "重置完成, 请记住这个密码，创建用户时需要!",
 		"reboot_by_bypass":          "在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！",
 		"reboot_by_bypass_1":        "新建用户类型为管理员，操作完成后进入恢复模式，选择 (macOS13绕过步骤2)",
 
@@ -178,10 +349,10 @@ var i18n = map[string]map[string]string{
 		// menuDisableRoot
 		"disabling_root":        "正在禁用root用户登录",
 		"run_normal":            "请在桌面模式下运行",
-		"input_your_password":   "请输入你的密码",
+		"input_your_password":   "请输入你的密码: ",
 		"disable_root_err":      "禁用root用户登录失败!",
-		"disable_root_err_pass": "禁用root用户登录失败! 请检查密码是否正确: !",
-		"disabled_root":         "禁用root用户登录成功! 请执行(完整清理监管(更多人选择))",
+		"disable_root_err_pass": "禁用root用户登录失败! 请检查密码是否正确: ",
+		"disable_root_ok":       "禁用root用户登录成功! 请执行(完整清理监管(更多人选择))",
 
 		// menuAddHosts
 		"adding_hosts": "正在屏蔽Apple服务",
@@ -206,7 +377,21 @@ var i18n = map[string]map[string]string{
 		"exiting": "正在退出...",
 
 		// mainShell
-
+		"menu_welcome":      "欢迎使用 MDM 助手! (正在测试阶段)",
+		"choose_options":    "   可供选择:",
+		"disable_mdm":       "停用监管(更多人选择)",
+		"clean_mdm":         "清理监管(安装了监管配置文件)",
+		"bypass_install_1":  "绕过安装步骤1(系统版本 > 12)",
+		"bypass_install_2":  "绕过安装步骤2(系统版本 > 12)",
+		"disable_root":      "禁用root用户登录(系统版本 > 12)",
+		"clean_wifi":        "清理WiFi数据(卡在安装监管页面)",
+		"add_hosts":         "屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)",
+		"clean_hosts":       "清除HOSTS屏蔽(Apple服务相关)",
+		"delete_apple_lock": "删除Apple安装锁文件(开机会进入Hello页面)",
+		"touch_apple_lock":  "创建Apple安装锁文件(开机会进入登录页面)",
+		"exit":              "退出操作",
+		"choose_menu":       "   请选择你需要的操作: ",
+		"new_menu":          "恭喜你发现了新大陆!",
 	},
 }
 
@@ -218,11 +403,11 @@ func init() {
 	}
 	currentUser, err := user.Current()
 	if err != nil {
-		msgFatal("无法获取当前用户信息", err)
+		msgFatal(i18n[Language]["cant_get_user_info"], err)
 	}
 
 	if currentUser.Username != "root" {
-		msgFatal("请使用root用户运行", err)
+		msgFatal(i18n[Language]["please_use_root"], err)
 	}
 	flag.Parse()
 	testDebug := os.Getenv("mdm_debug")
@@ -238,13 +423,13 @@ func init() {
 		*supplier = true
 	}
 	if *Debug {
-		msgOk("Debug 模式已开启")
+		msgOk(i18n[Language]["debug_mode_opened"])
 	}
 	if *menuAll {
-		msgOk("Menu All 模式已开启")
+		msgOk(i18n[Language]["menu_all_mode_opened"])
 	}
 	if *supplier {
-		msgOk("Supplier 模式已开启")
+		msgOk(i18n[Language]["supplier_mode_opened"])
 	}
 }
 
@@ -291,9 +476,9 @@ func msgFatal(msg string, err error) {
 }
 
 func disableSip() {
-	msgInfo("正在禁用SIP(系统完整性保护) 状态...")
-	msgInfo("如果提示 [y/n] 请输入 y 并回车")
-	msgInfo("用户填写你的用户名，[password] 请输入密码并回车")
+	msgInfo(i18n[Language]["disabled_sip"])
+	msgInfo(i18n[Language]["disabled_sip_1"])
+	msgInfo(i18n[Language]["disabled_sip_2"])
 	timeLast := time.Now().Unix()
 	cmd := exec.Command("csrutil", "disable")
 	cmd.Stdout = os.Stdout
@@ -301,67 +486,67 @@ func disableSip() {
 	cmd.Stdin = os.Stdin
 
 	if err := cmd.Start(); err != nil {
-		msgErr("禁用SIP 运行失败", err)
+		msgErr(i18n[Language]["disabled_sip_run_err"], err)
 		return
 	}
 	if err := cmd.Wait(); err != nil {
-		msgErr("禁用SIP 运行失败", err)
+		msgErr(i18n[Language]["disabled_sip_run_err"], err)
 		return
 	}
 
 	if getSip() {
-		msgErr("禁用SIP 失败", nil)
+		msgErr(i18n[Language]["disabled_sip_err"], nil)
 		timeLatest := time.Now().Unix()
 		duration := timeLatest - timeLast
 		if duration < 5 {
-			msgFatal("请先正常进入系统, 再点击关机, 再进入恢复模式", nil)
+			msgFatal(i18n[Language]["re_goto_recovery"], nil)
 		}
 		return
 	}
-	msgOk("禁用SIP 运行成功")
+	msgOk(i18n[Language]["disabled_sip_ok"])
 }
 
 func enableSip() {
-	msgInfo("正在启用SIP(系统完整性保护) 状态...")
+	msgInfo(i18n[Language]["enabled_sip"])
 	timeLast := time.Now().Unix()
 	cmd := exec.Command("csrutil", "enable")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	if err := cmd.Start(); err != nil {
-		msgErr("启用SIP 运行失败", err)
+		msgErr(i18n[Language]["enabled_sip_run_err"], err)
 		return
 	}
 	if err := cmd.Wait(); err != nil {
-		msgErr("启用SIP 运行失败", err)
+		msgErr(i18n[Language]["enabled_sip_run_err"], err)
 		return
 	}
 	if !getSip() {
-		msgErr("启用SIP 失败", nil)
+		msgErr(i18n[Language]["enabled_sip_err"], nil)
 		timeLatest := time.Now().Unix()
 		duration := timeLatest - timeLast
 		if duration < 5 {
-			msgErr("请先正常进入系统, 再点击(关机), 再进入恢复模式", nil)
+			msgErr(i18n[Language]["re_goto_recovery"], nil)
 		}
 		return
 	}
-	msgOk("启用SIP 运行成功")
+	msgOk(i18n[Language]["enabled_sip_run_ok"])
 }
 
 func getSip() bool {
-	msgInfo("正在查询SIP(系统完整性保护) 状态")
-	msgInfo("双系统可能判断不正确! ")
+	msgInfo(i18n[Language]["get_sip"])
+	msgInfo(i18n[Language]["get_sip_1"])
 	cmd := exec.Command("csrutil", "status")
 	output, err := cmd.Output()
 	if err != nil {
-		msgErr("查询SIP 运行失败", err)
+		msgErr(i18n[Language]["get_sip_run_err"], err)
 		return false
 	}
 	if strings.Contains(string(output), "disabled") {
-		msgOk("SIP(系统完整性保护) 已禁用.")
+		msgOk(i18n[Language]["get_sip_disabled"])
 		return false
 	} else {
-		msgOk("SIP(系统完整性保护) 已启用")
+		msgOk(i18n[Language]["get_sip_enabled"])
 		return true
 	}
 }
@@ -380,7 +565,7 @@ func execCmd(execType bool, name string, arg ...string) bool {
 			msgErr("Failed to get caller information", nil)
 			return false
 		}
-		msgErr(fmt.Sprintf("运行失败 Caller: %v:%v", runtime.FuncForPC(pc).Name(), line), nil)
+		msgErr(fmt.Sprintf("%v Caller: %v:%v", i18n[Language]["exec_cmd_run_err"], runtime.FuncForPC(pc).Name(), line), nil)
 		return false
 	}
 	if err := cmd.Wait(); err != nil {
@@ -389,7 +574,7 @@ func execCmd(execType bool, name string, arg ...string) bool {
 			msgErr("Failed to get caller information", nil)
 			return false
 		}
-		msgErr(fmt.Sprintf("运行失败 Caller: %v:%v", runtime.FuncForPC(pc).Name(), line), nil)
+		msgErr(fmt.Sprintf("%v Caller: %v:%v", i18n[Language]["exec_cmd_run_err"], runtime.FuncForPC(pc).Name(), line), nil)
 		return false
 	}
 	return true
@@ -398,7 +583,7 @@ func execCmd(execType bool, name string, arg ...string) bool {
 func findAndDelete(p string, v string) {
 	entries, err := os.ReadDir(p)
 	if err != nil {
-		msgFatal("读取目录失败"+p, errors.New(filepath.Base(p)))
+		msgFatal(i18n[Language]["read_dir_err"]+p, errors.New(filepath.Base(p)))
 	}
 	for _, entry := range entries {
 		if strings.Contains(strings.ToLower(entry.Name()), strings.ToLower(v)) {
@@ -414,18 +599,18 @@ func deleteFile(source string) bool {
 	if User == "" || NewMachine || !OSTYPE {
 		if err := os.RemoveAll(source); err != nil {
 			if *Debug {
-				msgErr(fmt.Sprintf("删除文件失败: %v err: %v", fn, handleError(err)), err)
+				msgErr(fmt.Sprintf("%v: %v err: %v", i18n[Language]["delete_file_err"], fn, handleError(err)), err)
 			} else {
-				msgErr(fmt.Sprintf("删除文件失败 err: %v", handleError(err)), err)
+				msgErr(fmt.Sprintf("%v err: %v", i18n[Language]["delete_file_err"], handleError(err)), err)
 			}
 			return false
 		}
 	} else {
 		if err := os.Rename(source, destination); err != nil {
 			if *Debug {
-				msgErr(fmt.Sprintf("删除文件失败: %v err: %v", fn, handleError(err)), err)
+				msgErr(fmt.Sprintf("%v: %v err: %v", i18n[Language]["delete_file_err"], fn, handleError(err)), err)
 			} else {
-				msgErr(fmt.Sprintf("删除文件失败 err: %v", handleError(err)), err)
+				msgErr(fmt.Sprintf("%v err: %v", i18n[Language]["delete_file_err"], handleError(err)), err)
 			}
 			return false
 		}
@@ -445,7 +630,7 @@ func handleError(err error) string {
 func findOSPATH() {
 	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE \"\\- Data|Data|System|\\n|private|macOS Base System\"").Output()
 	if err != nil {
-		msgFatal("查找系统路径失败", err)
+		msgFatal(i18n[Language]["find_os_path_err"], nil)
 	}
 	lines := strings.Split(string(output), "\n")
 	var newLines []string
@@ -456,34 +641,34 @@ func findOSPATH() {
 	}
 
 	if len(newLines) == 0 {
-		msgFatal("未找到系统盘.", nil)
+		msgFatal(i18n[Language]["find_os_path_1"], nil)
 	} else if len(newLines) == 1 {
 		OSPATH = newLines[0]
 	} else if len(newLines) > 1 {
 		for i, path := range newLines {
 			fmt.Printf("    %d. %s\n", i+1, path)
 		}
-		fmt.Printf("   找到多个系统盘, 常见的系统启动盘为: Macintosh HD, 请选择你的系统盘: ")
+		fmt.Printf(i18n[Language]["find_os_path_2"])
 		var idNum int
 		if _, err := fmt.Scanln(&idNum); err != nil {
 			msgLast(1 + len(newLines))
-			msgFatal("输入错误!", err)
+			msgFatal(i18n[Language]["in_put_err"], err)
 		} else {
 			msgLast(1 + len(newLines))
 		}
 		if idNum < 1 || idNum > len(newLines) {
-			msgFatal("输入错误!", nil)
+			msgFatal(i18n[Language]["in_put_err"], err)
 		}
 		OSPATH = newLines[idNum-1]
 	}
-	msgOk("系统路径: " + OSPATH)
+	msgOk(i18n[Language]["os_path"] + OSPATH)
 }
 
 func checkUser() {
 	checkDiskEncryption()
 	entries, err := os.ReadDir(OSPATH + "Users/")
 	if err != nil {
-		msgFatal("读取目录失败", err)
+		msgFatal(i18n[Language]["read_dir_er"], err)
 	}
 	var Users []string
 
@@ -505,20 +690,20 @@ func checkUser() {
 		for i, path := range Users {
 			fmt.Printf("    %d. %s\n", i+1, path)
 		}
-		fmt.Printf("   找到多个用户, 请选择你的用户: ")
+		fmt.Printf(i18n[Language]["check_user"])
 		var idNum int
 		if _, err := fmt.Scanln(&idNum); err != nil {
 			msgLast(1 + len(Users))
-			msgFatal("输入错误!", err)
+			msgFatal(i18n[Language]["in_put_err"], err)
 		} else {
 			msgLast(1 + len(Users))
 		}
 		if idNum < 1 || idNum > len(Users) {
-			msgFatal("输入错误!", nil)
+			msgFatal(i18n[Language]["in_put_err"], err)
 		}
 		User = Users[idNum-1]
 	}
-	msgOk("用户名: " + User)
+	msgOk(i18n[Language]["user_name"] + User)
 }
 
 func cleanMdm() {
@@ -526,7 +711,7 @@ func cleanMdm() {
 	LibraryPath = OSPATH + "Library/"
 	UserLibraryPath = OSPATH + "Users/" + User + "/Library/"
 
-	msgInfo("正在清理监管子程序")
+	msgInfo(i18n[Language]["cleaning_mdm"])
 
 	findAndDelete(LibraryPath+"LaunchDaemons/", "mosyle")
 	findAndDelete(LibraryPath+"LaunchDaemons/", "tinyapp")
@@ -552,23 +737,23 @@ func cleanMdm() {
 	findAndDelete(OSPATH+"Applications/", "jamfsoftware")
 	findAndDelete(OSPATH+"Applications/", "Self-Service")
 	findAndDelete(OSPATH+"Applications/", "Falcon")
-	msgOk("清除监管子程序完成, 若有新型监管子程序, 请联系管理更新程序.")
-	msgOk("请重启电脑.")
+	msgOk(i18n[Language]["cleaned_mdm"])
+	msgOk(i18n[Language]["reboot_by_clean"])
 }
 
 func checkDiskEncryption() {
 	MDMPath = OSPATH + "var/db/ConfigurationProfiles/"
 	if _, err := os.Stat(MDMPath); err != nil {
 		if OSTYPE {
-			msgErr("未找到监管程序文件夹, 请联系管理更新程序", nil)
+			msgErr(i18n[Language]["cant_find_mdm"], nil)
 		} else {
-			msgFatal(fmt.Sprintf("请退出终端, 前往磁盘工具, 将磁盘全部展开(箭头) 找到 %v - DATA , 选择装载, 接着退出磁盘工具回到终端重新运行程序", strings.Replace(strings.Replace(OSPATH, "/Volumes/", "", -1), "/", "", -1)), nil)
+			msgFatal(fmt.Sprintf(i18n[Language]["disk_encryption"], strings.Replace(strings.Replace(OSPATH, "/Volumes/", "", -1), "/", "", -1)), nil)
 		}
 	}
 }
 
 func disableMdm() {
-	msgInfo("正在停用监管程序")
+	msgInfo(i18n[Language]["disabling_mdm"])
 	checkDiskEncryption()
 	SetHosts(true, getMdmDomain())
 	menuAddHosts()
@@ -582,31 +767,31 @@ func disableMdm() {
 	}
 
 	// 清理监管软件概要文件夹
-	//execCmd("chflags", "-R", "nouchg", MDMPath)
+	//execCmd(false, "chflags", "-R", "nouchg", MDMPath)
 	if !deleteFile(MDMPath + "Settings") {
-		msgErr("删除监管文件失败, 请重启进入恢复模式停用监管", nil)
+		msgErr(i18n[Language]["delete_mdm_file_err"], nil)
+	} else {
+		execCmd(false, "mkdir", MDMPath+"Settings")
 	}
-	deleteFile(MDMPath + ".profilesAreInstalled")
-	if !OSTYPE {
-		if !deleteFile(MDMPath + "Store") {
-			msgErr("删除监管数据库失败, 请重启进入恢复模式停用监管", nil) // TODO
-		}
-		execCmd(false, "mkdir", MDMPath+"Store")
-	}
-	// findAndDelete(OSPATH+"/var/db/", ".AppleSetupDone")
-	execCmd(false, "mkdir", MDMPath+"Settings") // .cloudConfigHasActivationRecord .cloudConfigRecordFound
-	execCmd(false, "touch", MDMPath+".profilesAreInstalled")
-	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigRecordNotFound")
+
+	execCmd(false, "touch", MDMPath+"Settings/.profilesAreInstalled")
+
+	deleteFile(MDMPath + "Settings/.cloudConfigHasActivationRecord")
+	//execCmd(false, "rm", MDMPath+"Settings/.cloudConfigHasActivationRecord")
 	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigProfileInstalled") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4591775#gistcomment-4591775
+
+	deleteFile(MDMPath + "Settings/.cloudConfigRecordFound")
+	//execCmd(false, "rm", MDMPath+"Settings/.cloudConfigRecordFound")
+	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigRecordNotFound")
 	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigNoActivationRecord")
 	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigUserSkippedEnrollment")
-	//execCmd("chmod", "-R", "444", MDMPath)
-	//execCmd("chflags", "-R", "uchg", MDMPath)
+	//execCmd(false, "chmod", "-R", "444", MDMPath)
+	//execCmd(false, "chflags", "-R", "uchg", MDMPath)
 
 	if OSTYPE {
 		targetUser, err := user.Lookup(User)
 		if err != nil {
-			msgErr("无法获取用户信息", err)
+			msgErr(i18n[Language]["get_user_info_err"], err)
 		}
 		if targetUser != nil {
 			UID = targetUser.Uid
@@ -614,16 +799,25 @@ func disableMdm() {
 
 		execCmd(false, "dscacheutil", "-flushcache")
 		execCmd(false, "killall", "-HUP", "mDNSResponder")
-		msgInfo("请输入 y 再按回车 以移除全部描述文件")
+		msgInfo(i18n[Language]["in_put_y"])
 		execCmd(false, "profiles", "remove", "-all") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
 		msgLast(1)
-		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
+		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient")
+		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient.daemon")
 		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.enroll")
-		msgOk("监管程序停用完成")
+		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementd.teslad")
+		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementclient.teslad")
+		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
+		msgOk(i18n[Language]["disabled_mdm_ok"])
 	} else {
-		msgOk("监管程序停用完成")
-		msgOk("请重启电脑. 在桌面模式再次运行程序, 选择 停用监管(更多人选择)")
+		if !deleteFile(MDMPath + "Store") {
+			msgErr(i18n[Language]["delete_mdm_database_err"], nil) // TODO
+		} else {
+			execCmd(false, "mkdir", MDMPath+"Store")
+		}
+
+		msgOk(i18n[Language]["disabled_mdm_ok"])
+		msgOk(i18n[Language]["reboot_by_disable"])
 	}
 }
 
@@ -635,13 +829,13 @@ func SetHosts(types bool, hostsRaw string) {
 	hosts := strings.Split(hostsRaw, "\n")
 	file, err := os.OpenFile(filePath, os.O_RDWR, 0644)
 	if err != nil {
-		msgFatal("无法打开 hosts 文件:", err)
+		msgFatal(i18n[Language]["cant_open_hosts"], err)
 		return
 	}
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			msgFatal("关闭 hosts 文件失败:", err)
+			msgFatal(i18n[Language]["close_hosts_err"], nil)
 		}
 	}(file)
 
@@ -651,7 +845,7 @@ func SetHosts(types bool, hostsRaw string) {
 	// 创建一个新的临时文件，用于存储修改后的内容
 	tempFile, err := os.CreateTemp("", "hosts_temp")
 	if err != nil {
-		msgFatal("无法创建临时文件:", err)
+		msgFatal(i18n[Language]["cant_create_temp"], err)
 		return
 	}
 
@@ -670,7 +864,7 @@ func SetHosts(types bool, hostsRaw string) {
 		if !found {
 			_, err := tempFile.WriteString(line + "\n")
 			if err != nil {
-				msgFatal("写入临时文件失败:", err)
+				msgFatal(i18n[Language]["write_temp_err"], err)
 				return
 			}
 		}
@@ -680,7 +874,7 @@ func SetHosts(types bool, hostsRaw string) {
 	if types {
 		_, err = tempFile.WriteString(hostsRaw + "\n")
 		if err != nil {
-			msgFatal("写入临时文件失败:", err)
+			msgFatal(i18n[Language]["write_temp_err"], err)
 			return
 		}
 	}
@@ -688,14 +882,14 @@ func SetHosts(types bool, hostsRaw string) {
 	// 关闭临时文件
 	err = tempFile.Close()
 	if err != nil {
-		msgFatal("关闭临时文件失败:", err)
+		msgFatal(i18n[Language]["close_temp_err"], err)
 		return
 	}
 
 	// 替换 /etc/hosts 文件为临时文件
 	err = os.Rename(tempFile.Name(), "/etc/hosts")
 	if err != nil {
-		msgFatal("替换 /etc/hosts 文件失败:", err)
+		msgFatal(i18n[Language]["replace_hosts_err"], err)
 		return
 	}
 	msgOk("Hosts Changed!")
@@ -737,23 +931,23 @@ func getLanguage() {
 	httpClient := privacyDns()
 	req, err := http.NewRequest("GET", "http://cip.cc", nil)
 	if err != nil {
-		msgFatal("创建请求失败", err)
+		msgErr(i18n[Language]["create_request_err"], err)
 	}
 	req.Header.Set("User-Agent", "curl/7.64.1")
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		fmt.Println("网络请求失败")
+		msgErr(i18n[Language]["network_request_err"], err)
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			fmt.Println("关闭Body失败")
+			fmt.Println(i18n[Language]["close_body_err"])
 		}
 	}(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("读取数据包失败")
+		msgErr(i18n[Language]["read_data_err"], err)
 	}
 	if strings.Contains(string(body), "中国") {
 		Language = "zh"
@@ -762,7 +956,7 @@ func getLanguage() {
 
 func getSN() {
 	if *SN == "" {
-		msgFatal("请输入序列号", nil)
+		msgFatal(i18n[Language]["input_sn"], nil)
 	}
 	//serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
 	///usr/sbin/ioreg -c IOPlatformExpertDevice -d 2 | /usr/bin/awk -F\" '/IOPlatformSerialNumber/{print $(NF-1)}'
@@ -773,29 +967,29 @@ func getSN() {
 	tmpSN := string(output)
 	tmpSN = strings.Replace(tmpSN, "\n", "", -1)
 	if len(tmpSN) < 8 || len(tmpSN) > 12 {
-		msgFatal("序列号格式不匹配!", nil)
+		msgFatal(i18n[Language]["sn_not_pair"], nil)
 	}
 	if !strings.EqualFold(*SN, tmpSN) {
 		httpClient := privacyDns()
 		req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.fun:65501/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
 		if err != nil {
-			msgFatal("创建请求失败", err)
+			msgFatal(i18n[Language]["create_request_err"], err)
 		}
 		req.Header.Set("User-Agent", "curl/7.64.1")
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			fmt.Println("网络请求失败")
+			msgFatal(i18n[Language]["network_request_err"], err)
 		}
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
-				fmt.Println("关闭Body失败")
+				fmt.Println(i18n[Language]["close_body_err"])
 			}
 		}(resp.Body)
 		if resp.StatusCode != 200 {
-			msgFatal("获取授权失败!", nil)
+			msgFatal(i18n[Language]["get_auth_err"], nil)
 		}
-		msgFatal("序列号不匹配,严禁搞破坏,请联系管理员", nil)
+		msgFatal(i18n[Language]["sn_not_pair_1"], nil)
 	}
 	AuthSN()
 }
@@ -804,21 +998,21 @@ func AuthSN() {
 	httpClient := privacyDns()
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.fun:65501/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
 	if err != nil {
-		msgFatal("网络请求失败", err)
+		msgFatal(i18n[Language]["create_request_err"], err)
 	}
 	req.Header.Set("User-Agent", "curl/7.64.1")
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		fmt.Println("网络请求失败")
+		msgFatal(i18n[Language]["network_request_err"], err)
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			fmt.Println("关闭Body失败")
+			fmt.Println(i18n[Language]["close_body_err"])
 		}
 	}(resp.Body)
 	if resp.StatusCode != 200 {
-		msgFatal("获取授权失败!", nil)
+		msgFatal(i18n[Language]["get_auth_err"], nil)
 	}
 	type Response struct {
 		CardType int `json:"card_type"`
@@ -826,13 +1020,13 @@ func AuthSN() {
 	// 解析resp的JSON数据
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("读取数据包失败")
+		msgFatal(i18n[Language]["read_data_err"], err)
 	}
 
 	var response Response
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		fmt.Println("解析数据包失败")
+		msgFatal(i18n[Language]["decode_date_err"], err)
 	}
 	cardType := response.CardType
 	if cardType == 0 {
@@ -880,18 +1074,18 @@ func privacyDns() (client *http.Client) {
 }
 
 func menuDisableSip() {
-	msgInfo("正在禁用系统完整性保护!")
+	msgInfo(i18n[Language]["disabling_sip"])
 	if OSTYPE {
-		msgFatal("请在恢复模式下运行!", nil)
+		msgFatal(i18n[Language]["not_work_normal"], nil)
 	} else {
 		disableSip()
 	}
 	os.Exit(0)
 }
 func menuEnableSip() {
-	msgInfo("正在启用系统完整性保护!")
+	msgInfo(i18n[Language]["enabling_sip"])
 	if OSTYPE {
-		msgFatal("请在恢复模式下运行!", nil)
+		msgFatal(i18n[Language]["not_work_normal"], nil)
 	} else {
 		enableSip()
 	}
@@ -899,53 +1093,50 @@ func menuEnableSip() {
 }
 
 func menuCleanMDM() {
-	msgOk("正在清理监管子程序!")
-	findOSPATH()
+	msgInfo(i18n[Language]["cleaning_mdm_agent"])
+	checkUser()
 	disableMdm()
 	cleanMdm()
 	os.Exit(0)
 }
 
 func menuDisableMdm() {
-	msgOk("正在禁用监管!")
-	findOSPATH()
+	msgInfo(i18n[Language]["disabling_mdm"])
 	checkUser()
 	disableMdm()
 	os.Exit(0)
 }
 
 func menuCleanWiFi() {
-	msgOk("正在清除WiFi!")
-	findOSPATH()
+	msgInfo(i18n[Language]["cleaning_wifi"])
 	LibraryPath = OSPATH + "Library/"
 	findAndDelete(LibraryPath+"Keychains/", "apsd.keychain")
 	findAndDelete(LibraryPath+"Keychains/", "System.keychain")
 	findAndDelete(LibraryPath+"Preferences/", "com.apple.wifi.known-networks.plist")
-	msgOk("清除WiFi完成!")
+	msgOk(i18n[Language]["cleaned_wifi"])
 	//os.Exit(0)
 }
 
 func menuBypassMacos13Step1() {
-	msgInfo("正在准备macOS13绕过工作 1!")
+	msgInfo(i18n[Language]["bypassing_macos_13_step_1"])
 	if OSTYPE {
-		msgFatal("请在恢复模式下运行!", nil)
+		msgFatal(i18n[Language]["not_work_normal"], nil)
 	} else {
-		findOSPATH()
-		msgInfo("正在修改 root 用户密码 (不要使用空格)")
-		fmt.Printf("   请设置root密码: ")
+		msgInfo(i18n[Language]["changing_root_password"])
+		fmt.Printf(i18n[Language]["input_root_password"])
 		var rootPass string
 		if _, err := fmt.Scanln(&rootPass); err != nil {
-			msgFatal("输入错误!", nil)
+			msgFatal(i18n[Language]["in_put_err"], nil)
 		}
 		msgLast(1)
-		msgOk("root密码: " + rootPass)
+		msgOk(i18n[Language]["root_password"] + rootPass)
 
 		execCmd(false, "dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root", rootPass)
 		//msgLast(1) TODO
-		msgOk("重置完成, 请记住这个密码，创建用户时需要!")
-		msgOk("在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！")
-		msgOk("新建用户类型为管理员，操作完成后进入恢复模式，选择 (macOS13绕过步骤2)")
-		msgOk("请重启电脑！")
+		msgOk(i18n[Language]["reste_root_password_ok"])
+		msgOk(i18n[Language]["reboot_by_bypass"])
+		msgOk(i18n[Language]["reboot_by_bypass_1"])
+		msgOk(i18n[Language]["reboot_by_clean"])
 		//msgLast(1)
 		//disableSip()
 	}
@@ -953,15 +1144,14 @@ func menuBypassMacos13Step1() {
 }
 
 func menuSupplier() {
-	msgInfo("当前是供应商特供模式")
-	findOSPATH()
+	msgInfo(i18n[Language]["supplier_mode_now"])
 	cleanMdm()
 	disableMdm()
 	if User == "" && !OSTYPE {
-		msgInfo("正在创建新用户")
+		msgInfo(i18n[Language]["creating_user"])
 		userName := "apple"
 		userPass := "123456"
-		msgInfo(fmt.Sprintf("用户名: %v\n密码: %v", userName, userPass))
+		msgInfo(fmt.Sprintf("%v%v\n%v%v", i18n[Language]["user_name"], userName, i18n[Language]["password"], userPass))
 		// 生成介于 1000 和 2000 之间的随机数
 		uid := rand.Intn(2000-1000+1) + 1000
 		execCmd(false, "dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
@@ -988,48 +1178,45 @@ func menuSupplier() {
 		execCmd(false, "security", "unlock-keychain", "-p", OSPATH+"Library/Keychains/System.keychain")
 		menuTouchAppleDone()
 	}
-	msgOk("亲爱的供应商, 监管程序运行完成!")
+	msgOk(i18n[Language]["supplier_mode_ok"])
 }
 
 func menuBypassMacos13Step2() {
-	msgInfo("正在准备macOS13绕过工作 2")
+	msgInfo(i18n[Language]["bypassing_macos_13_step_2"])
 	if OSTYPE {
 		msgFatal("请在恢复模式下运行!", nil)
 	} else {
-		findOSPATH()
-		msgInfo("正在完善macOS13的安装工作")
+		msgInfo(i18n[Language]["perfecting_macos13_install"])
 		execCmd(false, "touch", OSPATH+"private/var/db/.AppleSetupDone")
 		menuNewMachine()
 		disableMdm()
-		msgOk("请重新启动,进入系统后请执行(禁用root用户登录)")
+		msgInfo(i18n[Language]["reboot_by_step2"])
 	}
 	os.Exit(0)
 }
 
 func menuDisableRoot() {
-	msgInfo("正在禁用root用户登录!")
+	msgInfo(i18n[Language]["disabling_root"])
 	if !OSTYPE {
-		msgFatal("请在桌面模式下运行!", nil)
+		msgFatal(i18n[Language]["not_work_normal"], nil)
 	} else {
-		msgInfo("正在禁用root用户登录!")
-		findOSPATH()
 		checkUser()
-		fmt.Printf("请输入您的密码: ")
+		fmt.Printf(i18n[Language]["input_your_password"])
 		var idstr string
 		if _, err := fmt.Scanln(&idstr); err != nil {
 			msgLast(1)
-			msgFatal("输入错误!", err)
+			msgFatal(i18n[Language]["in_put_err"], nil)
 		} else {
 			msgLast(1)
 		}
 		output, err := exec.Command("dsenableroot", "-d", "-u", User, "-p", idstr).Output()
 		if err != nil {
-			msgFatal("禁用root用户登录失败!", err)
+			msgFatal(i18n[Language]["disable_root_err"], nil)
 		}
 		if strings.Contains(string(output), "Successfully") {
-			msgOk("禁用root用户登录成功! 请执行(完整清理监管(更多人选择))")
+			msgOk(i18n[Language]["disable_root_ok"])
 		} else {
-			msgFatal("禁用root用户登录失败! 请检查密码是否正确: ["+idstr+"]", nil)
+			msgFatal(fmt.Sprintf("%v[%v]", i18n[Language]["disable_root_err_pass"], idstr), nil)
 		}
 		//msgLast(3)
 	}
@@ -1037,109 +1224,107 @@ func menuDisableRoot() {
 }
 
 func menuAddHosts() {
-	msgInfo("正在屏蔽Apple服务.")
-	findOSPATH()
+	msgInfo(i18n[Language]["adding_hosts"])
 	SetHosts(true, `0.0.0.0 iprofiles.apple.com
 0.0.0.0 mdmenrollment.apple.com
 0.0.0.0 deviceenrollment.apple.com`)
-	msgOk("屏蔽Apple服务完成.")
+	msgOk(i18n[Language]["added_hosts"])
 	//os.Exit(0)
 }
 
 func menuCleanHosts() {
-	msgInfo("正在清除屏蔽的Apple服务.")
-	findOSPATH()
+	msgInfo(i18n[Language]["cleaning_hosts"])
 	SetHosts(false, `0.0.0.0 iprofiles.apple.com
 0.0.0.0 mdmenrollment.apple.com
 0.0.0.0 deviceenrollment.apple.com
 0.0.0.0 gdmf.apple.com
 0.0.0.0 acmdm.apple.com
 0.0.0.0 albert.apple.com`)
-	msgOk("清除屏蔽的Apple服务完成.")
+	msgOk(i18n[Language]["cleaned_hosts"])
 	//os.Exit(0)
 }
 
 func menuDeleteAppleDone() {
-	msgInfo("正在删除Apple安装锁文件.")
-	findOSPATH()
+	msgInfo(i18n[Language]["deleting_apple_done"])
 	checkDiskEncryption()
 	findAndDelete(OSPATH+"var/db/", ".AppleSetupDone")
-	msgOk("删除Apple安装锁文件完成. 重启进入Hello安装页面")
+	msgOk(i18n[Language]["deleted_apple_done"])
 	//os.Exit(0)
 }
 func menuTouchAppleDone() {
-	msgInfo("正在创建Apple安装锁文件.")
-	findOSPATH()
+	msgInfo(i18n[Language]["touching_apple_done"])
 	checkDiskEncryption()
 	execCmd(false, "touch", OSPATH+"var/db/"+".AppleSetupDone")
-	msgOk("创建Apple安装锁文件完成. 重启进入桌面!")
+	msgOk(i18n[Language]["touched_apple_done"])
 	//os.Exit(0)
 }
 
 func menuNewMachine() {
-	msgOk("当前是新机模式! 将屏蔽苹果服务器, 如有异常, 请选择: 清除HOSTS屏蔽(Apple服务相关).")
+	msgInfo(i18n[Language]["new_machine"])
 	//SetHosts(true, `0.0.0.0 iprofiles.apple.com`)
 	menuAddHosts()
 }
 
 func menuExit() {
-	msgInfo("正在退出!")
+	msgInfo(i18n[Language]["exiting"])
 	os.Exit(0)
 }
 
 func mainShell() {
-	fmt.Println()
-	msgOk("欢迎使用 MDM 助手! (正在测试阶段)")
+	msgOk(i18n[Language]["menu_welcome"])
 	var idNum int
-	fmt.Println("   可供选择:")
+	fmt.Println(i18n[Language]["choose_options"])
 	var options []string
 	if *menuAll {
 		options = []string{
-			"停用监管(更多人选择)", "清理监管(安装了监管配置文件)",
-			"绕过安装步骤1(系统版本 > 12)", "绕过安装步骤2(系统版本 > 12)",
-			"禁用root用户登录(系统版本 > 12)", "清理WiFi数据(卡在安装监管页面)",
-			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple服务相关)",
-			"删除Apple安装锁文件(开机会进入Hello页面)", "创建Apple安装锁文件(开机会进入登录页面)",
-			"退出操作"}
+			i18n[Language]["disable_mdm"], i18n[Language]["clean_mdm"],
+			i18n[Language]["bypass_install_1"], i18n[Language]["bypass_install_2"],
+			i18n[Language]["disable_root"], i18n[Language]["clean_wifi"],
+			i18n[Language]["add_hosts"], i18n[Language]["clean_hosts"],
+			i18n[Language]["delete_apple_lock"], i18n[Language]["touch_apple_lock"],
+			i18n[Language]["exit"]}
 	} else if OSTYPE {
 		options = []string{
-			"停用监管(更多人选择)", "清理监管(安装了监管配置文件)",
-			"禁用root用户登录(系统版本 > 12)",
-			"屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)", "清除HOSTS屏蔽(Apple服务相关)",
-			"删除Apple安装锁文件(开机会进入Hello页面)",
-			"退出操作"}
+			i18n[Language]["disable_mdm"], i18n[Language]["clean_mdm"],
+			i18n[Language]["disable_root"],
+			i18n[Language]["add_hosts"], i18n[Language]["clean_hosts"],
+			i18n[Language]["delete_apple_lock"],
+			i18n[Language]["exit"],
+		}
 	} else {
 		options = []string{
-			"停用监管(更多人选择)",
-			"绕过安装步骤1(系统版本 > 12)", "绕过安装步骤2(系统版本 > 12)",
-			"删除Apple安装锁文件(开机会进入Hello页面)", "创建Apple安装锁文件(开机会进入登录页面)",
-			"退出操作"}
+			i18n[Language]["disable_mdm"],
+			i18n[Language]["bypass_install_1"], i18n[Language]["bypass_install_2"],
+			i18n[Language]["delete_apple_lock"], i18n[Language]["touch_apple_lock"],
+			i18n[Language]["exit"],
+		}
 	}
 
 	for i, option := range options {
 		fmt.Printf("    %d. %s\n", i+1, option)
 	}
-	fmt.Printf("   请选择你需要的操作: ")
+	fmt.Printf(i18n[Language]["choose_menu"])
 	_, _ = fmt.Scanln(&idNum)
 
 	if *menuAll {
 		msgLast(13)
 	} else if OSTYPE {
 		if idNum > 7 {
-			msgInfo("恭喜你发现了新大陆!")
+			msgInfo(i18n[Language]["new_menu"])
 		}
 		msgLast(9)
 	} else {
 		if idNum > 6 {
-			msgInfo("恭喜你发现了新大陆!")
+			msgInfo(i18n[Language]["new_menu"])
 		}
 		msgLast(8)
 	}
+
 	switch idNum {
 	case 1:
 		menuDisableMdm()
 	case 2:
-		if OSTYPE {
+		if OSTYPE || *menuAll {
 			menuCleanMDM()
 		} else {
 			menuBypassMacos13Step1()
@@ -1188,16 +1373,15 @@ func mainShell() {
 		menuDeleteAppleDone()
 	case 10:
 		menuTouchAppleDone()
-	case 11:
-		menuExit()
 	default:
-		msgErr("输入错误!", nil)
+		menuExit()
 	}
 }
 
 func main() {
 	getSN()
 	getLanguage()
+	findOSPATH()
 	if *supplier {
 		menuSupplier()
 		os.Exit(0)

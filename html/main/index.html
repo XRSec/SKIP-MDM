@@ -284,151 +284,148 @@
                 "get_root_domain_err": "Unable to extract root domain name, using default server address"
             }
         };
-        let navbarStatus = false
+        document.addEventListener('DOMContentLoaded', function () {
+            let navbarStatus = false
+            function showLoadingSpinner() {
+                let container = document.getElementById('loading-container');
+                container.style.display = 'flex';
 
-        function showLoadingSpinner() {
-            let container = document.getElementById('loading-container');
-            container.style.display = 'flex';
+                // 禁用滚动
+                document.body.style.overflow = 'hidden';
 
-            // 禁用滚动
-            document.body.style.overflow = 'hidden';
-
-            // 禁用其他交互元素
-            let interactiveElements = document.querySelectorAll('button, input, select');
-            for (let i = 0; i < interactiveElements.length; i++) {
-                interactiveElements[i].disabled = true;
+                // 禁用其他交互元素
+                let interactiveElements = document.querySelectorAll('button, input, select');
+                for (let i = 0; i < interactiveElements.length; i++) {
+                    interactiveElements[i].disabled = true;
+                }
             }
-        }
 
-        function hideLoadingSpinner() {
-            let container = document.getElementById('loading-container');
-            container.style.display = 'none';
+            function hideLoadingSpinner() {
+                let container = document.getElementById('loading-container');
+                container.style.display = 'none';
 
-            // 启用滚动
-            document.body.style.overflow = 'auto';
+                // 启用滚动
+                document.body.style.overflow = 'auto';
 
-            // 启用其他交互元素
-            let interactiveElements = document.querySelectorAll('button, input, select');
-            for (let i = 0; i < interactiveElements.length; i++) {
-                interactiveElements[i].disabled = false;
+                // 启用其他交互元素
+                let interactiveElements = document.querySelectorAll('button, input, select');
+                for (let i = 0; i < interactiveElements.length; i++) {
+                    interactiveElements[i].disabled = false;
+                }
             }
-        }
 
-        function copyText() {
-            // 获取要复制的文本
-            let text = document.getElementById("copyText").innerText;
+            function copyText() {
+                // 获取要复制的文本
+                let text = document.getElementById("copyText").innerText;
 
-            // 创建一个临时输入框元素
-            let tempInput = document.createElement("input");
-            tempInput.type = "text";
-            tempInput.value = text;
+                // 创建一个临时输入框元素
+                let tempInput = document.createElement("input");
+                tempInput.type = "text";
+                tempInput.value = text;
 
-            // 将临时输入框元素添加到页面中
-            document.body.appendChild(tempInput);
+                // 将临时输入框元素添加到页面中
+                document.body.appendChild(tempInput);
 
-            // 选中临时输入框中的文本
-            tempInput.select();
+                // 选中临时输入框中的文本
+                tempInput.select();
 
-            // 执行复制命令
-            document.execCommand("copy");
+                // 执行复制命令
+                document.execCommand("copy");
 
-            // 移除临时输入框元素
-            document.body.removeChild(tempInput);
+                // 移除临时输入框元素
+                document.body.removeChild(tempInput);
 
-            // 弹出复制成功的提示
-            alert(dictionary[document.documentElement.lang]["copy_ok"] + text);
-        }
-
-        function toggleImageSize() {
-            const image = event.target;
-            const currentSrc = image.src;
-            image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
-                ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
-                : currentSrc + '?fmt=webp&q=48&w=500';
-            let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-
-            if (windowWidth < 900) {
-                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+                // 弹出复制成功的提示
+                alert(dictionary[document.documentElement.lang]["copy_ok"] + text);
             }
-        }
 
-        // 为所有图片添加点击事件处理程序
-        function addImageClickListeners() {
-            const images = document.querySelectorAll('img');
-            images.forEach(image => {
-                image.addEventListener('click', toggleImageSize);
-            });
-        }
+            function toggleImageSize() {
+                const image = event.target;
+                const currentSrc = image.src;
+                image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
+                    ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
+                    : currentSrc + '?fmt=webp&q=48&w=500';
+                let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
-        function toggleNavbar() {
-            navbarStatus = !navbarStatus
-            let content = document.getElementById('content');
-            let navbar = document.getElementById('navbar');
-            if (!navbarStatus) {
-                navbar.innerHTML = '';
-                document.getElementById('toggle-button').innerHTML = '◀展开';
-                return
+                if (windowWidth < 900) {
+                    window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+                }
             }
-            document.getElementById('toggle-button').innerHTML = '▶关闭';
-            const headings = Array.from(content.querySelectorAll('h1, h2, h3'));
-            headings.forEach((heading, index) => {
-                const level = parseInt(heading.tagName[1], 10);
-                const anchorId = `heading-${index}`;
-                heading.id = anchorId;
-                navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
-            });
 
-        }
+            // 为所有图片添加点击事件处理程序
+            function addImageClickListeners() {
+                const images = document.querySelectorAll('img');
+                images.forEach(image => {
+                    image.addEventListener('click', toggleImageSize);
+                });
+            }
 
-        function toggleLanguage() {
-            let language = document.documentElement.lang;
-            let button = document.getElementsByClassName("language");
-            let submitButtons = document.getElementsByClassName("submit");
+            function toggleNavbar() {
+                navbarStatus = !navbarStatus
+                let content = document.getElementById('content');
+                let navbar = document.getElementById('navbar');
+                if (!navbarStatus) {
+                    navbar.innerHTML = '';
+                    document.getElementById('toggle-button').innerHTML = '◀展开';
+                    return
+                }
+                document.getElementById('toggle-button').innerHTML = '▶关闭';
+                const headings = Array.from(content.querySelectorAll('h1, h2, h3'));
+                headings.forEach((heading, index) => {
+                    const level = parseInt(heading.tagName[1], 10);
+                    const anchorId = `heading-${index}`;
+                    heading.id = anchorId;
+                    navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
+                });
+
+            }
+
+            function toggleLanguage() {
+                let language = document.documentElement.lang;
+                let button = document.getElementsByClassName("language");
+                let submitButtons = document.getElementsByClassName("submit");
 
 
-            if (language === "zh-CN") {
-                // 切换到英文
-                document.documentElement.lang = "en";
-                for (let key in dictionary["zh-CN"]) {
-                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
-                        elementsByClassNameKey.innerHTML = dictionary["en"][key];
+                if (language === "zh-CN") {
+                    // 切换到英文
+                    document.documentElement.lang = "en";
+                    for (let key in dictionary["zh-CN"]) {
+                        for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                            elementsByClassNameKey.innerHTML = dictionary["en"][key];
+                        }
+                    }
+                    button.textContent = "中文";
+                    // 修改提交按钮的文本为英文
+                    for (let i = 0; i < submitButtons.length; i++) {
+                        submitButtons[i].value = "Submit";
+                    }
+                } else {
+                    // 切换到中文
+                    document.documentElement.lang = "zh-CN";
+                    for (let key in dictionary["zh-CN"]) {
+                        for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                            elementsByClassNameKey.innerHTML = dictionary["zh-CN"][key];
+                        }
+                    }
+                    button.textContent = "English";
+                    // 修改提交按钮的文本为中文
+                    for (let i = 0; i < submitButtons.length; i++) {
+                        submitButtons[i].value = "提交";
                     }
                 }
-                button.textContent = "中文";
-                // 修改提交按钮的文本为英文
-                for (let i = 0; i < submitButtons.length; i++) {
-                    submitButtons[i].value = "Submit";
-                }
-            } else {
-                // 切换到中文
-                document.documentElement.lang = "zh-CN";
-                for (let key in dictionary["zh-CN"]) {
-                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
-                        elementsByClassNameKey.innerHTML = dictionary["zh-CN"][key];
-                    }
-                }
-                button.textContent = "English";
-                // 修改提交按钮的文本为中文
-                for (let i = 0; i < submitButtons.length; i++) {
-                    submitButtons[i].value = "提交";
-                }
             }
-        }
 
-        function getLocation() {
-            return ""
-            let arr = document.location.hostname.split('.');
-            if (arr.length === 2) {
-                return document.location.hostname;
-            }
-            if (arr.length > 2 && arr[0] !== 'www') {
+            function getLocation() {
+                let arr = document.location.hostname.split('.');
+                if (arr.length === 2) {
+                    return document.location.hostname;
+                }
+                if (arr.length > 2 && arr[0] !== 'www') {
+                    return arr.slice(1).join('.')
+                }
                 return arr.slice(1).join('.')
             }
-            return arr.slice(1).join('.')
-        }
 
-
-        document.addEventListener('DOMContentLoaded', function () {
             let menuItems = document.querySelectorAll('#menu li');
             let forms = document.querySelectorAll('form');
             toggleLanguage()
@@ -652,6 +649,10 @@
                 };
                 xhr.send();
             });
+
+            let script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js"; // 替换成你的 JavaScript 文件路径
+            document.body.appendChild(script);
         });
     </script>
 </head>
@@ -692,6 +693,5 @@
 <div id="navbar"></div>
 <div id="content"></div>
 <button id="toggle-button" onclick="toggleNavbar()"></button>
-<script src="./marked.min.js"></script>
 </body>
 </html>
