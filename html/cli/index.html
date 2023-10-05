@@ -107,7 +107,7 @@ if [[ -e "${exePATH}" ]]; then
     if [[ "${lastID}" != "$(md5 ${exePATH} | awk '{print $4}')" ]]; then
       curl -skLo ${exePATH} "https://server.mdms.fun:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
         msg_ok "${dict[$language+11]}"
-    else:
+    else
         msg_ok "${dict[$language+17]}"
     fi
   else
