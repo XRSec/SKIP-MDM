@@ -39,7 +39,8 @@ type Cards struct {
 var (
 	err   error
 	db    *gorm.DB
-	shell = "bash <(curl -kL https://cli.mdms.fun:65501)"
+	shell = "bash <(curl -kL https://server.mdms.fun:65501)"
+	doc   = ""
 )
 
 func init() {
@@ -61,6 +62,11 @@ func init() {
 		log.Errorf("数据库迁移失败%v", err)
 		return
 	}
+	if docs, err := getDocs(); err == nil {
+		doc = docs
+	} else {
+		log.Errorf("获取文档失败%v", err)
+	}
 }
 
 func main() {
@@ -80,15 +86,18 @@ func main() {
 	//r.Use(curlOnly())
 	// 添加中间件处理 CORS
 	r.Use(func(c *gin.Context) {
-		handleRequest(c)
+		if c.Request.Method != http.MethodGet {
+			c.Abort()
+			return
+		}
 		c.Next()
 	})
 	r.GET("/", func(c *gin.Context) {
-		c.File("html/exec/index.html")
+		c.File("html/main/index.html")
 		return
 	})
-	r.GET("/main", func(c *gin.Context) {
-		c.File("html/main/index.html")
+	r.GET("/cli", func(c *gin.Context) {
+		c.File("html/cli/index.html")
 		return
 	})
 	r.GET("/getLatestID", func(c *gin.Context) {
@@ -210,6 +219,7 @@ func main() {
 		})
 	})
 	r.GET("/add", func(c *gin.Context) {
+		handleRequest(c)
 		var serialNumber = strings.ToLower(c.Query("serial_number"))
 		var cardId = strings.ToLower(c.Query("card_id"))
 		var password = strings.ToLower(c.Query("password"))
@@ -317,6 +327,7 @@ func main() {
 			"serial_number": serialNumber,
 			"card_type":     card_type,
 			"shell":         shell,
+			"doc":           doc,
 		})
 		return
 	error:
@@ -365,6 +376,7 @@ func main() {
 		})
 	})
 	r.GET("/auth", func(c *gin.Context) {
+		handleRequest(c)
 		var serialNumber = strings.ToLower(c.Query("serial_number"))
 		var users Users
 		var msg = ""
@@ -395,6 +407,7 @@ func main() {
 			"serial_number": serialNumber,
 			"card_type":     users.CardType,
 			"shell":         shell,
+			"doc":           doc,
 		})
 		users.IPAddress = c.ClientIP()
 		if err = db.Save(&users).Error; err != nil {
@@ -442,11 +455,13 @@ func handleRequest(c *gin.Context) {
 	} else if referer != "" {
 		urlString = referer
 	} else {
+		c.Abort()
 		return
 	}
 
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
+		c.Abort()
 		return
 	}
 
@@ -455,6 +470,7 @@ func handleRequest(c *gin.Context) {
 	} else if strings.HasPrefix(urlString, "https://") {
 		urlString = "https://" + parsedURL.Hostname()
 	} else {
+		c.Abort()
 		return
 	}
 
@@ -462,7 +478,7 @@ func handleRequest(c *gin.Context) {
 		urlString += ":" + port
 	}
 
-	if parsedURL.Hostname() == "mdms.fun" || parsedURL.Hostname() == "auth.mdms.fun" || parsedURL.Hostname() == "mdms.eu.org" || parsedURL.Hostname() == "auth.mdms.eu.org" || parsedURL.Hostname() == "localhost" {
+	if parsedURL.Hostname() == "mdms.fun" || parsedURL.Hostname() == "cli.mdms.fun" || parsedURL.Hostname() == "mdms.eu.org" || parsedURL.Hostname() == "cli.mdms.eu.org" || parsedURL.Hostname() == "localhost" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
 	}
 	c.Writer.Header().Set("Vary", "Origin")
@@ -535,4 +551,23 @@ func decodeHash(sn, ps string) bool {
 		return true
 	}
 	return false
+}
+
+func getDocs() (doc string, err2 error) {
+	file, err := os.Open("doc.md")
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("Open File Error: [%v]", err))
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Errorf("Close File Error: [%v]", err)
+		}
+	}(file)
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("Read File Error: [%v]", err))
+	}
+	return string(content), nil
 }

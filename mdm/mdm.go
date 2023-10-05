@@ -89,6 +89,10 @@ var i18n = map[string]map[string]string{
 		// deleteFile
 		"delete_file_err": "Failed to delete file",
 
+		// handleError
+		"permission_denied": "Permission denied",
+		"file_not_found":    "File not found,Don't worry.",
+
 		// findOSPATH
 		"find_os_path_err": "Failed to find system path",
 		"find_os_path_1":   "System disk not found.",
@@ -259,6 +263,10 @@ var i18n = map[string]map[string]string{
 
 		// deleteFile
 		"delete_file_err": "删除文件失败",
+
+		// handleError
+		"permission_denied": "权限不够",
+		"file_not_found":    "文件不存在, 没事!",
 
 		// findOSPATH
 		"find_os_path_err": "查找系统路径失败",
@@ -620,9 +628,9 @@ func deleteFile(source string) bool {
 
 func handleError(err error) string {
 	if os.IsPermission(err) {
-		return "Permission denied"
+		return i18n[Language]["permission_denied"]
 	} else if os.IsNotExist(err) {
-		return "File not found"
+		return i18n[Language]["file_not_found"]
 	}
 	return "i dont know?"
 }
@@ -827,6 +835,7 @@ func SetHosts(types bool, hostsRaw string) {
 	}
 	filePath := OSPATH + "etc/hosts" // hosts文件路径
 	hosts := strings.Split(hostsRaw, "\n")
+	execCmd(false, "chflags", "noschg,nouchg", filePath) // 解锁hosts 文件权限
 	file, err := os.OpenFile(filePath, os.O_RDWR, 0644)
 	if err != nil {
 		msgFatal(i18n[Language]["cant_open_hosts"], err)
@@ -971,7 +980,7 @@ func getSN() {
 	}
 	if !strings.EqualFold(*SN, tmpSN) {
 		httpClient := privacyDns()
-		req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.fun:65501/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("https://server.mdms.fun:65501/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
 		if err != nil {
 			msgFatal(i18n[Language]["create_request_err"], err)
 		}
@@ -996,7 +1005,7 @@ func getSN() {
 
 func AuthSN() {
 	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://cli.mdms.fun:65501/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://server.mdms.fun:65501/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
 	if err != nil {
 		msgFatal(i18n[Language]["create_request_err"], err)
 	}

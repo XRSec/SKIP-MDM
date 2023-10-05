@@ -123,6 +123,7 @@
             right: 0;
             background-color: rgba(0, 0, 0, 0.5);
             color: #fff;
+            z-index: 4;
         }
 
         #content {
@@ -132,6 +133,7 @@
             transform: translate(-50%, 0);
             height: auto;
             width: 90%;
+            z-index: 3;
         }
 
         a {
@@ -194,6 +196,7 @@
             top: 0;
             right: 0;
             color: #fff;
+            z-index: 4;
         }
 
         @media screen and (orientation: portrait) and (max-device-width: 900px) and (max-device-height: 1200px), screen and (orientation: landscape) and (max-device-width: 1200px) and (max-device-height: 900px) {
@@ -261,7 +264,10 @@
                 "auth_ok": "验证成功！",
                 "copy_ok": "复制成功: ",
                 "time_error": "临时权限，使用权限超过一天!",
-                "get_root_domain_err": "无法提取根域名, 使用默认服务器地址"
+                "get_root_domain_err": "无法提取根域名, 使用默认服务器地址",
+                "get_doc_error": "获取文档失败",
+                "show": "展开",
+                "hide": "收起"
             },
             "en": {
                 "title": "MDM Auth Manage",
@@ -281,161 +287,171 @@
                 "auth_ok": "Authentication succeeded!",
                 "copy_ok": "Copy Success: ",
                 "time_error": "Temporary permissions, use permissions for more than one day!",
-                "get_root_domain_err": "Unable to extract root domain name, using default server address"
+                "get_root_domain_err": "Unable to extract root domain name, using default server address",
+                "get_doc_error": "获取文档失败",
+                "show": "Show",
+                "hide": "Hide"
             }
         };
-        document.addEventListener('DOMContentLoaded', function () {
-            let navbarStatus = false
-            function showLoadingSpinner() {
-                let container = document.getElementById('loading-container');
-                container.style.display = 'flex';
+        let navbarStatus = false
 
-                // 禁用滚动
-                document.body.style.overflow = 'hidden';
-
-                // 禁用其他交互元素
-                let interactiveElements = document.querySelectorAll('button, input, select');
-                for (let i = 0; i < interactiveElements.length; i++) {
-                    interactiveElements[i].disabled = true;
-                }
-            }
-
-            function hideLoadingSpinner() {
-                let container = document.getElementById('loading-container');
-                container.style.display = 'none';
-
-                // 启用滚动
-                document.body.style.overflow = 'auto';
-
-                // 启用其他交互元素
-                let interactiveElements = document.querySelectorAll('button, input, select');
-                for (let i = 0; i < interactiveElements.length; i++) {
-                    interactiveElements[i].disabled = false;
-                }
-            }
-
-            function copyText() {
-                // 获取要复制的文本
-                let text = document.getElementById("copyText").innerText;
-
-                // 创建一个临时输入框元素
-                let tempInput = document.createElement("input");
-                tempInput.type = "text";
-                tempInput.value = text;
-
-                // 将临时输入框元素添加到页面中
-                document.body.appendChild(tempInput);
-
-                // 选中临时输入框中的文本
-                tempInput.select();
-
-                // 执行复制命令
-                document.execCommand("copy");
-
-                // 移除临时输入框元素
-                document.body.removeChild(tempInput);
-
-                // 弹出复制成功的提示
-                alert(dictionary[document.documentElement.lang]["copy_ok"] + text);
-            }
-
-            function toggleImageSize() {
-                const image = event.target;
-                const currentSrc = image.src;
-                image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
-                    ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
-                    : currentSrc + '?fmt=webp&q=48&w=500';
-                let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-
-                if (windowWidth < 900) {
-                    window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
-                }
-            }
-
-            // 为所有图片添加点击事件处理程序
-            function addImageClickListeners() {
-                const images = document.querySelectorAll('img');
-                images.forEach(image => {
-                    image.addEventListener('click', toggleImageSize);
-                });
-            }
-
-            function toggleNavbar() {
-                navbarStatus = !navbarStatus
-                let content = document.getElementById('content');
-                let navbar = document.getElementById('navbar');
-                if (!navbarStatus) {
-                    navbar.innerHTML = '';
-                    document.getElementById('toggle-button').innerHTML = '◀展开';
-                    return
-                }
-                document.getElementById('toggle-button').innerHTML = '▶关闭';
-                const headings = Array.from(content.querySelectorAll('h1, h2, h3'));
-                headings.forEach((heading, index) => {
-                    const level = parseInt(heading.tagName[1], 10);
-                    const anchorId = `heading-${index}`;
-                    heading.id = anchorId;
-                    navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
-                });
-
-            }
-
-            function toggleLanguage() {
-                let language = document.documentElement.lang;
-                let button = document.getElementsByClassName("language");
-                let submitButtons = document.getElementsByClassName("submit");
+        function toggleLanguage() {
+            let language = document.documentElement.lang;
+            let button = document.getElementsByClassName("language");
+            let submitButtons = document.getElementsByClassName("submit");
 
 
-                if (language === "zh-CN") {
-                    // 切换到英文
-                    document.documentElement.lang = "en";
-                    for (let key in dictionary["zh-CN"]) {
-                        for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
-                            elementsByClassNameKey.innerHTML = dictionary["en"][key];
-                        }
-                    }
-                    button.textContent = "中文";
-                    // 修改提交按钮的文本为英文
-                    for (let i = 0; i < submitButtons.length; i++) {
-                        submitButtons[i].value = "Submit";
-                    }
-                } else {
-                    // 切换到中文
-                    document.documentElement.lang = "zh-CN";
-                    for (let key in dictionary["zh-CN"]) {
-                        for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
-                            elementsByClassNameKey.innerHTML = dictionary["zh-CN"][key];
-                        }
-                    }
-                    button.textContent = "English";
-                    // 修改提交按钮的文本为中文
-                    for (let i = 0; i < submitButtons.length; i++) {
-                        submitButtons[i].value = "提交";
+            if (language === "zh-CN") {
+                // 切换到英文
+                document.documentElement.lang = "en";
+                for (let key in dictionary["zh-CN"]) {
+                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                        elementsByClassNameKey.innerHTML = dictionary["en"][key];
                     }
                 }
+                button.textContent = "中文";
+                // 修改提交按钮的文本为英文
+                for (let i = 0; i < submitButtons.length; i++) {
+                    submitButtons[i].value = "Submit";
+                }
+            } else {
+                // 切换到中文
+                document.documentElement.lang = "zh-CN";
+                for (let key in dictionary["zh-CN"]) {
+                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                        elementsByClassNameKey.innerHTML = dictionary["zh-CN"][key];
+                    }
+                }
+                button.textContent = "English";
+                // 修改提交按钮的文本为中文
+                for (let i = 0; i < submitButtons.length; i++) {
+                    submitButtons[i].value = "提交";
+                }
             }
+        }
 
-            function getLocation() {
-                let arr = document.location.hostname.split('.');
-                if (arr.length === 2) {
-                    return document.location.hostname;
-                }
-                if (arr.length > 2 && arr[0] !== 'www') {
-                    return arr.slice(1).join('.')
-                }
+        function getLocation() {
+            let arr = document.location.hostname.split('.');
+            if (arr.length === 2) {
+                return document.location.hostname;
+            }
+            if (arr.length > 2 && arr[0] !== 'www') {
                 return arr.slice(1).join('.')
             }
+            return arr.slice(1).join('.')
+        }
 
+        function copyText() {
+            // 获取要复制的文本
+            let text = document.getElementById("copyText").innerText;
+
+            // 创建一个临时输入框元素
+            let tempInput = document.createElement("input");
+            tempInput.type = "text";
+            tempInput.value = text;
+
+            // 将临时输入框元素添加到页面中
+            document.body.appendChild(tempInput);
+
+            // 选中临时输入框中的文本
+            tempInput.select();
+
+            // 执行复制命令
+            document.execCommand("copy");
+
+            // 移除临时输入框元素
+            document.body.removeChild(tempInput);
+
+            // 弹出复制成功的提示
+            alert(dictionary[document.documentElement.lang]["copy_ok"] + text);
+        }
+
+        function showLoadingSpinner() {
+            let container = document.getElementById('loading-container');
+            container.style.display = 'flex';
+
+            // 禁用滚动
+            document.body.style.overflow = 'hidden';
+
+            // 禁用其他交互元素
+            let interactiveElements = document.querySelectorAll('button, input, select');
+            for (let i = 0; i < interactiveElements.length; i++) {
+                interactiveElements[i].disabled = true;
+            }
+        }
+
+        function hideLoadingSpinner() {
+            let container = document.getElementById('loading-container');
+            container.style.display = 'none';
+
+            // 启用滚动
+            document.body.style.overflow = 'auto';
+
+            // 启用其他交互元素
+            let interactiveElements = document.querySelectorAll('button, input, select');
+            for (let i = 0; i < interactiveElements.length; i++) {
+                interactiveElements[i].disabled = false;
+            }
+        }
+
+        function toggleImageSize() {
+            const image = event.target;
+            const currentSrc = image.src;
+            image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
+                ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
+                : currentSrc + '?fmt=webp&q=48&w=500';
+            let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+            if (windowWidth < 900) {
+                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+            }
+        }
+
+        // 为所有图片添加点击事件处理程序
+        function addImageClickListeners() {
+            const images = document.querySelectorAll('img');
+            images.forEach(image => {
+                image.addEventListener('click', toggleImageSize);
+            });
+        }
+
+        function toggleNavbar() {
+            navbarStatus = !navbarStatus
+            let content = document.getElementById('content');
+            let navbar = document.getElementById('navbar');
+            if (!navbarStatus) {
+                navbar.innerHTML = '';
+                document.getElementById('toggle-button').innerHTML = document.documentElement.lang === "en" ? dictionary["en"]["show"] : dictionary["zh-CN"]["show"]
+                return
+            }
+            document.getElementById('toggle-button').innerHTML = document.documentElement.lang === "en" ? dictionary["en"]["hide"] : dictionary["zh-CN"]["hide"]
+            const headings = Array.from(content.querySelectorAll('h1, h2, h3'));
+            headings.forEach((heading, index) => {
+                const level = parseInt(heading.tagName[1], 10);
+                const anchorId = `heading-${index}`;
+                heading.id = anchorId;
+                navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
+            });
+
+        }
+
+        function showDocs(doc) {
+            document.getElementById('content').innerHTML = marked.parse(doc);
+            addImageClickListeners();
+            toggleNavbar()
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
             let menuItems = document.querySelectorAll('#menu li');
             let forms = document.querySelectorAll('form');
             toggleLanguage()
             // 默认显示第一个表单
             forms[0].style.display = 'block';
-            var locationResult = getLocation();
+            let locationResult = getLocation();
             if (!locationResult || locationResult.trim() === "") {
                 locationResult = "mdms.fun";
             }
-            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + ")";
+            document.getElementById("copyText").innerText = "bash <(curl -L cli." + locationResult + ") -s";
 
             // 切换菜单
             menuItems.forEach(function (item, index) {
@@ -457,122 +473,6 @@
                 });
             });
 
-            function showDocs() {
-                let doc = `# 监管绕过停用文档
-
-## 声明：
-
-1. <font color=red>本教程严禁外传，谢谢配合</font>
-2. 如果您时间很宝贵，请认真查阅下面的图片 <font color=red>**点击放大更清晰**</font>
-
-### 小助手程序：
-
-**终端输入**：\`bash <(curl -L mdms.fun)\`
-
-得到以下菜单：
-
-\`\`\`bash
- [✓] 欢迎使用 MDM 助手! (正在测试阶段)
-  可供选择:
-1. 停用监管(更多人选择)
-2. 清理监管(安装了监管配置文件)
-3. 绕过安装步骤1(系统版本 > 12)
-4. 绕过安装步骤2(系统版本 > 12)
-5. 禁用root用户登录(系统版本 > 12)
-6. 清理WiFi数据(卡在安装监管页面)
-7. 屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)
-8. 清除HOSTS屏蔽(Apple服务相关)
-9. 删除Apple安装锁文件(开机会进入Hello页面)
-10. 创建Apple安装锁文件(开机会进入登录页面)
-11. 退出操作
-  请选择你需要的操作:
-\`\`\`
-
-![MDM-CLI](https://xrsec.s3.bitiful.net/MDM/MDM_CLI.png?fmt=webp&q=48&w=500)
-
-![macOS](https://xrsec.s3.bitiful.net/MDM/macos.png?fmt=webp&q=48&w=500)
-
----
-
-## 步骤说明
-
-### A. 升级/正常使用弹窗
-
-1. 恢复模式下： 停用监管(更多人选择)
-2. 桌面模式下： 停用监管(更多人选择)
-3. 参考视频：https://b23.tv/BV1Ba411U7wV
-
-### B. 重装 且高于Monterey
-
-1. 恢复模式下：绕过安装步骤1(系统版本 > 12)
-2. hello开始页面：创建用户
-3. 恢复模式下：绕过安装步骤2(系统版本 > 12)
-4. 桌面模式下： 禁用root用户登录(系统版本 > 12)
-5. 参考视频：监管绕过自动化 https://b23.tv/BV1zX4y1q77q
-
----
-
-## 不同模式说明
-
-### 恢复模式：
-
-1. 英特尔CPU苹果电脑 通常是 长按 command + R 进入
-2. Apple CPU 苹果电脑 通常是 长按 电源键 进入
-3. 终端在：实用工具 -> 终端
-
-### 桌面模式：
-
-1. 正常开机的页面就是桌面模式
-2. 终端在：其他/实用工具 -> 终端
-
-### hello/开始页面：
-
-1. 装系统的时候选择语言那个界面
-2. 终端在：选择语言的界面 点1-2次继续，然后按快捷键 control + option + command + t
-
-### DFU刷机：
-
-1. 不到万不得已没必要选择DFU
-2. DFU 是刷机速度最快的模式
-3. Apple Configurator 界面直接把下载好的 ipsw 文件拖动到要刷机的设备上，而不是右键恢复
-4. 视频教程: https://b23.tv/BV1vK411V7UL
-
----
-
-## 温馨提示
-
-**禁用SIP** 需要先关机，再进入恢复模式，<font color=red>**现在我们不需要禁用SIP**</font>
-
-**清理监管** 需要联网 移动网络经常出问题，建议切换电信网络
-
-**全新安装** 尽量使用macOS 12的安装U盘 如果不行，则可以尝试 DFU 安装。安装完之后切记断开网络 或者拔掉路由器电源
-
-**重装/升级** 重装需要再运行一次禁用SIP和清理监管，升级理论没影响，强烈建议升级 14 Sonoma之前做好备份（可以升级）
-
-**系统版本** 不建议吃螃蟹，建议使用 Monterey
-
----
-
-## 最后测试
-
-1. 登录 Apple ID
-2. 有iPad的测试 随航 功能是否正常
-3. iPhone 测试粘贴板是否正常
-4. iPhone 测试 是否能让电脑播放音乐（手机播放音乐，切换播放设备为电脑）
-
----
-
-<font color=red>**当前脚本还麻烦不要宣传 低调使用即可，技术无罪，使用不当就有罪**</font>
-
----
-
-交流群：Apple 技术交流会员群
-微信：xr_sec`
-                document.getElementById('content').innerHTML = marked.parse(doc);
-                addImageClickListeners();
-                toggleNavbar()
-            }
-
             // 授权验证
             document.querySelector('#form1').addEventListener('submit', function (e) {
                 e.preventDefault();
@@ -585,7 +485,7 @@
                 }
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://cli.mdms.fun:65501/auth?serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://server.mdms.fun:65501/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && xhr.status === 200) {
                         let response = {}
@@ -596,7 +496,7 @@
                             } else {
                                 alert(dictionary[document.documentElement.lang]["auth_ok"])
                                 document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
-                                showDocs()
+                                showDocs(response?.doc ? response.doc : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
                             }
                         } catch (error) {
                             alert('JSON Parsing error:' + error)
@@ -621,7 +521,6 @@
                 }
                 if (password.length !== 15) {
                     alert(dictionary[document.documentElement.lang]["pass_no_pair"])
-                    showDocs()
                     hideLoadingSpinner()
                     return
                 }
@@ -633,7 +532,7 @@
 
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://cli.mdms.fun:65501/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://server.mdms.fun:65501/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4) {
                         let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
@@ -641,8 +540,8 @@
                             alert(response?.msg)
                         } else {
                             alert(dictionary[document.documentElement.lang]["add_success"])
-                            showDocs()
                             document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
+                            showDocs(response?.doc ? response.doc : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
                         }
                     }
                     hideLoadingSpinner()

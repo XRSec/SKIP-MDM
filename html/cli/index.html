@@ -52,16 +52,18 @@ dict[6]="您的序列号: "
 dict[8]="正在进行调试模式!"
 dict[10]="异常的系统架构！默认ARM (M1/M2)"
 dict[12]="软件更新完成!"
-dict[14]="请勿攻击 和 频繁使用程序! 请30分钟后再试, 或者联系管理员"
+dict[14]="服务器异常! 请联系管理员"
 dict[16]="请输入您的登录密码："
+dict[18]="检测更新完成!"
 dict[1]="Checking your permission to use."
 dict[3]="Couldn't find your serial number. Please contact the management updater."
 dict[5]="Your serial number: "
 dict[7]="Debugging mode active."
 dict[9]="Failing to detect CPU, resorting to Default ARM (M1/M2) configuration."
 dict[11]="Software update is finished!"
-dict[13]="Avoid excessive program use and malicious actions. Wait 30 minutes or contact the administrator if needed."
+dict[13]="Server exception! Please contact the administrator"
 dict[15]="Please input your login password: "
+dict[17]="Update check is finished!"
 
 checkUser() {
   msg_info "${dict[$language+1]}"
@@ -100,17 +102,19 @@ fi
 checkUser
 
 if [[ -e "${exePATH}" ]]; then
-  lastID=$(curl -skL "https://cli.mdms.fun:65501/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
+  lastID=$(curl -skL "https://server.mdms.fun:65501/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
   if [[ "${lastID}" != "" ]]; then
     if [[ "${lastID}" != "$(md5 ${exePATH} | awk '{print $4}')" ]]; then
-      curl -skLo ${exePATH} "https://cli.mdms.fun:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
+      curl -skLo ${exePATH} "https://server.mdms.fun:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
         msg_ok "${dict[$language+11]}"
+    else:
+        msg_ok "${dict[$language+17]}"
     fi
   else
     msg_err "${dict[$language+13]}"
   fi
 else
-  curl -skLo ${exePATH} "https://cli.mdms.fun:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
+  curl -skLo ${exePATH} "https://server.mdms.fun:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
 fi
 
 chmod +x "${exePATH}"

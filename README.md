@@ -18,7 +18,7 @@ gzexe *.sh
 | 接口           | 参数                                        | 说明           |
 |--------------|-------------------------------------------|--------------|
 | /            |                                           | 执行程序         |
-| /main        |                                           | 验证程序         |
+| /cli         |                                           | 验证程序         |
 | /getLatestID | ?serial_number=序列号                        | 获取最新版本程序的哈希值 |
 | /getLatest   | ?serial_number=序列号                        | 获取最新版本程序     |
 | /add         | ?serial_number=序列号&card_id=卡号&password=密码 | 添加授权用户       |
