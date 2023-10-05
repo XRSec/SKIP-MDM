@@ -93,7 +93,7 @@ func main() {
 		c.Next()
 	})
 	r.GET("/", func(c *gin.Context) {
-		c.File("html/main/index.html")
+		c.File("html/index.html")
 		return
 	})
 	r.GET("/cli", func(c *gin.Context) {
@@ -478,7 +478,7 @@ func handleRequest(c *gin.Context) {
 		urlString += ":" + port
 	}
 
-	if parsedURL.Hostname() == "mdms.fun" || parsedURL.Hostname() == "cli.mdms.fun" || parsedURL.Hostname() == "mdms.eu.org" || parsedURL.Hostname() == "cli.mdms.eu.org" || parsedURL.Hostname() == "localhost" {
+	if parsedURL.Hostname() == "mdms.fun" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
 	}
 	c.Writer.Header().Set("Vary", "Origin")

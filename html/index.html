@@ -7,11 +7,11 @@
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title class="title">MDM Auth</title>
     <style>
-        html, body {
+        body {
             justify-content: center;
             align-items: center;
             height: 90vh;
-            margin: 30px;
+            /*margin: 30px;*/
             padding: 0;
         }
 
@@ -197,6 +197,18 @@
             right: 0;
             color: #fff;
             z-index: 4;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+            font-size: 14px;
+            color: #cb6b60;
         }
 
         @media screen and (orientation: portrait) and (max-device-width: 900px) and (max-device-height: 1200px), screen and (orientation: landscape) and (max-device-width: 1200px) and (max-device-height: 900px) {
@@ -592,5 +604,8 @@
 <div id="navbar"></div>
 <div id="content"></div>
 <button id="toggle-button" onclick="toggleNavbar()"></button>
+<div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
+    建站不容易,熬夜两行泪
+</div>
 </body>
 </html>

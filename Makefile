@@ -7,7 +7,7 @@ ubs:
 	@scp mdm-*-* ubs:/docker/MDM/
 	@scp server/* ubs:/docker/MDM/
 	@scp Makefile ubs:/docker/MDM/
-	@scp main/index.html ubs:/docker/MDM/
+	@scp html/ ubs:/docker/MDM/
 	@scp ubs:/docker/MDM/server.db server/
 	@ssh ubs "docker restart mdm"
 	@rm -rf mdm-*-*
@@ -35,6 +35,7 @@ serve:
 	@docker save mdm > mdm.tar
 	@mv mdm.tar /Volumes/docker*/
 	@rm mdm-linux-*
+	@$(MAKE) ikuai
 	@read -p "请删除您的容器 并 输入您的 iKuai Token：" -r token; \
 	curl 'http://192.168.0.88/Action/call' -X 'POST' -H "Cookie: login=1; sess_key=$${token}; username=xrsec" --data-binary '{"func_name":"docker_image","action":"IMPORT","param":{"filepath":"vm/Docker_Data/mdm.tar"}}'; \
 	curl 'http://192.168.0.88/Action/call' -X 'POST' -H "Cookie: login=1; sess_key=$${token}; username=xrsec" --data-binary '{"func_name":"docker_container","action":"add","param":{"name":"MDM","interface":"doc_lan","image":"mdm:latest","memory":268435456,"auto_start":1,"mounts":"/vm/Docker_Data/letsencrypt/data/archive/server.mdms.fun:/certs,/vm/Docker_Data/MDM:/app","cmd":"","env":"","ip6addr":"","ipaddr":"172.17.0.2"}}'
