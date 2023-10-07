@@ -4,8 +4,8 @@
 
 1. <font color=red>本教程严禁外传，谢谢配合</font>
 2. 如果您时间很宝贵，请认真查阅下面的图片 <font color=red>**点击放大更清晰**</font>
-3. 升级系统视频教程：https://b23.tv/BV1Ba411U7wV
-4. 重装系统视频教程：https://b23.tv/BV1zX4y1q77q
+3. 重装/升级绕过视频教程：https://b23.tv/BV1Ba411U7wV
+4. 重装视频教程(不建议)：https://b23.tv/BV1zX4y1q77q
 
 ## 一键解放双手
 

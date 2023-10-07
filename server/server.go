@@ -32,14 +32,14 @@ type Users struct {
 type Cards struct {
 	gorm.Model
 	CardId       string `gorm:"column:card_id;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
-	PassWord     string `gorm:"column:password;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
-	SerialNumber string `gorm:"column:serial_number;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	PassWord     string `gorm:"column:password;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 }
 
 var (
 	err   error
 	db    *gorm.DB
-	shell = "bash <(curl -kL https://server.mdms.fun:65501/cli)"
+	shell = "bash <(curl -kL https://server.mdms.fun:65501/cli) -s"
 	doc   = ""
 )
 
@@ -114,7 +114,7 @@ func main() {
 			goto error
 		}
 		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", users.Model.CreatedAt.String())
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 CST", users.Model.CreatedAt.String())
 			duration := time.Now().Sub(targetTime) // 计算时间差
 			if duration.Hours() > 24 {             // 判断时间差是否大于1天
 				goto error
@@ -150,7 +150,7 @@ func main() {
 			goto error
 		}
 		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", users.Model.CreatedAt.String())
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 CST", users.Model.CreatedAt.String())
 			duration := time.Now().Sub(targetTime) // 计算时间差
 			if duration.Hours() > 24 {             // 判断时间差是否大于1天
 				goto error
@@ -232,7 +232,7 @@ func main() {
 		var msg = ""
 		var users Users
 		var cards Cards
-		var card_type = 0
+		var cardType = 0
 		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 		compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardId)
 		compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
@@ -243,6 +243,7 @@ func main() {
 				if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 					// 序列号不存在则创建
 					users.CardType = 1
+					// 删除 users 的 serial_number
 					if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: users.CardType}).Error; err != nil {
 						msg = fmt.Sprintf("Create Error: [%v]", err)
 						goto error
@@ -284,7 +285,7 @@ func main() {
 		}
 
 		if strings.Contains(cardId, "ma") {
-			card_type = 1
+			cardType = 1
 		}
 		// 先判断卡密是否正确
 		if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardId, password).Error; err != nil {
@@ -292,7 +293,7 @@ func main() {
 			goto error
 		}
 		// 再判断 卡密是否已经使用
-		if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ? and LOWER(serial_number) is NULL", cardId, password).Error; err != nil {
+		if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ? and LOWER(serial_number) is ''", cardId, password).Error; err != nil {
 			msg = fmt.Sprintf("Auth Error: [%v]", errors.New("card password has been used"))
 			goto error
 		}
@@ -300,14 +301,14 @@ func main() {
 		// 判断序列号是否存在
 		if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 			// 序列号不存在则创建
-			if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: card_type}).Error; err != nil {
+			if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: cardType}).Error; err != nil {
 				msg = fmt.Sprintf("Create Error: [%v]", err)
 				goto error
 			}
 		} else {
 			// 序列号存在则更新
 			// 序列号权限更新判断
-			if users.CardType != card_type && card_type > users.CardType {
+			if users.CardType != cardType && cardType > users.CardType {
 				auth = true
 			}
 			// 更新用户信息
@@ -326,7 +327,7 @@ func main() {
 			"code":          http.StatusOK,
 			"auth":          auth,
 			"serial_number": serialNumber,
-			"card_type":     card_type,
+			"card_type":     cardType,
 			"shell":         shell,
 			"doc":           doc,
 		})
@@ -396,10 +397,11 @@ func main() {
 				goto error
 			}
 		} else {
-			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is NULL", cardId, password).Error; err != nil {
-				msg = fmt.Sprintf("Auth Error: [%v]", errors.New("card has been used"))
+			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is ''", cardId).Error; err != nil {
+				msg = fmt.Sprintf("Auth Error: [%v]", err)
 				goto error
 			}
+			cards.PassWord = password
 			if err = db.Save(&cards).Error; err != nil {
 				msg = fmt.Sprintf("Save cards Error: [%v]", err)
 				goto error
@@ -436,7 +438,7 @@ func main() {
 		}
 		if users.CardType == 0 {
 			// 2023-10-02 08:21:35.72515647 +0000 UTC
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", users.Model.CreatedAt.String())
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 CST", users.Model.CreatedAt.String())
 			// 计算时间差
 			duration := time.Now().Sub(targetTime)
 
