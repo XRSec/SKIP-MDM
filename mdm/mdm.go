@@ -722,6 +722,8 @@ func cleanMdm() {
 	msgInfo(i18n[Language]["cleaning_mdm"])
 
 	findAndDelete(LibraryPath+"LaunchDaemons/", "mosyle")
+	findAndDelete(LibraryPath+"LaunchDaemons/", "freshservice.agent.daemon")
+	findAndDelete(LibraryPath+"LaunchDaemons/", "us.zoom")
 	findAndDelete(LibraryPath+"LaunchDaemons/", "tinyapp")
 	findAndDelete(LibraryPath+"LaunchDaemons/", "jamf")
 	findAndDelete(LibraryPath+"LaunchDaemons/", "jamfsoftware")
@@ -735,6 +737,7 @@ func cleanMdm() {
 
 	if !NewMachine {
 		findAndDelete(UserLibraryPath+"Preferences/", "mosyle")
+		findAndDelete(UserLibraryPath+"Preferences/", "us.zoom")
 		findAndDelete(UserLibraryPath+"Preferences/", "tinyapp")
 		findAndDelete(UserLibraryPath+"Preferences/", "jamf")
 		findAndDelete(UserLibraryPath+"Preferences/", "jamfsoftware")

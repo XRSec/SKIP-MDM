@@ -463,7 +463,8 @@
             if (!locationResult || locationResult.trim() === "") {
                 locationResult = "mdms.fun";
             }
-            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + "/cli) -s";
+            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + "/cli)";
+            // TODO 可选项 点击复制
 
             // 切换菜单
             menuItems.forEach(function (item, index) {

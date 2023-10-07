@@ -41,3 +41,7 @@ sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordNotFound
 ```bash
 make build
 ```
+
+# 卡密生成
+
+- http://www.txttool.com/kami/

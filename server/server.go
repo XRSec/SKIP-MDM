@@ -39,7 +39,7 @@ type Cards struct {
 var (
 	err   error
 	db    *gorm.DB
-	shell = "bash <(curl -kL https://server.mdms.fun:65501)"
+	shell = "bash <(curl -kL https://server.mdms.fun:65501/cli)"
 	doc   = ""
 )
 
@@ -67,6 +67,7 @@ func init() {
 	} else {
 		log.Errorf("获取文档失败%v", err)
 	}
+	time.Local = time.FixedZone("CST", 8*3600) // 东八
 }
 
 func main() {
@@ -373,6 +374,49 @@ func main() {
 			"code":          http.StatusBadRequest,
 			"msg":           msg,
 			"serial_number": serialNumber,
+		})
+	})
+	r.GET("/update", func(c *gin.Context) {
+		var cardId = strings.ToLower(c.Query("card_id"))
+		var password = strings.ToLower(c.Query("password"))
+		ps := c.Query("ps")
+		var msg = ""
+		var cards Cards
+		compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardId)
+		compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
+		if !compile1 || !compile2 || ps == "" || !decodeHash("", ps) {
+			msg = fmt.Sprintf("Auth Error: [%v]", err)
+			goto error
+		}
+		// 查询卡密信息
+		if err = db.First(&cards, "LOWER(card_id) = ?", cardId, password).Error; err != nil {
+			// 不存在则创建
+			if err = db.Create(&Cards{CardId: cardId, PassWord: password}).Error; err != nil {
+				msg = fmt.Sprintf("Create Error: [%v]", err)
+				goto error
+			}
+		} else {
+			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is NULL", cardId, password).Error; err != nil {
+				msg = fmt.Sprintf("Auth Error: [%v]", errors.New("card has been used"))
+				goto error
+			}
+			if err = db.Save(&cards).Error; err != nil {
+				msg = fmt.Sprintf("Save cards Error: [%v]", err)
+				goto error
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"code": http.StatusOK,
+			"card": cards,
+		})
+		return
+	error:
+		log.Errorln(msg)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": http.StatusBadRequest,
+			"msg":  msg,
+			"card": cards,
 		})
 	})
 	r.GET("/auth", func(c *gin.Context) {
