@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"time"
 )
 
@@ -47,12 +46,11 @@ func msgFatal(msg string, err error) {
 	os.Exit(1)
 }
 
+func init() {
+	time.Local = time.FixedZone("CST", 8*3600) // 东八
+}
 func main() {
-	targetUser, err := user.Lookup("xr")
-	if err != nil {
-		msgErr("无法获取用户信息", nil)
-	}
-	if targetUser != nil {
-		msgInfo(targetUser.Uid)
-	}
+	//2022-12-18 04:58:04.974417+08:00
+	targetTime3, _ := time.Parse("2006-01-02 15:04:05.999999999-07:00", "2022-12-18 04:58:04.974417+08:00")
+	msgOk(targetTime3.String())
 }

@@ -44,11 +44,13 @@ var (
 )
 
 func init() {
+	os.Setenv("ZONEINFO", "/app/zoneinfo.zip")
+
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	if db, err = gorm.Open(sqlite.Open("server.db"), &gorm.Config{
+	if db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
 		//Logger: logger.Default.LogMode(logger.Info),
 	}); err != nil {
 		log.Errorf("连接数据库失败%v", err)
@@ -67,7 +69,6 @@ func init() {
 	} else {
 		log.Errorf("获取文档失败%v", err)
 	}
-	time.Local = time.FixedZone("CST", 8*3600) // 东八
 }
 
 func main() {
@@ -114,7 +115,7 @@ func main() {
 			goto error
 		}
 		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 CST", users.Model.CreatedAt.String())
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", users.Model.CreatedAt.String())
 			duration := time.Now().Sub(targetTime) // 计算时间差
 			if duration.Hours() > 24 {             // 判断时间差是否大于1天
 				goto error
@@ -150,7 +151,7 @@ func main() {
 			goto error
 		}
 		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 CST", users.Model.CreatedAt.String())
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", users.Model.CreatedAt.String())
 			duration := time.Now().Sub(targetTime) // 计算时间差
 			if duration.Hours() > 24 {             // 判断时间差是否大于1天
 				goto error
@@ -201,8 +202,8 @@ func main() {
 
 			totalLines := len(lines)
 			startIndex := 0
-			if totalLines > 25 {
-				startIndex = totalLines - 25
+			if totalLines > 30 {
+				startIndex = totalLines - 30
 			}
 			var logs string
 			for i := startIndex; i < totalLines; i++ {
@@ -437,8 +438,7 @@ func main() {
 			goto error
 		}
 		if users.CardType == 0 {
-			// 2023-10-02 08:21:35.72515647 +0000 UTC
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999999 -0700 CST", users.Model.CreatedAt.String())
+			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", users.Model.CreatedAt.String())
 			// 计算时间差
 			duration := time.Now().Sub(targetTime)
 
