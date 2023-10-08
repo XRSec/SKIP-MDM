@@ -50,13 +50,14 @@ func init() {
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	if db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
+	db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
 		//Logger: logger.Default.LogMode(logger.Info),
-	}); err != nil {
+	})
+	if err != nil {
 		log.Errorf("连接数据库失败%v", err)
 		return
 	}
-	if err = db.AutoMigrate(&Users{}); err != nil {
+	if err := db.AutoMigrate(&Users{}); err != nil {
 		log.Errorf("数据库迁移失败%v", err)
 		return
 	}
@@ -94,400 +95,448 @@ func main() {
 		}
 		c.Next()
 	})
-	r.GET("/", func(c *gin.Context) {
-		c.File("html/index.html")
-		return
-	})
-	r.GET("/cli", func(c *gin.Context) {
-		c.File("html/cli/index.html")
-		return
-	})
-	r.GET("/getLatestID", func(c *gin.Context) {
-		var serialNumber = strings.ToLower(c.Query("serial_number"))
-		var arch = c.Query("arch")
-		var users Users
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || arch == "" {
-			log.Errorf("Auth Error: [%v]", err)
-			goto error
-		}
-		if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
-			goto error
-		}
-		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", users.Model.CreatedAt.String())
-			duration := time.Now().Sub(targetTime) // 计算时间差
-			if duration.Hours() > 24 {             // 判断时间差是否大于1天
-				goto error
-			}
-		}
-		if fileMD5, err := calculateFileMD5("mdm" + "-darwin-" + arch); err != nil {
-			c.String(http.StatusServiceUnavailable, "")
-		} else {
-			c.String(http.StatusOK, fileMD5)
-		}
-		// 更新用户信息
-		users.IPAddress = c.ClientIP()
-		if db.Save(&users).Error != nil {
-			log.Errorf("Save Error: [%v]", err)
-			goto error
-		}
-		return
-	error:
-		c.Abort()
-		return
-	})
-	r.GET("/getLatest", func(c *gin.Context) {
-		var serialNumber = strings.ToLower(c.Query("serial_number"))
-		var arch = c.Query("arch")
-		var users Users
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || arch == "" {
-			log.Errorf("Auth Error: [%v]", err)
-			goto error
-		}
-
-		if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
-			goto error
-		}
-		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", users.Model.CreatedAt.String())
-			duration := time.Now().Sub(targetTime) // 计算时间差
-			if duration.Hours() > 24 {             // 判断时间差是否大于1天
-				goto error
-			}
-		}
-		c.File("mdm" + "-darwin-" + arch)
-		// 更新用户信息
-		users.IPAddress = c.ClientIP()
-		if db.Save(&users).Error != nil {
-			log.Errorf("Save Error: [%v]", err)
-			goto error
-		}
-		return
-	error:
-		c.File("errorShell.sh")
-	})
-	r.GET("/getlogs", func(c *gin.Context) {
-		ps := c.Query("ps")
-		var msg = ""
-		if ps == "" || !decodeHash("", ps) {
-			log.Infoln("ps:", ps)
-			msg = fmt.Sprintf("Auth Error: [%v]", err)
-			goto error
-		} else {
-			filePath := "logs/app.log" // 替换为你要读取的文件路径
-
-			file, err := os.Open(filePath)
-			if err != nil {
-				msg = fmt.Sprintf("Open File Error: [%v]", err)
-				goto error
-			}
-			defer func(file *os.File) {
-				err := file.Close()
-				if err != nil {
-					log.Errorf("Close File Error: [%v]", err)
-				}
-			}(file)
-
-			var lines []string
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				lines = append(lines, scanner.Text())
-			}
-			if err := scanner.Err(); err != nil {
-				msg = fmt.Sprintf("Scan File Error: [%v]", err)
-				goto error
-			}
-
-			totalLines := len(lines)
-			startIndex := 0
-			if totalLines > 30 {
-				startIndex = totalLines - 30
-			}
-			var logs string
-			for i := startIndex; i < totalLines; i++ {
-				logs += lines[i] + "\n"
-			}
-			c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
-			c.String(http.StatusOK, logs)
+	{
+		r.GET("/", func(c *gin.Context) {
+			c.File("html/index.html")
 			return
-		}
-	error:
-		log.Errorln(msg)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": http.StatusBadRequest,
-			"msg":  msg,
 		})
-	})
-	r.GET("/add", func(c *gin.Context) {
-		handleRequest(c)
-		var serialNumber = strings.ToLower(c.Query("serial_number"))
-		var cardId = strings.ToLower(c.Query("card_id"))
-		var password = strings.ToLower(c.Query("password"))
-		var ps = c.Query("ps")
-		serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
-		cardId = strings.Replace(cardId, " ", "", -1)             // 去除空格
-		password = strings.Replace(password, " ", "", -1)         // 去除空格
-		var auth = false
-		var msg = ""
-		var users Users
-		var cards Cards
-		var cardType = 0
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardId)
-		compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
+		r.GET("/favicon.ico", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+			return
+		})
+	}
+	{
+		r.GET("/cli", func(c *gin.Context) {
+			c.File("html/cli/index.html")
+			return
+		})
+		r.GET("/getLatestID", func(c *gin.Context) {
+			var arch = c.Query("arch")
+			var msg = ""
+			if arch == "" {
+				msg = "auth_error"
+				goto error
+			}
 
-		if serialNumber == "" || cardId == "" || password == "" || err != nil || !compile || !compile1 || !compile2 {
-			if ps != "" && serialNumber != "" && compile && decodeHash(serialNumber, ps) {
-				// 判断序列号是否存在
-				if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
-					// 序列号不存在则创建
-					users.CardType = 1
-					// 删除 users 的 serial_number
-					if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: users.CardType}).Error; err != nil {
-						msg = fmt.Sprintf("Create Error: [%v]", err)
-						goto error
-					}
-					auth = false
-					c.JSON(http.StatusOK, gin.H{
-						"code":          http.StatusOK,
-						"auth":          auth,
-						"serial_number": serialNumber,
-						"card_type":     users.CardType,
-						"shell":         shell,
-					})
-					return
-				} else {
-					// 序列号存在则更新
-					// 序列号权限更新判断
-					if users.CardType == 1 {
-						auth = true
-					}
-					users.CardType = 1
+			if msg, users, status := checkAuch(c); status {
+				if fileMD5, err := calculateFileMD5("mdm" + "-darwin-" + arch); err == nil {
+					c.String(http.StatusOK, fileMD5)
 					// 更新用户信息
 					users.IPAddress = c.ClientIP()
-					if err = db.Save(&users).Error; err != nil {
-						msg = fmt.Sprintf("Save users Error: [%v]", err)
-						goto error
+					if db.Save(&users).Error != nil {
+						log.Errorf("Save Error: [%v]", err)
 					}
-					c.JSON(http.StatusOK, gin.H{
-						"code":          http.StatusOK,
-						"auth":          auth,
-						"serial_number": serialNumber,
-						"card_type":     users.CardType,
-					})
 					return
 				}
 			} else {
+				log.Errorln(msg)
+			}
+		error:
+			log.Errorln(msg)
+			c.Abort()
+			return
+		})
+		r.GET("/getLatest", func(c *gin.Context) {
+			var arch = c.Query("arch")
+			var msg = ""
+			if arch == "" {
+				msg = "auth_error"
+				goto error
+			}
+
+			if msg, users, status := checkAuch(c); status {
+				c.File("mdm" + "-darwin-" + arch)
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if err := db.Save(&users).Error; err != nil {
+					log.Errorf("Save Error: [%v]", err)
+				}
+				return
+			} else {
+				log.Errorln(msg)
+			}
+		error:
+			log.Errorln(msg)
+			c.File("errorShell.sh")
+			return
+		})
+	}
+	{
+		r.GET("/getlogs", func(c *gin.Context) {
+			ps := c.Query("ps")
+			var msg = ""
+			if ps == "" || !decodeHash("", ps) {
+				log.Infoln("ps:", ps)
+				msg = fmt.Sprintf("Auth Error: [%v]", nil)
+				goto error
+			} else {
+				filePath := "logs/app.log" // 替换为你要读取的文件路径
+
+				file, err := os.Open(filePath)
+				if err != nil {
+					msg = fmt.Sprintf("Open File Error: [%v]", err)
+					goto error
+				}
+				defer func(file *os.File) {
+					err := file.Close()
+					if err != nil {
+						log.Errorf("Close File Error: [%v]", err)
+					}
+				}(file)
+
+				var lines []string
+				scanner := bufio.NewScanner(file)
+				for scanner.Scan() {
+					lines = append(lines, scanner.Text())
+				}
+				if err := scanner.Err(); err != nil {
+					msg = fmt.Sprintf("Scan File Error: [%v]", err)
+					goto error
+				}
+
+				totalLines := len(lines)
+				startIndex := 0
+				if totalLines > 30 {
+					startIndex = totalLines - 30
+				}
+				var logs string
+				for i := startIndex; i < totalLines; i++ {
+					logs += lines[i] + "\n"
+				}
+				c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
+				c.String(http.StatusOK, logs)
+				return
+			}
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
+	}
+	{
+		r.GET("/add", func(c *gin.Context) {
+			handleRequest(c)
+			var serialNumber = strings.ToLower(c.Query("serial_number"))
+			var cardId = strings.ToLower(c.Query("card_id"))
+			var password = strings.ToLower(c.Query("password"))
+			var ps = c.Query("ps")
+			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
+			cardId = strings.Replace(cardId, " ", "", -1)             // 去除空格
+			password = strings.Replace(password, " ", "", -1)         // 去除空格
+			var auth = false
+			var msg = ""
+			var users Users
+			var cards Cards
+			var cardType = 0
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardId)
+			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
+
+			if serialNumber == "" || cardId == "" || password == "" || err != nil || !compile || !compile1 || !compile2 {
+				if ps != "" && serialNumber != "" && compile && decodeHash(serialNumber, ps) {
+					// 判断序列号是否存在
+					if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
+						// 序列号不存在则创建
+						users.CardType = 1
+						// 删除 users 的 serial_number
+						if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: users.CardType}).Error; err != nil {
+							msg = "create_error"
+							goto error
+						}
+						auth = false
+						c.JSON(http.StatusOK, gin.H{
+							"code":          http.StatusOK,
+							"auth":          auth,
+							"serial_number": serialNumber,
+							"card_type":     users.CardType,
+							"shell":         shell,
+						})
+						return
+					} else {
+						// 序列号存在则更新
+						// 序列号权限更新判断
+						if users.CardType == 1 {
+							auth = true
+						}
+						users.CardType = 1
+						// 更新用户信息
+						users.IPAddress = c.ClientIP()
+						if err = db.Save(&users).Error; err != nil {
+							msg = "create_error"
+							goto error
+						}
+						c.JSON(http.StatusOK, gin.H{
+							"code":          http.StatusOK,
+							"auth":          auth,
+							"serial_number": serialNumber,
+							"card_type":     users.CardType,
+						})
+						return
+					}
+				} else {
+					msg = "auth_error"
+					goto error
+				}
+			}
+
+			if strings.Contains(cardId, "ma") {
+				cardType = 1
+			}
+			// 先判断卡密是否正确
+			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardId, password).Error; err != nil {
+				msg = "auth_error"
+				goto error
+			}
+			// 再判断 卡密是否已经使用
+			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ? and LOWER(serial_number) is ''", cardId, password).Error; err != nil {
+				msg = "card_used"
+				goto error
+			}
+
+			// 判断序列号是否存在
+			if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
+				// 序列号不存在则创建
+				if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: cardType}).Error; err != nil {
+					msg = "create_error"
+					goto error
+				}
+			} else {
+				// 序列号存在则更新
+				// 序列号权限更新判断
+				if users.CardType != cardType && cardType > users.CardType {
+					auth = true
+				}
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if err = db.Save(&users).Error; err != nil {
+					msg = "create_error"
+					goto error
+				}
+			}
+			cards.SerialNumber = serialNumber
+			if err = db.Save(&cards).Error; err != nil {
+				msg = "create_error"
+				goto error
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code":          http.StatusOK,
+				"auth":          auth,
+				"serial_number": serialNumber,
+				"card_type":     cardType,
+				"shell":         shell,
+				"doc":           doc,
+			})
+			return
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusOK, gin.H{
+				"code":          http.StatusBadRequest,
+				"msg":           msg,
+				"serial_number": serialNumber,
+			})
+			return
+		})
+		r.GET("/del", func(c *gin.Context) {
+			var serialNumber = strings.ToLower(c.Query("serial_number"))
+			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
+			ps := c.Query("ps")
+			var auth = false
+			var msg = ""
+			var users Users
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+			if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
 				msg = fmt.Sprintf("Auth Error: [%v]", err)
 				goto error
 			}
-		}
-
-		if strings.Contains(cardId, "ma") {
-			cardType = 1
-		}
-		// 先判断卡密是否正确
-		if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardId, password).Error; err != nil {
-			msg = fmt.Sprintf("Auth Error: [%v]", errors.New("card password verification failed"))
-			goto error
-		}
-		// 再判断 卡密是否已经使用
-		if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ? and LOWER(serial_number) is ''", cardId, password).Error; err != nil {
-			msg = fmt.Sprintf("Auth Error: [%v]", errors.New("card password has been used"))
-			goto error
-		}
-
-		// 判断序列号是否存在
-		if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
-			// 序列号不存在则创建
-			if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: cardType}).Error; err != nil {
-				msg = fmt.Sprintf("Create Error: [%v]", err)
-				goto error
-			}
-		} else {
-			// 序列号存在则更新
-			// 序列号权限更新判断
-			if users.CardType != cardType && cardType > users.CardType {
+			// 查询用户信息
+			if db.First(&users, "serial_number = ?", serialNumber).Error == nil {
 				auth = true
 			}
-			// 更新用户信息
-			users.IPAddress = c.ClientIP()
-			if err = db.Save(&users).Error; err != nil {
-				msg = fmt.Sprintf("Save users Error: [%v]", err)
-				goto error
+			if db.Unscoped().Delete(&users, "serial_number = ?", serialNumber).Error != nil {
+				if auth {
+					goto error
+				}
 			}
-		}
-		cards.SerialNumber = serialNumber
-		if err = db.Save(&cards).Error; err != nil {
-			msg = fmt.Sprintf("Save cards Error: [%v]", err)
-			goto error
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":          http.StatusOK,
-			"auth":          auth,
-			"serial_number": serialNumber,
-			"card_type":     cardType,
-			"shell":         shell,
-			"doc":           doc,
-		})
-		return
-	error:
-		log.Errorln(msg)
-		c.JSON(http.StatusOK, gin.H{
-			"code":          http.StatusBadRequest,
-			"msg":           msg,
-			"serial_number": serialNumber,
-		})
-		return
-	})
-	r.GET("/del", func(c *gin.Context) {
-		var serialNumber = strings.ToLower(c.Query("serial_number"))
-		serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
-		ps := c.Query("ps")
-		var auth = false
-		var msg = ""
-		var users Users
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
-			msg = fmt.Sprintf("Auth Error: [%v]", err)
-			goto error
-		}
-		// 查询用户信息
-		if db.First(&users, "serial_number = ?", serialNumber).Error == nil {
-			auth = true
-		}
-		if db.Unscoped().Delete(&users, "serial_number = ?", serialNumber).Error != nil {
-			if auth {
-				goto error
-			}
-		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"code":          http.StatusOK,
-			"auth":          auth,
-			"serial_number": serialNumber,
+			c.JSON(http.StatusOK, gin.H{
+				"code":          http.StatusOK,
+				"auth":          auth,
+				"serial_number": serialNumber,
+			})
+			return
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":          http.StatusBadRequest,
+				"msg":           msg,
+				"serial_number": serialNumber,
+			})
 		})
-		return
-	error:
-		log.Errorln(msg)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":          http.StatusBadRequest,
-			"msg":           msg,
-			"serial_number": serialNumber,
-		})
-	})
-	r.GET("/update", func(c *gin.Context) {
-		var cardId = strings.ToLower(c.Query("card_id"))
-		var password = strings.ToLower(c.Query("password"))
-		ps := c.Query("ps")
-		var msg = ""
-		var cards Cards
-		compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardId)
-		compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
-		if !compile1 || !compile2 || ps == "" || !decodeHash("", ps) {
-			msg = fmt.Sprintf("Auth Error: [%v]", err)
-			goto error
-		}
-		// 查询卡密信息
-		if err = db.First(&cards, "LOWER(card_id) = ?", cardId, password).Error; err != nil {
-			// 不存在则创建
-			if err = db.Create(&Cards{CardId: cardId, PassWord: password}).Error; err != nil {
-				msg = fmt.Sprintf("Create Error: [%v]", err)
+		r.GET("/cardUpdate", func(c *gin.Context) {
+			var cardID = strings.ToLower(c.Query("card_id"))
+			var password = strings.ToLower(c.Query("password"))
+			ps := c.Query("ps")
+			var msg = ""
+			var cards Cards
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
+			if !compile1 || !compile2 || ps == "" || !decodeHash("", ps) {
+				msg = "auth_error"
 				goto error
 			}
-		} else {
-			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is ''", cardId).Error; err != nil {
-				msg = fmt.Sprintf("Auth Error: [%v]", err)
-				goto error
+			// 查询卡密信息
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				if err = db.Create(&Cards{CardId: cardID, PassWord: password, SerialNumber: ""}).Error; err != nil {
+					msg = fmt.Sprintf("Create Error: [%v]", err)
+					goto error
+				}
+			} else {
+				if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is ''", cardID).Error; err != nil {
+					msg = fmt.Sprintf("Card has been used: [%v]", err)
+					goto error
+				}
+				cards.PassWord = password
+				if err = db.Save(&cards).Error; err != nil {
+					msg = fmt.Sprintf("Save cards Error: [%v]", err)
+					goto error
+				}
 			}
-			cards.PassWord = password
-			if err = db.Save(&cards).Error; err != nil {
-				msg = fmt.Sprintf("Save cards Error: [%v]", err)
-				goto error
-			}
-		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"code": http.StatusOK,
-			"card": cards,
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"card": cards,
+			})
+			return
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+				"card": cards,
+			})
 		})
-		return
-	error:
-		log.Errorln(msg)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": http.StatusBadRequest,
-			"msg":  msg,
-			"card": cards,
-		})
-	})
-	r.GET("/auth", func(c *gin.Context) {
-		handleRequest(c)
-		var serialNumber = strings.ToLower(c.Query("serial_number"))
-		var users Users
-		var msg = ""
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile {
-			msg = "auth_error"
-			goto error
-		}
-		// 查询用户信息
-		if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
-			msg = "auth_error"
-			goto error
-		}
-		if users.CardType == 0 {
-			targetTime, _ := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", users.Model.CreatedAt.String())
-			// 计算时间差
-			duration := time.Now().Sub(targetTime)
-
-			// 判断时间差是否大于1天
-			if duration.Hours() > 24 {
-				msg = "time_error"
+		r.GET("/cardGet", func(c *gin.Context) {
+			var cardID = c.Query("card_id")
+			var ps = c.Query("ps")
+			var msg = ""
+			var cards Cards
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
+				msg = "auth_error"
 				goto error
 			}
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":          http.StatusOK,
-			"serial_number": serialNumber,
-			"card_type":     users.CardType,
-			"shell":         shell,
-			"doc":           doc,
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				goto error
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"code": http.StatusOK,
+					"card": cards,
+				})
+				return
+			}
+		error:
+			log.Errorln(msg)
+			c.File("errorShell.sh")
+			return
 		})
-		users.IPAddress = c.ClientIP()
-		if err = db.Save(&users).Error; err != nil {
-			msg = fmt.Sprintf("Save users Error: [%v]", err)
-			goto error
-		}
-		return
-	error:
-		log.Errorln(msg)
-		c.JSON(http.StatusOK, gin.H{
-			"code":          http.StatusServiceUnavailable,
-			"serial_number": serialNumber,
-			"card_type":     users.CardType,
-			"msg":           msg,
+		r.GET("/cardDel", func(c *gin.Context) {
+			var cardID = strings.ToLower(c.Query("card_id"))
+			var ps = c.Query("ps")
+			var msg = ""
+			var cards Cards
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
+				msg = "auth_error"
+				goto error
+			}
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				goto error
+			} else {
+				if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is not ''", cardID).Error; err == nil {
+					cards.SerialNumber = ""
+					if err = db.Save(&cards).Error; err != nil {
+						msg = fmt.Sprintf("Save cards Error: [%v]", err)
+						goto error
+					}
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"card": cards,
+			})
+			return
+		error:
+			log.Errorln(msg)
+			c.File("errorShell.sh")
+			return
 		})
-		return
-	})
-	r.GET("/favicon.ico", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-		return
-	})
+		r.GET("/auth", func(c *gin.Context) {
+			handleRequest(c)
+			if msg, users, status := checkAuch(c); !status {
+				log.Errorln(msg)
+				c.JSON(http.StatusOK, gin.H{
+					"code":  http.StatusServiceUnavailable,
+					"users": users,
+					"msg":   msg,
+				})
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"code":  http.StatusOK,
+					"users": users,
+					"shell": shell,
+				})
+			}
+		})
+	}
+
 	r.NoRoute(func(c *gin.Context) {
 		c.Abort()
 		return
 	})
 
 	// 启动 HTTPS 服务器
-	fmt.Printf("Starting HTTPS server on :33659...\n")
-	if err := r.RunTLS(":33659", "/certs/cert1.pem", "/certs/privkey1.pem"); err != nil {
-		fmt.Printf("HTTPS server error: %v\n", err)
-	}
-	//if err := r.Run(":33659"); err != nil {
+	//fmt.Printf("Starting HTTPS server on :33659...\n")
+	//if err := r.RunTLS(":33659", "/certs/cert1.pem", "/certs/privkey1.pem"); err != nil {
 	//	fmt.Printf("HTTPS server error: %v\n", err)
 	//}
+	if err := r.Run(":33659"); err != nil {
+		fmt.Printf("HTTPS server error: %v\n", err)
+	}
+}
+
+func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
+	var serialNumber = strings.ToLower(c.Query("serial_number"))
+	compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+	if serialNumber == "" || err != nil || !compile {
+		msg = "auth_error"
+		return msg, users, false
+	}
+	// 查询用户信息
+	if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
+		msg = "auth_error"
+		return msg, users, false
+	}
+	if users.CardType == 0 {
+		targetTime, _ := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", users.Model.CreatedAt.String())
+		// 计算时间差
+		duration := time.Now().Sub(targetTime)
+
+		// 判断时间差是否大于1天
+		if duration.Hours() > 24 {
+			msg = "time_error"
+			return msg, users, false
+		}
+	}
+	return msg, users, true
 }
 
 func handleRequest(c *gin.Context) {

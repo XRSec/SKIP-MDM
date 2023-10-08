@@ -23,7 +23,9 @@ gzexe *.sh
 | /getLatest   | ?serial_number=序列号                              | 获取最新版本程序     |
 | /add         | ?serial_number=序列号&card_id=卡号&password=密码       | 添加授权用户       |
 | /add         | ?serial_number=序列号&ps=管理员密码                     | 添加授权用户       |
-| /update      | ?card_id=card_id&password=new_password&ps=管理员密码 | 添加授权用户       |
+| /cardGet     | ?card_id=card_id&ps=管理员密码                       | 获取卡信息        |
+| /cardUpdate  | ?card_id=card_id&password=new_password&ps=管理员密码 | 添加授权用户       |
+| /cardDel     | ?card_id=card_id&password=new_password&ps=管理员密码 | 添加授权用户       |
 | /del         | ?serial_number=序列号&ps=管理员密码                     | 删除授权用户       |
 | /auth        | ?serial_number=序列号&ps=管理员密码                     | 验证授权用户       |
 | /ps          | ?ps=管理员密码                                       | 验证授权用户       |

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -50,7 +53,28 @@ func init() {
 	time.Local = time.FixedZone("CST", 8*3600) // 东八
 }
 func main() {
-	//2022-12-18 04:58:04.974417+08:00
-	targetTime3, _ := time.Parse("2006-01-02 15:04:05.999999999-07:00", "2022-12-18 04:58:04.974417+08:00")
-	msgOk(targetTime3.String())
+	cmd1 := exec.Command("diskutil", "info", "-plist", "$(bless", "--getBoot)")
+	cmd2 := exec.Command("plutil", "-extract", "VolumeName", "raw", "--", "-")
+
+	// 创建一个管道，将第一个命令的输出连接到第二个命令的输入
+	r, w := io.Pipe()
+	cmd1.Stdout = w
+	cmd2.Stdin = r
+
+	var out bytes.Buffer
+
+	// 将第二个命令的输出连接到缓冲区
+	cmd2.Stdout = &out
+
+	// 启动两个命令
+	cmd1.Start()
+	cmd2.Start()
+
+	// 等待两个命令完成
+	cmd1.Wait()
+	w.Close()
+	cmd2.Wait()
+
+	// 打印结果
+	fmt.Println(out.String())
 }

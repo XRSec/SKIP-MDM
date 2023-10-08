@@ -25,7 +25,7 @@ ikuai:
 	@cp -v Makefile /Volumes/MDM*/
 	@cp -rv html /Volumes/MDM*/
 	@cp -v /Volumes/MDM*/server.db server/
-	@cp -v /Volumes/MDM*/logs server/
+	@cp -rv /Volumes/MDM*/logs server/
 	@rm -rf mdm-darwin-*
 	@echo "all done"
 
