@@ -1026,21 +1026,20 @@ func AuthSN() {
 	if resp.StatusCode != 200 {
 		msgFatal(i18n[Language]["get_auth_err"], nil)
 	}
-	type Response struct {
-		CardType int `json:"card_type"`
-	}
-	// 解析resp的JSON数据
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		msgFatal(i18n[Language]["read_data_err"], err)
 	}
 
-	var response Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
 		msgFatal(i18n[Language]["decode_date_err"], err)
 	}
-	cardType := response.CardType
+
+	usersData := data["users"].(map[string]interface{})
+
+	cardType := int(usersData["CardType"].(float64))
 	if cardType == 0 {
 		*supplier = true
 	}

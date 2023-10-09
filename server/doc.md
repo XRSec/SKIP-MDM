@@ -4,14 +4,12 @@
 
 1. <font color=red>本教程严禁外传，谢谢配合</font>
 2. 如果您时间很宝贵，请认真查阅下面的图片 <font color=red>**点击放大更清晰**</font>
-3. 重装/升级绕过视频教程：https://b23.tv/BV1Ba411U7wV
-4. 重装视频教程(不建议)：https://b23.tv/BV1zX4y1q77q
+3. 重装/升级 教程：https://b23.tv/BV1Ba411U7wV
+4. 重装 教程(不建议)：https://b23.tv/BV1zX4y1q77q
 
 ## 一键解放双手
 
-> 备用域名：mdms.fun/cli 替换成 server.mdm.funs:65501/cli
-
-**终端输入**：`bash <(curl -L mdms.fun/cli) -s`
+**终端输入**：`bash <(curl mdms.fun/cli) -s`
 
 1. **系统升级** 则自动执行：停用监管，清理监管，屏蔽监管 操作
 2. **重装系统** 则自动运行：绕过监管，停用监管，清理监管，屏蔽监管 操作
@@ -19,17 +17,17 @@
 
 ---
 
-> 该部分是程序精细化操作，非专业勿看
+> <font color=red>该部分是程序精细化操作，非专业勿看</font>
 
 ### 手动操作
 
-**终端输入**：`bash <(curl -L mdms.fun/cli)`
+**终端输入**：`bash <(curl mdms.fun/cli)`
 
 > 程序将根据当前系统模式智能提供菜单，以免菜单太多烦人
 
 ### 全部菜单
 
-**终端输入**：`bash <(curl -L mdms.fun/cli) -a`
+**终端输入**：`bash <(curl mdms.fun/cli) -a`
 
 ![MDM-CLI](https://xrsec.s3.bitiful.net/MDM/MDM_CLI.png?fmt=webp&q=48&w=500)
 
@@ -65,6 +63,10 @@
 ---
 
 ## 温馨提示
+
+![须知1](https://xrsec.s3.bitiful.net/MDM/须知1.jpg?fmt=webp&q=48&w=500)
+
+![须知1](https://xrsec.s3.bitiful.net/MDM/须知2.jpg?fmt=webp&q=48&w=500)
 
 **禁用SIP** 需要先关机，再进入恢复模式，<font color=red>**现在我们不需要禁用SIP**</font>
 

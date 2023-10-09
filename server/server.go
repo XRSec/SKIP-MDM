@@ -504,13 +504,13 @@ func main() {
 					"code":  http.StatusServiceUnavailable,
 					"users": users,
 					"msg":   msg,
-					"doc":   doc,
 				})
 			} else {
 				c.JSON(http.StatusOK, gin.H{
 					"code":  http.StatusOK,
 					"users": users,
 					"shell": shell,
+					"doc":   doc,
 				})
 			}
 		})
