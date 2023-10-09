@@ -1162,7 +1162,8 @@ func menuSupplier() {
 		msgInfo(i18n[Language]["creating_user"])
 		userName := "apple_" + strconv.Itoa(rand.Intn(10))
 		userPass := "123456"
-		msgOk(fmt.Sprintf("%v%v\n%v%v", i18n[Language]["user_name"], userName, i18n[Language]["password"], userPass))
+		msgOk(i18n[Language]["user_name"] + userName)
+		msgOk(i18n[Language]["password"] + userPass)
 		// 生成介于 1000 和 2000 之间的随机数
 		uid := rand.Intn(20) + 520
 		execCmd(false, "dscl", "-f", OSPATH+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)

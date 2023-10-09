@@ -1,9 +1,11 @@
 mdms:
 	@rm -rf server/server.db
 	@rm -rf server/logs
-	@if [ ! -e "mdm-darwin-amd64" ]; then xgo --targets=darwin/amd64,darwin/arm64 ./mdm;fi
-	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-extldflags -static" ./server;fi
+	@if [ ! -e "mdm-darwin-amd64" ]; then xgo --targets=darwin/amd64,darwin/arm64 -ldflags="-s -w -extldflags -static" ./mdm;fi
+	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static" ./server;fi
 	@if [ ! -d "dist" ]; then mkdir dist;fi
+	@upx -9 mdm-darwin-amd64
+	@upx -9 mdm-linux-amd64
 	@cp -v mdm-*-* dist/
 	@cp -rv html dist/
 	@cp server/doc.md dist/
@@ -15,6 +17,8 @@ mdms:
 	@scp -r dist/* mdm:/app/
 	@scp -r mdm:/app/server.db server/
 	@scp -r mdm:/app/logs server/
+	@aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64
+	@aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64
 	@rm -rf mdm-*-*
 	@rm -rf dist
 	@ssh mdm "systemctl start mdm"
@@ -26,7 +30,7 @@ ikuai:
 	@rm -rf server/server.db
 	@rm -rf server/logs
 	@rm -rf mdm-darwin-*
-	@xgo --targets=darwin/amd64,darwin/arm64 ./mdm
+	@xgo --targets=darwin/amd64,darwin/arm64 -ldflags="-s -w -extldflags -static" ./mdm
 	@cp mdm-darwin-* /Volumes/MDM*/
 	@cp -rv server/* /Volumes/MDM*/
 	@cp -v Makefile /Volumes/MDM*/
@@ -39,7 +43,7 @@ ikuai:
 
 serve:
 	@while true; do if ls /Volumes/ | grep -q "^docker"; then break; fi; open smb://192.168.0.88/docker; sleep 3; done
-	@xgo --targets=linux/amd64 -ldflags="-extldflags -static" ./server
+	@xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static" ./server
 	@docker build -f server/Dockerfile.ext -t mdm .
 	@docker save mdm > mdm.tar
 	@mv mdm.tar /Volumes/docker*/

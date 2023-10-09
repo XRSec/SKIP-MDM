@@ -162,7 +162,8 @@ func main() {
 			}
 
 			if msg, users, status := checkAuch(c); status {
-				c.File("mdm" + "-darwin-" + arch)
+				c.Redirect(302, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
+				//c.File("mdm" + "-darwin-" + arch)
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
 				if err := db.Save(&users).Error; err != nil {
