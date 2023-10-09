@@ -1,13 +1,11 @@
 mdm.client:
 	@$(MAKE) deleteDsStore
 	@ssh mdm "date" || exit 1
-	@rm -rf server/server.db
-	@rm -rf server/logs
+	@rm -rfv server/server.db
+	@rm -rfv server/logs
 	@$(MAKE) buildClient
 	@$(MAKE) mdm.copyFile
-	@aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64
-	@aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64
-	@rm -rf mdm-*-*
+	@rm -rfv mdm-*-*
 	@if [ ! -e "html/cli/cli.sh" ]; then mv html/cli/index.html html/cli/cli.sh; fi
 	@#gits by Makefile
 	@echo "all done"
@@ -17,7 +15,7 @@ mdm.serve:
 	@$(MAKE) buildServer
 	@ssh mdm "systemctl stop mdm" || exit 1
 	@$(MAKE) mdm.copyFile
-	@rm mdm-*-*
+	@rm -rfv mdm-*-*
 	@if [ ! -e "html/cli/cli.sh" ]; then mv html/cli/index.html html/cli/cli.sh; fi
 	@ssh mdm "systemctl start mdm"
 
@@ -32,12 +30,16 @@ mdm.copyFile:
 	@scp -r mdm:/app/logs server/
 	@# 推送文件
 	@if [ ! -e "html/cli/index.html" ]; then mv html/cli/cli.sh html/cli/index.html; fi
-	@scp mdm-*-* mdm:/app/
+	@$(MAKE) uploadMDM
 	@scp -r html mdm:/app/
 	@scp server/doc.md mdm:/app/
 	@scp server/mdm.service mdm:/app/
 	@scp server/errorShell.sh mdm:/app/
 	@scp Makefile mdm:/app/
+
+uploadMDM:
+	@if [[ "$(curl "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$(md5sum mdm-darwin-amd64 | cut -d' ' -f1)" ]]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64 mdm:/app/; fi
+	@if [[ "$(curl "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$(md5sum mdm-darwin-arm64 | cut -d' ' -f1)" ]]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-amd64 mdm:/app/; fi
 
 buildServer:
 	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static" ./server; fi
@@ -54,8 +56,8 @@ deleteDsStore:
 ikuai.client:
 	@$(MAKE) deleteDsStore
 	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; open smb://192.168.0.88/docker/MDM; sleep 3; done
-	@rm -rf server/server.db
-	@rm -rf server/logs
+	@rm -rfv server/server.db
+	@rm -rfv server/logs
 	@$(MAKE) buildClient
 	@$(MAKE) getMD5
 	@mv html/cli/cli.sh html/cli/index.html
@@ -65,7 +67,7 @@ ikuai.client:
 	@cp -v Makefile /Volumes/MDM*/
 	@cp -v /Volumes/MDM*/server.db server/
 	@cp -rv /Volumes/MDM*/logs server/
-	@rm -rf mdm-darwin-*
+	@rm -rfv mdm-darwin-*
 	@mv html/cli/index.html html/cli/cli.sh
 	@echo "all done"
 
@@ -76,7 +78,7 @@ ikuai.serve:
 	@docker build -f server/Dockerfile.ext -t mdm .
 	@docker save mdm > mdm.tar
 	@mv mdm.tar /Volumes/docker*/
-	@rm mdm-linux-*
+	@rm -v mdm-linux-*
 	@$(MAKE) ikuai
 	@read -p "请删除您的容器 并 输入您的 iKuai Token：" -r token; \
 	curl 'http://192.168.0.88/Action/call' -X 'POST' -H "Cookie: login=1; sess_key=$${token}; username=xrsec" --data-binary '{"func_name":"docker_image","action":"IMPORT","param":{"filepath":"vm/Docker_Data/mdm.tar"}}'; \
