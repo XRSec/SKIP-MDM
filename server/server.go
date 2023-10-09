@@ -130,15 +130,14 @@ func main() {
 			}
 
 			if msg, users, status := checkAuch(c); status {
-				if fileMD5, err := calculateFileMD5("mdm" + "-darwin-" + arch); err == nil {
-					c.String(http.StatusOK, fileMD5)
-					// 更新用户信息
-					users.IPAddress = c.ClientIP()
-					if db.Save(&users).Error != nil {
-						log.Errorf("Save Error: [%v]", err)
-					}
-					return
+				fileMD5 := getMD5("mdm-darwin-" + arch)
+				c.String(http.StatusOK, fileMD5)
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if db.Save(&users).Error != nil {
+					log.Errorf("Save Error: [%v]", err)
 				}
+				return
 			} else {
 				log.Errorln(msg)
 			}
@@ -600,8 +599,7 @@ func curlOnly(ctx *gin.Context) bool {
 	shortcutAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "shortcut")
 	phone := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "android")
 	if !(curlAgentStatus || shortcutAgentStatus || phone) {
-		// ctx.AbortWithStatus(http.StatusServiceUnavailable)
-		ctx.Status(http.StatusForbidden)
+		ctx.AbortWithStatus(http.StatusServiceUnavailable)
 		return false
 	}
 	return true
@@ -621,6 +619,18 @@ func getClientIp() string {
 		}
 	}
 	return ""
+}
+
+func getMD5(filePath string) string {
+	data, err := os.ReadFile(filePath + ".md5")
+	if err != nil {
+		fmt.Println("读取文件失败：", err)
+		if fileMD5, err := calculateFileMD5(filePath); err == nil {
+			return fileMD5
+		}
+		return ""
+	}
+	return string(data)
 }
 
 func calculateFileMD5(filePath string) (string, error) {
