@@ -504,13 +504,18 @@ func main() {
 	})
 
 	// 启动 HTTPS 服务器
-	//fmt.Printf("Starting HTTPS server on :33659...\n")
-	//if err := r.RunTLS(":33659", "/certs/cert1.pem", "/certs/privkey1.pem"); err != nil {
-	//	fmt.Printf("HTTPS server error: %v\n", err)
-	//}
-	if err := r.Run(":33659"); err != nil {
-		fmt.Printf("HTTPS server error: %v\n", err)
+	if os.Getenv("SHELL") != "" {
+		log.Infoln("HTTP server on :33659...")
+		if err := r.Run(":33659"); err != nil {
+			fmt.Printf("HTTP server error: %v\n", err)
+		}
+	} else {
+		log.Infoln("HTTPS server on :33659...")
+		if err := r.RunTLS(":33659", "/certs/cert1.pem", "/certs/privkey1.pem"); err != nil {
+			fmt.Printf("HTTPS server error: %v\n", err)
+		}
 	}
+
 }
 
 func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
