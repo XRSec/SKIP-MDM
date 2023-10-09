@@ -502,7 +502,7 @@
                 }
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://server.mdms.fun:65501/auth?serial_number=${serial_number}`, false);
+                xhr.open("GET", `http://mdms.fun/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && xhr.status === 200) {
                         let response = {}
@@ -549,7 +549,7 @@
 
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://server.mdms.fun:65501/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.open("GET", `http://mdms.fun/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4) {
                         let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
@@ -567,7 +567,7 @@
             });
 
             let script = document.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js"; // 替换成你的 JavaScript 文件路径
+            script.src = "/marked.min.js";
             document.body.appendChild(script);
         });
     </script>

@@ -1,16 +1,23 @@
-ubs:
-	@rm -rf server/serial_number.json
+mdms:
+	@rm -rf server/server.db
 	@rm -rf server/logs
-	@rm -rf mdm-darwin-*
-	@xgo --targets=darwin/amd64,darwin/arm64 ./mdm
-	@xgo --targets=linux/amd64 -ldflags="-extldflags -static" ./server
-	@scp mdm-*-* ubs:/docker/MDM/
-	@scp server/* ubs:/docker/MDM/
-	@scp Makefile ubs:/docker/MDM/
-	@scp html/ ubs:/docker/MDM/
-	@scp ubs:/docker/MDM/server.db server/
-	@ssh ubs "docker restart mdm"
+	@if [ ! -e "mdm-darwin-amd64" ]; then xgo --targets=darwin/amd64,darwin/arm64 ./mdm;fi
+	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-extldflags -static" ./server;fi
+	@if [ ! -d "dist" ]; then mkdir dist;fi
+	@cp -v mdm-*-* dist/
+	@cp -rv html dist/
+	@cp server/doc.md dist/
+	@cp server/mdm.service dist/
+	@cp server/errorShell.sh dist/
+	@cp Makefile dist/
+	@mv dist/html/cli/cli.sh dist/html/cli/index.html
+	@ssh mdm "systemctl stop mdm"
+	@scp -r dist/* mdm:/app/
+	@scp -r mdm:/app/server.db server/
+	@scp -r mdm:/app/logs server/
 	@rm -rf mdm-*-*
+	@rm -rf dist
+	@ssh mdm "systemctl start mdm"
 	@#gits by Makefile
 	@echo "all done"
 
@@ -24,6 +31,7 @@ ikuai:
 	@cp -rv server/* /Volumes/MDM*/
 	@cp -v Makefile /Volumes/MDM*/
 	@cp -rv html /Volumes/MDM*/
+	@mv /Volumes/MDM*/html/cli/cli.sh dist/html/cli/index.html
 	@cp -v /Volumes/MDM*/server.db server/
 	@cp -rv /Volumes/MDM*/logs server/
 	@rm -rf mdm-darwin-*
@@ -59,7 +67,7 @@ dev:
 	@cd mdm;CGO_ENABLED=0 go build -a -ldflags "-extldflags -static" mdm.go
 
 fail2ban:
-	@cp gin_filter.conf /etc/fail2ban/filter.d/gin.conf
-	@cp gin_action.conf /etc/fail2ban/action.d/gin.conf
-	@cp gin_jail.conf /etc/fail2ban/jail.d/gin.conf
+	@cp mdm_filter.conf /etc/fail2ban/filter.d/mdm.conf
+	@cp mdm_action.conf /etc/fail2ban/action.d/mdm.conf
+	@cp mdm_jail.conf /etc/fail2ban/jail.d/mdm.conf
 	@systemctl restart fail2ban

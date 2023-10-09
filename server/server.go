@@ -39,7 +39,7 @@ type Cards struct {
 var (
 	err   error
 	db    *gorm.DB
-	shell = "bash <(curl -kL https://server.mdms.fun:65501/cli) -s"
+	shell = "bash <(curl mdms.fun/cli) -s"
 	doc   = ""
 )
 
@@ -75,7 +75,6 @@ func init() {
 func main() {
 	fmt.Println("Run models...")
 
-	log.Infof("Server Start: https://%v:33659\n", getClientIp())
 	// 配置日志输出到文件
 	logFile := &lumberjack.Logger{
 		Filename:   "./logs/app.log", // 日志文件路径
@@ -84,18 +83,20 @@ func main() {
 		MaxAge:     30,               // 保留的旧日志文件的最大天数
 		Compress:   true,             // 是否压缩/归档旧日志文件
 	}
-	r := gin.Default()
+
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(logFile))
-	//r.Use(curlOnly())
-	// 添加中间件处理 CORS
-	r.Use(func(c *gin.Context) {
-		if c.Request.Method != http.MethodGet {
-			c.Abort()
-			return
-		}
-		c.Next()
-	})
 	{
+		// 添加中间件处理 CORS
+		r.Use(func(c *gin.Context) {
+			if c.Request.Method != http.MethodGet {
+				c.Status(http.StatusForbidden)
+				return
+			}
+			c.Next()
+		})
 		r.GET("/", func(c *gin.Context) {
 			c.File("html/index.html")
 			return
@@ -104,13 +105,23 @@ func main() {
 			c.Status(http.StatusOK)
 			return
 		})
+		r.GET("/marked.min.js", func(c *gin.Context) {
+			c.File("html/marked.min.js")
+			return
+		})
 	}
 	{
 		r.GET("/cli", func(c *gin.Context) {
+			if !curlOnly(c) {
+				return
+			}
 			c.File("html/cli/index.html")
 			return
 		})
 		r.GET("/getLatestID", func(c *gin.Context) {
+			if !curlOnly(c) {
+				return
+			}
 			var arch = c.Query("arch")
 			var msg = ""
 			if arch == "" {
@@ -133,10 +144,16 @@ func main() {
 			}
 		error:
 			log.Errorln(msg)
-			c.Abort()
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
 			return
 		})
 		r.GET("/getLatest", func(c *gin.Context) {
+			if !curlOnly(c) {
+				return
+			}
 			var arch = c.Query("arch")
 			var msg = ""
 			if arch == "" {
@@ -209,7 +226,7 @@ func main() {
 			}
 		error:
 			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"code": http.StatusBadRequest,
 				"msg":  msg,
 			})
@@ -217,7 +234,7 @@ func main() {
 	}
 	{
 		r.GET("/add", func(c *gin.Context) {
-			handleRequest(c)
+			//handleRequest(c)
 			var serialNumber = strings.ToLower(c.Query("serial_number"))
 			var cardId = strings.ToLower(c.Query("card_id"))
 			var password = strings.ToLower(c.Query("password"))
@@ -368,7 +385,7 @@ func main() {
 			return
 		error:
 			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"code":          http.StatusBadRequest,
 				"msg":           msg,
 				"serial_number": serialNumber,
@@ -412,7 +429,7 @@ func main() {
 			return
 		error:
 			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"code": http.StatusBadRequest,
 				"msg":  msg,
 				"card": cards,
@@ -480,13 +497,14 @@ func main() {
 			return
 		})
 		r.GET("/auth", func(c *gin.Context) {
-			handleRequest(c)
+			//handleRequest(c)
 			if msg, users, status := checkAuch(c); !status {
 				log.Errorln(msg)
 				c.JSON(http.StatusOK, gin.H{
 					"code":  http.StatusServiceUnavailable,
 					"users": users,
 					"msg":   msg,
+					"doc":   doc,
 				})
 			} else {
 				c.JSON(http.StatusOK, gin.H{
@@ -504,18 +522,10 @@ func main() {
 	})
 
 	// 启动 HTTPS 服务器
-	if os.Getenv("SHELL") != "" {
-		log.Infoln("HTTP server on :33659...")
-		if err := r.Run(":33659"); err != nil {
-			fmt.Printf("HTTP server error: %v\n", err)
-		}
-	} else {
-		log.Infoln("HTTPS server on :33659...")
-		if err := r.RunTLS(":33659", "/certs/cert1.pem", "/certs/privkey1.pem"); err != nil {
-			fmt.Printf("HTTPS server error: %v\n", err)
-		}
+	log.Infof("Server Start: http://%v:80\n", getClientIp())
+	if err := r.Run(":80"); err != nil {
+		fmt.Printf("HTTP server error: %v\n", err)
 	}
-
 }
 
 func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
@@ -584,18 +594,16 @@ func handleRequest(c *gin.Context) {
 	c.Writer.Header().Set("Vary", "Origin")
 }
 
-func curlOnly() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		curlAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "curl")
-		shortcutAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "shortcut")
-		phone := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "android")
-		if !(curlAgentStatus || shortcutAgentStatus || phone) {
-			// ctx.AbortWithStatus(http.StatusServiceUnavailable)
-			ctx.Abort()
-			return
-		}
-		ctx.Next()
+func curlOnly(ctx *gin.Context) bool {
+	curlAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "curl")
+	shortcutAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "shortcut")
+	phone := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "android")
+	if !(curlAgentStatus || shortcutAgentStatus || phone) {
+		// ctx.AbortWithStatus(http.StatusServiceUnavailable)
+		ctx.Status(http.StatusForbidden)
+		return false
 	}
+	return true
 }
 
 func getClientIp() string {

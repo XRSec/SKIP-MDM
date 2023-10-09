@@ -983,7 +983,7 @@ func getSN() {
 	}
 	if !strings.EqualFold(*SN, tmpSN) {
 		httpClient := privacyDns()
-		req, err := http.NewRequest("GET", fmt.Sprintf("https://server.mdms.fun:65501/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://mdms.fun/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
 		if err != nil {
 			msgFatal(i18n[Language]["create_request_err"], err)
 		}
@@ -1008,7 +1008,7 @@ func getSN() {
 
 func AuthSN() {
 	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://server.mdms.fun:65501/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://mdms.fun/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
 	if err != nil {
 		msgFatal(i18n[Language]["create_request_err"], err)
 	}

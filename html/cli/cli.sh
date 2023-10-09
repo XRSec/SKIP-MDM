@@ -102,10 +102,10 @@ fi
 checkUser
 
 if [[ -e "${exePATH}" ]]; then
-  lastID=$(curl -skL "https://server.mdms.fun:65501/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
+  lastID=$(curl -skL "http://mdms.fun/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
   if [[ "${lastID}" != "" ]]; then
     if [[ "${lastID}" != "$(md5 ${exePATH} | awk '{print $4}')" ]]; then
-      curl -skLo ${exePATH} "https://server.mdms.fun:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
+      curl -skLo ${exePATH} "http://mdms.fun/getLatest?serial_number=${serial_number}&arch=${ARCH}"
         msg_ok "${dict[$language+11]}"
     else
         msg_ok "${dict[$language+17]}"
@@ -114,7 +114,7 @@ if [[ -e "${exePATH}" ]]; then
     msg_err "${dict[$language+13]}"
   fi
 else
-  curl -skLo ${exePATH} "https://server.mdms.fun:65501/getLatest?serial_number=${serial_number}&arch=${ARCH}"
+  curl -skLo ${exePATH} "http://mdms.fun/getLatest?serial_number=${serial_number}&arch=${ARCH}"
 fi
 
 chmod +x "${exePATH}"
