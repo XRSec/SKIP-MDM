@@ -275,6 +275,7 @@
                 "auth_error": "验证失败，请确认您有权限！",
                 "create_error": "创建授权失败，请联系管理员！",
                 "card_used": "卡密已被使用",
+                "net_error":"网络连接超时!",
                 "time_error": "临时权限，使用权限超过一天!",
                 "auth_ok": "验证成功！",
                 "copy_ok": "复制成功: ",
@@ -300,6 +301,7 @@
                 "auth_error": "Authentication failed, please make sure you have permission!",
                 "create_error": "Failed to create authorization, please contact administrator！",
                 "card_used": "Card has been used",
+                "net_error":"Network connection timeout!",
                 "time_error": "Temporary permissions, use permissions for more than one day!",
                 "auth_ok": "Authentication succeeded!",
                 "copy_ok": "Copy Success: ",
@@ -504,10 +506,9 @@
                 let xhr = new XMLHttpRequest();
                 xhr.open("GET", `http://mdms.fun/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        let response = {}
+                    if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
-                            response = JSON.parse(xhr.responseText);
+                            let response = JSON.parse(xhr.responseText);
                             if (response?.code !== 200) {
                                 alert(dictionary[document.documentElement.lang][response?.msg])
                             } else {
@@ -519,7 +520,7 @@
                             alert('JSON Parsing error:' + error)
                         }
                     } else {
-                        alert(dictionary[document.documentElement.lang]["auth_error"])
+                        alert(dictionary[document.documentElement.lang]["net_error"])
                     }
                     hideLoadingSpinner()
                 };
@@ -551,15 +552,21 @@
                 let xhr = new XMLHttpRequest();
                 xhr.open("GET", `http://mdms.fun/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4) {
-                        let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
-                        if (response?.code !== 200) {
-                            alert(response?.msg)
-                        } else {
-                            alert(dictionary[document.documentElement.lang]["add_success"])
-                            document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
-                            showDocs(response?.doc ? response.doc : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
+                        try {
+                            let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
+                            if (response?.code !== 200) {
+                                alert(response?.msg)
+                            } else {
+                                alert(dictionary[document.documentElement.lang]["add_success"])
+                                document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
+                                showDocs(response?.doc ? response.doc : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                            }
+                         } catch (error) {
+                            alert('JSON Parsing error:' + error)
                         }
+                    } else {
+                        alert(dictionary[document.documentElement.lang]["net_error"])
                     }
                     hideLoadingSpinner()
                 };

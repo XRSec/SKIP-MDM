@@ -92,7 +92,7 @@ func main() {
 		// 添加中间件处理 CORS
 		r.Use(func(c *gin.Context) {
 			if c.Request.Method != http.MethodGet {
-				c.Status(http.StatusForbidden)
+				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
 			c.Next()
@@ -143,7 +143,7 @@ func main() {
 			}
 		error:
 			log.Errorln(msg)
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusBadRequest, gin.H{
 				"code": http.StatusBadRequest,
 				"msg":  msg,
 			})
@@ -174,12 +174,25 @@ func main() {
 			}
 		error:
 			log.Errorln(msg)
-			c.File("errorShell.sh")
+			c.String(http.StatusBadRequest, `# set color
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+COL_NC='\033[0m' # No Color
+OVER="\\r\\033[K"
+
+msg_err() {
+    printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
+    exit 1
+}
+
+msg_ok() {
+    printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
+}
+
+msg_err "验证失败, 请确认您是否拥有权限!"`)
 			return
 		})
-	}
-	{
-		r.GET("/getlogs", func(c *gin.Context) {
+		r.GET("/getLogs", func(c *gin.Context) {
 			ps := c.Query("ps")
 			var msg = ""
 			if ps == "" || !decodeHash("", ps) {
@@ -226,7 +239,36 @@ func main() {
 			}
 		error:
 			log.Errorln(msg)
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
+		r.GET("/getCard", func(c *gin.Context) {
+			var cardID = c.Query("card_id")
+			var ps = c.Query("ps")
+			var msg = ""
+			var cards Cards
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
+				msg = "auth_error"
+				goto error
+			}
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				goto error
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"code": http.StatusOK,
+					"card": cards,
+				})
+				return
+			}
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
 				"code": http.StatusBadRequest,
 				"msg":  msg,
 			})
@@ -326,6 +368,7 @@ func main() {
 					auth = true
 				}
 				// 更新用户信息
+				users.CreatedAt = time.Now()
 				users.IPAddress = c.ClientIP()
 				if err = db.Save(&users).Error; err != nil {
 					msg = "create_error"
@@ -348,12 +391,58 @@ func main() {
 			return
 		error:
 			log.Errorln(msg)
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusBadRequest, gin.H{
 				"code":          http.StatusBadRequest,
 				"msg":           msg,
 				"serial_number": serialNumber,
 			})
 			return
+		})
+		r.GET("/cardUpdate", func(c *gin.Context) {
+			var cardID = strings.ToLower(c.Query("card_id"))
+			var password = strings.ToLower(c.Query("password"))
+			ps := c.Query("ps")
+			var msg = ""
+			var cards Cards
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
+			if !compile1 || !compile2 || ps == "" || !decodeHash("", ps) {
+				msg = "auth_error"
+				goto error
+			}
+			// 查询卡密信息
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				if err = db.Create(&Cards{CardId: cardID, PassWord: password, SerialNumber: ""}).Error; err != nil {
+					msg = fmt.Sprintf("Create Error: [%v]", err)
+					goto error
+				}
+			} else {
+				if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is ''", cardID).Error; err != nil {
+					msg = "card_used"
+					cards.SerialNumber = ""
+					//goto error
+				}
+				cards.PassWord = password
+				if err = db.Save(&cards).Error; err != nil {
+					msg = fmt.Sprintf("Save cards Error: [%v]", err)
+					goto error
+				}
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"msg":  msg,
+				"card": cards,
+			})
+			return
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+				"card": cards,
+			})
 		})
 		r.GET("/del", func(c *gin.Context) {
 			var serialNumber = strings.ToLower(c.Query("serial_number"))
@@ -385,82 +474,11 @@ func main() {
 			return
 		error:
 			log.Errorln(msg)
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusBadRequest, gin.H{
 				"code":          http.StatusBadRequest,
 				"msg":           msg,
 				"serial_number": serialNumber,
 			})
-		})
-		r.GET("/cardUpdate", func(c *gin.Context) {
-			var cardID = strings.ToLower(c.Query("card_id"))
-			var password = strings.ToLower(c.Query("password"))
-			ps := c.Query("ps")
-			var msg = ""
-			var cards Cards
-			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
-			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
-			if !compile1 || !compile2 || ps == "" || !decodeHash("", ps) {
-				msg = "auth_error"
-				goto error
-			}
-			// 查询卡密信息
-			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
-				// 不存在则创建
-				if err = db.Create(&Cards{CardId: cardID, PassWord: password, SerialNumber: ""}).Error; err != nil {
-					msg = fmt.Sprintf("Create Error: [%v]", err)
-					goto error
-				}
-			} else {
-				if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is ''", cardID).Error; err != nil {
-					msg = fmt.Sprintf("Card has been used: [%v]", err)
-					goto error
-				}
-				cards.PassWord = password
-				if err = db.Save(&cards).Error; err != nil {
-					msg = fmt.Sprintf("Save cards Error: [%v]", err)
-					goto error
-				}
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"code": http.StatusOK,
-				"card": cards,
-			})
-			return
-		error:
-			log.Errorln(msg)
-			c.JSON(http.StatusOK, gin.H{
-				"code": http.StatusBadRequest,
-				"msg":  msg,
-				"card": cards,
-			})
-		})
-		r.GET("/cardGet", func(c *gin.Context) {
-			var cardID = c.Query("card_id")
-			var ps = c.Query("ps")
-			var msg = ""
-			var cards Cards
-			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
-			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
-				msg = "auth_error"
-				goto error
-			}
-
-			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
-				// 不存在则创建
-				msg = "card_error"
-				goto error
-			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"code": http.StatusOK,
-					"card": cards,
-				})
-				return
-			}
-		error:
-			log.Errorln(msg)
-			c.File("errorShell.sh")
-			return
 		})
 		r.GET("/cardDel", func(c *gin.Context) {
 			var cardID = strings.ToLower(c.Query("card_id"))
@@ -493,15 +511,19 @@ func main() {
 			return
 		error:
 			log.Errorln(msg)
-			c.File("errorShell.sh")
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+				"card": cards,
+			})
 			return
 		})
 		r.GET("/auth", func(c *gin.Context) {
 			//handleRequest(c)
 			if msg, users, status := checkAuch(c); !status {
 				log.Errorln(msg)
-				c.JSON(http.StatusOK, gin.H{
-					"code":  http.StatusServiceUnavailable,
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":  http.StatusBadRequest,
 					"users": users,
 					"msg":   msg,
 				})
@@ -515,9 +537,8 @@ func main() {
 			}
 		})
 	}
-
 	r.NoRoute(func(c *gin.Context) {
-		c.Abort()
+		c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	})
 
@@ -565,13 +586,13 @@ func handleRequest(c *gin.Context) {
 	} else if referer != "" {
 		urlString = referer
 	} else {
-		c.Abort()
+		c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
 
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		c.Abort()
+		c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
 
@@ -580,7 +601,7 @@ func handleRequest(c *gin.Context) {
 	} else if strings.HasPrefix(urlString, "https://") {
 		urlString = "https://" + parsedURL.Hostname()
 	} else {
-		c.Abort()
+		c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
 
@@ -590,6 +611,8 @@ func handleRequest(c *gin.Context) {
 
 	if parsedURL.Hostname() == "mdms.fun" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
+	} else if parsedURL.Hostname() == "localhost" {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:63342")
 	}
 	c.Writer.Header().Set("Vary", "Origin")
 }
@@ -630,7 +653,7 @@ func getMD5(filePath string) string {
 		}
 		return ""
 	}
-	return string(data)
+	return strings.Replace(strings.Replace(string(data), "\n", "", -1), "", "", -1)
 }
 
 func calculateFileMD5(filePath string) (string, error) {
