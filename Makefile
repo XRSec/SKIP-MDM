@@ -6,7 +6,7 @@ mdm.client:
 	@$(MAKE) buildClient
 	@$(MAKE) uploadMDM
 	@$(MAKE) mdm.copyFile
-	@#rm -rfv mdm-*-*
+	@rm -rfv mdm-*-*
 	@if [ ! -e "html/cli/cli.sh" ]; then mv html/cli/index.html html/cli/cli.sh; fi
 	@#gits by Makefile
 	@echo "all done"

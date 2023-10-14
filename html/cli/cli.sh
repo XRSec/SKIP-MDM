@@ -20,7 +20,7 @@ msg_info() {
 msg_over() {
   printf "${OVER}%s" "" 1>&2
 }
-msgLast(){
+msg_last(){
   for ((i=1; i<=${1}; i++))
   do
       printf "\r\033[1A%s" "" 1>&2
@@ -123,7 +123,7 @@ if [[ "${OSTYPE}" == "normal" ]]; then
   "${exePATH}" -sn="${serial_number}" "$@"
 else
   read -p "${dict[$language+15]}" -r passwd
-  msgLast 1
+  msg_last 1
   echo "${passwd}" | sudo -S dscacheutil -flushcache
   sudo killall -HUP mDNSResponder
   sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
