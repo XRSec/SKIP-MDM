@@ -24,7 +24,7 @@ gzexe *.sh
 | /getLogs     | ?serial_number=序列号                              | 获取日志         |
 | /add         | ?serial_number=序列号&card_id=卡号&password=密码       | 添加授权用户       |
 | /add         | ?serial_number=序列号&ps=管理员密码                     | 添加授权用户       |
-| /cardGet     | ?card_id=card_id&ps=管理员密码                       | 获取卡密信息       |
+| /getCard     | ?card_id=card_id&ps=管理员密码                       | 获取卡密信息       |
 | /cardUpdate  | ?card_id=card_id&password=new_password&ps=管理员密码 | 更新卡密清空绑定     |
 | /cardDel     | ?card_id=card_id&ps=管理员密码                       | 删除卡密绑定       |
 | /del         | ?serial_number=序列号&ps=管理员密码                     | 删除授权用户       |

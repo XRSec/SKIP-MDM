@@ -85,16 +85,20 @@ func main() {
 	}
 
 	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
+	r := gin.Default()
 	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(logFile))
 	{
-		// 添加中间件处理 CORS
 		r.Use(func(c *gin.Context) {
 			if c.Request.Method != http.MethodGet {
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
+			if !curlOnly(c) {
+				return
+			}
+
+			handleRequest(c)
 			c.Next()
 		})
 		r.GET("/", func(c *gin.Context) {
@@ -105,23 +109,29 @@ func main() {
 			c.Status(http.StatusOK)
 			return
 		})
-		r.GET("/marked.min.js", func(c *gin.Context) {
-			c.File("html/marked.min.js")
+		r.GET("/apple-touch-icon-120x120-precomposed.png", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+			return
+		})
+		r.GET("/apple-touch-icon-120x120.png", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+			return
+		})
+		r.GET("/apple-touch-icon-precomposed.png", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+			return
+		})
+		r.GET("/apple-touch-icon.png", func(c *gin.Context) {
+			c.Status(http.StatusOK)
 			return
 		})
 	}
 	{
 		r.GET("/cli", func(c *gin.Context) {
-			if !curlOnly(c) {
-				return
-			}
 			c.File("html/cli/index.html")
 			return
 		})
 		r.GET("/getLatestID", func(c *gin.Context) {
-			if !curlOnly(c) {
-				return
-			}
 			var arch = c.Query("arch")
 			var msg = ""
 			if arch == "" {
@@ -150,9 +160,6 @@ func main() {
 			return
 		})
 		r.GET("/getLatest", func(c *gin.Context) {
-			if !curlOnly(c) {
-				return
-			}
 			var arch = c.Query("arch")
 			var msg = ""
 			if arch == "" {
@@ -161,7 +168,7 @@ func main() {
 			}
 
 			if msg, users, status := checkAuch(c); status {
-				c.Redirect(302, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
+				c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
 				//c.File("mdm" + "-darwin-" + arch)
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
@@ -544,6 +551,14 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 
 	// 启动 HTTPS 服务器
 	log.Infof("Server Start: http://%v:80\n", getClientIp())
+
+	go func() {
+		if err := r.RunTLS(":443", "/etc/letsencrypt/live/mdms.fun/cert.pem", "/etc/letsencrypt/live/mdms.fun/privkey.pem"); err != nil {
+			//if err := r.RunTLS(":443", "../cert.pem", "../privkey.pem"); err != nil {
+			fmt.Printf("HTTPS server error: %v\n", err)
+		}
+	}()
+
 	if err := r.Run(":80"); err != nil {
 		fmt.Printf("HTTP server error: %v\n", err)
 	}
@@ -586,13 +601,13 @@ func handleRequest(c *gin.Context) {
 	} else if referer != "" {
 		urlString = referer
 	} else {
-		c.AbortWithStatus(http.StatusServiceUnavailable)
+		//c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
 
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		c.AbortWithStatus(http.StatusServiceUnavailable)
+		//c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
 
@@ -601,7 +616,7 @@ func handleRequest(c *gin.Context) {
 	} else if strings.HasPrefix(urlString, "https://") {
 		urlString = "https://" + parsedURL.Hostname()
 	} else {
-		c.AbortWithStatus(http.StatusServiceUnavailable)
+		//c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
 
@@ -609,7 +624,7 @@ func handleRequest(c *gin.Context) {
 		urlString += ":" + port
 	}
 
-	if parsedURL.Hostname() == "mdms.fun" {
+	if parsedURL.Hostname() == "43.133.21.10" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
 	} else if parsedURL.Hostname() == "localhost" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:63342")
@@ -618,12 +633,25 @@ func handleRequest(c *gin.Context) {
 }
 
 func curlOnly(ctx *gin.Context) bool {
-	curlAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "curl")
-	shortcutAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "shortcut")
-	phone := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "android")
-	if !(curlAgentStatus || shortcutAgentStatus || phone) {
+	tmpHeader := strings.ToLower(ctx.GetHeader("User-Agent"))
+	curlAgentStatus := strings.Contains(tmpHeader, "curl")
+	shortcutAgentStatus := strings.Contains(tmpHeader, "shortcut")
+	phone := strings.Contains(tmpHeader, "android")
+	mac := strings.Contains(tmpHeader, "mac") && strings.Contains(tmpHeader, "safari")
+	if !(curlAgentStatus || shortcutAgentStatus || phone || mac) {
 		ctx.AbortWithStatus(http.StatusServiceUnavailable)
 		return false
+	}
+	if !curlAgentStatus {
+		if net.ParseIP(strings.Split(ctx.Request.Host, ":")[0]) != nil {
+			return true
+		}
+		if ctx.Request.TLS == nil {
+			newURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.Request.RequestURI)
+			ctx.Header("Location", newURL)
+			ctx.AbortWithStatus(http.StatusFound)
+			return false
+		}
 	}
 	return true
 }

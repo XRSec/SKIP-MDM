@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"crypto/sha256"
-	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -48,6 +47,7 @@ var (
 	Debug           = flag.Bool("d", false, "Debug Model")
 	supplier        = flag.Bool("s", false, "Supplier special version")
 	Language        = "en"
+	serverURL       = "mdms.fun"
 )
 
 var i18n = map[string]map[string]string{
@@ -135,6 +135,9 @@ var i18n = map[string]map[string]string{
 		"network_request_err": "Network request failed",
 		"closes_body_err":     "Failed to close Body",
 		"read_data_err":       "Failed to read packet",
+
+		// getServerIP
+		"get_server_ip_err": "Failed to obtain server IP",
 
 		// getSN
 		"input_sn":      "Please enter the serial number",
@@ -311,6 +314,9 @@ var i18n = map[string]map[string]string{
 		"network_request_err": "网络请求失败",
 		"closes_body_err":     "关闭Body失败",
 		"read_data_err":       "读取数据包失败",
+
+		// getServerIP
+		"get_server_ip_err": "获取服务器IP失败",
 
 		// getSN
 		"input_sn":      "请输入序列号",
@@ -968,6 +974,52 @@ func getLanguage() {
 	}
 }
 
+func getServerIP() {
+	httpClient := privacyDns()
+	req, err := http.NewRequest("POST", "https://www.ssleye.com/ssltool/dns_check_hander", strings.NewReader(fmt.Sprintf("domain=%v&dns=A", serverURL)))
+	if err != nil {
+		msgErr(i18n[Language]["create_request_err"], err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // 设置请求头的 Content-Type
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		msgErr(i18n[Language]["network_request_err"], err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println(i18n[Language]["close_body_err"])
+		}
+	}(resp.Body)
+
+	if resp.StatusCode != 200 {
+		msgErr(i18n[Language]["get_auth_err"], nil)
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		msgErr(i18n[Language]["read_data_err"], err)
+	}
+
+	type Response struct {
+		Msg   []string `json:"msg"`
+		Error bool     `json:"error"`
+	}
+	var data Response
+	if err := json.Unmarshal(body, &data); err != nil {
+		msgErr(i18n[Language]["decode_date_err"], err)
+	}
+	if !data.Error {
+		msgErr(i18n[Language]["get_server_ip_err"], nil)
+	}
+	if data.Msg[0] == "" {
+		msgErr(i18n[Language]["get_server_ip_err"], nil)
+	} else {
+		serverURL = data.Msg[0]
+	}
+}
+
 func getSN() {
 	if *SN == "" {
 		msgFatal(i18n[Language]["input_sn"], nil)
@@ -985,7 +1037,7 @@ func getSN() {
 	}
 	if !strings.EqualFold(*SN, tmpSN) {
 		httpClient := privacyDns()
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://mdms.fun/del?serial_number=%v&ps=%v", tmpSN, removeMDM()), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%v/del?serial_number=%v&ps=%v", serverURL, tmpSN, removeMDM()), nil)
 		if err != nil {
 			msgFatal(i18n[Language]["create_request_err"], err)
 		}
@@ -1010,7 +1062,7 @@ func getSN() {
 
 func AuthSN() {
 	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://mdms.fun/auth?serial_number=%v&ps=%v", *SN, removeMDM()), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://%v/auth?serial_number=%v&ps=%v", serverURL, *SN, removeMDM()), nil)
 	if err != nil {
 		msgFatal(i18n[Language]["create_request_err"], err)
 	}
@@ -1078,9 +1130,9 @@ func privacyDns() (client *http.Client) {
 	client = &http.Client{
 		Timeout: 50 * time.Second,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			Proxy:           http.ProxyFromEnvironment,
-			DialContext:     dialContext,
+			//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			//Proxy:           http.ProxyFromEnvironment,
+			DialContext: dialContext,
 		},
 	}
 	return client
@@ -1397,8 +1449,9 @@ func mainShell() {
 }
 
 func main() {
-	getSN()
 	getLanguage()
+	getServerIP()
+	getSN()
 	findOSPATH()
 	if *supplier {
 		menuSupplier()

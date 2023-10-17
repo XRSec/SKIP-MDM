@@ -275,7 +275,7 @@
                 "auth_error": "验证失败，请确认您有权限！",
                 "create_error": "创建授权失败，请联系管理员！",
                 "card_used": "卡密已被使用",
-                "net_error":"网络连接超时!",
+                "net_error": "网络连接超时!",
                 "time_error": "临时权限，使用权限超过一天!",
                 "auth_ok": "验证成功！",
                 "copy_ok": "复制成功: ",
@@ -301,7 +301,7 @@
                 "auth_error": "Authentication failed, please make sure you have permission!",
                 "create_error": "Failed to create authorization, please contact administrator！",
                 "card_used": "Card has been used",
-                "net_error":"Network connection timeout!",
+                "net_error": "Network connection timeout!",
                 "time_error": "Temporary permissions, use permissions for more than one day!",
                 "auth_ok": "Authentication succeeded!",
                 "copy_ok": "Copy Success: ",
@@ -349,6 +349,9 @@
         }
 
         function getLocation() {
+            if (isValidIP(document.location.hostname)) {
+                return document.location.hostname;
+            }
             let arr = document.location.hostname.split('.');
             if (arr.length === 2) {
                 return document.location.hostname;
@@ -357,6 +360,12 @@
                 return arr.slice(1).join('.')
             }
             return arr.slice(1).join('.')
+        }
+
+        function isValidIP(input) {
+            // 使用正则表达式验证是否为有效的 IP 地址
+            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            return ipRegex.test(input);
         }
 
         function copyText() {
@@ -471,7 +480,6 @@
                 locationResult = "mdms.fun";
             }
             document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + "/cli) -s";
-            // TODO 可选项 点击复制
 
             // 切换菜单
             menuItems.forEach(function (item, index) {
@@ -505,7 +513,7 @@
                 }
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `http://mdms.fun/auth?serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://${locationResult}/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -551,19 +559,19 @@
 
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `http://mdms.fun/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://${locationResult}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
-                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
+                    if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
                             let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
                             if (response?.code !== 200) {
-                                alert(response?.msg)
+                                alert(dictionary[document.documentElement.lang][response?.msg])
                             } else {
                                 alert(dictionary[document.documentElement.lang]["add_success"])
                                 document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
                                 showDocs(response?.doc ? response.doc : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
                             }
-                         } catch (error) {
+                        } catch (error) {
                             alert('JSON Parsing error:' + error)
                         }
                     } else {
@@ -575,7 +583,7 @@
             });
 
             let script = document.createElement("script");
-            script.src = "/marked.min.js";
+            script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
             document.body.appendChild(script);
         });
     </script>
