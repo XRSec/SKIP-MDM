@@ -373,8 +373,8 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				return
 			}
 		})
-		r.GET("/getCardList", func(c *gin.Context) {
-			c.File("html/cli.html")
+		r.GET("/cli", func(c *gin.Context) {
+			c.File("html/cli.sh")
 			return
 		})
 		r.GET("/getLogs", func(c *gin.Context) {
