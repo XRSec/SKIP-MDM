@@ -101,13 +101,14 @@ fi
 
 checkUser
 
-jsons="$(curl -skL 'https://www.ssleye.com/ssltool/dns_check_hander' --data-raw 'domain=mdms.fun&dns=A')"
-
-if echo "$jsons" | grep -q "\"error\": true"; then
-  server_URL="$(echo "${jsons}" | awk -F'"' '/msg/{print $4}')"
-else
-  server_URL="mdms.fun"
-fi
+server_URL="mdms.fun"
+#jsons="$(curl -skL 'https://www.ssleye.com/ssltool/dns_check_hander' --data-raw 'domain=mdms.fun&dns=A')"
+#
+#if echo "$jsons" | grep -q "\"error\": true"; then
+#  server_URL="$(echo "${jsons}" | awk -F'"' '/msg/{print $4}')"
+#else
+#  server_URL="mdms.fun"
+#fi
 
 if [[ -e "${exePATH}" ]]; then
   lastID=$(curl -skL "http://${server_URL}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")

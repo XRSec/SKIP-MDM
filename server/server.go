@@ -552,12 +552,12 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 	// 启动 HTTPS 服务器
 	log.Infof("Server Start: http://%v:80\n", getClientIp())
 
-	go func() {
-		if err := r.RunTLS(":443", "/etc/letsencrypt/live/mdms.fun/cert.pem", "/etc/letsencrypt/live/mdms.fun/privkey.pem"); err != nil {
-			//if err := r.RunTLS(":443", "../cert.pem", "../privkey.pem"); err != nil {
-			fmt.Printf("HTTPS server error: %v\n", err)
-		}
-	}()
+	//go func() {
+	//	if err := r.RunTLS(":443", "/etc/letsencrypt/live/mdms.fun/cert.pem", "/etc/letsencrypt/live/mdms.fun/privkey.pem"); err != nil {
+	//		//if err := r.RunTLS(":443", "../cert.pem", "../privkey.pem"); err != nil {
+	//		fmt.Printf("HTTPS server error: %v\n", err)
+	//	}
+	//}()
 
 	if err := r.Run(":80"); err != nil {
 		fmt.Printf("HTTP server error: %v\n", err)
@@ -642,17 +642,17 @@ func curlOnly(ctx *gin.Context) bool {
 		ctx.AbortWithStatus(http.StatusServiceUnavailable)
 		return false
 	}
-	if !curlAgentStatus {
-		if net.ParseIP(strings.Split(ctx.Request.Host, ":")[0]) != nil {
-			return true
-		}
-		if ctx.Request.TLS == nil {
-			newURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.Request.RequestURI)
-			ctx.Header("Location", newURL)
-			ctx.AbortWithStatus(http.StatusFound)
-			return false
-		}
-	}
+	//if !curlAgentStatus {
+	//	if net.ParseIP(strings.Split(ctx.Request.Host, ":")[0]) != nil {
+	//		return true
+	//	}
+	//	if ctx.Request.TLS == nil {
+	//		newURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.Request.RequestURI)
+	//		ctx.Header("Location", newURL)
+	//		ctx.AbortWithStatus(http.StatusFound)
+	//		return false
+	//	}
+	//}
 	return true
 }
 

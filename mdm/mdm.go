@@ -1241,6 +1241,7 @@ func menuNewUser() {
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "Picture")
 	execCmd(false, "security", "unlock-keychain", "-p", userPass)
 	execCmd(false, "security", "unlock-keychain", "-p", OsPath+"Library/Keychains/System.keychain")
+	menuTouchAppleDone()
 }
 
 func menuSupplier() {
@@ -1249,7 +1250,6 @@ func menuSupplier() {
 	disableMdm()
 	if User == "" && !OsType {
 		menuNewUser()
-		menuTouchAppleDone()
 	}
 	msgOk(i18n[Language]["supplier_mode_ok"])
 }
@@ -1450,7 +1450,7 @@ func mainShell() {
 
 func main() {
 	getLanguage()
-	getServerIP()
+	//getServerIP()
 	getSN()
 	findOSPATH()
 	if *supplier {
