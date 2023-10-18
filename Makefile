@@ -7,7 +7,7 @@ mdm.client:
 	@$(MAKE) uploadMDM
 	@$(MAKE) mdm.copyFile
 	@rm -rfv mdm-*-*
-	@if [ ! -e "html/cli.sh" ]; then mv html/cli.html html/cli.sh; fi
+	@#if [ ! -e "html/cli.sh" ]; then mv html/cli.html html/cli.sh; fi
 	@#gits by Makefile
 	@echo "all done"
 
@@ -18,7 +18,7 @@ mdm.serve:
 	@scp mdm-linux-amd64 mdm:/app/
 	@$(MAKE) mdm.copyFile
 	@rm -rfv mdm-*-*
-	@if [ ! -e "html/cli.sh" ]; then mv html/cli.html html/cli.sh; fi
+	@#if [ ! -e "html/cli.sh" ]; then mv html/cli.html html/cli.sh; fi
 	@ssh mdm "systemctl start mdm"
 
 getMD5:
@@ -31,7 +31,7 @@ mdm.copyFile:
 	@scp -r mdm:/app/server.db server/
 	@scp -r mdm:/app/logs server/
 	@# 推送文件
-	@if [ ! -e "html/cli.html" ]; then mv html/cli.sh html/cli.html; fi
+	@#if [ ! -e "html/cli.html" ]; then mv html/cli.sh html/cli.html; fi
 	@scp -r html mdm:/app/
 	@scp server/doc.md mdm:/app/
 	@scp server/mdm.service mdm:/app/

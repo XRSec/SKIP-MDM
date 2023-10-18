@@ -93,21 +93,17 @@ func main() {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
-		//c.Next()
-	})
-
-	r.Use(func(c *gin.Context) {
 		if !allowUA(c) {
 			return
 		}
 	})
-	r.GET("/", func(c *gin.Context) {
-		c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
-		c.File("html/index.html")
-		return
-	})
 
 	{
+		r.GET("/", func(c *gin.Context) {
+			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+			c.File("html/index.html")
+			return
+		})
 		icons := []string{"/favicon.ico", "/apple-touch-icon-120x120-precomposed.png", "/apple-touch-icon-120x120.png", "/apple-touch-icon-precomposed.png", "/apple-touch-icon.png"}
 		for _, path := range icons {
 			r.GET(path, func(c *gin.Context) {
@@ -297,6 +293,19 @@ func main() {
 				"serial_number": serialNumber,
 			})
 		})
+
+	}
+	{
+		r.Use(func(c *gin.Context) {
+			if !isCurl(c) {
+				c.AbortWithStatus(http.StatusServiceUnavailable)
+				return
+			}
+		})
+		r.GET("/cli", func(c *gin.Context) {
+			c.File("html/cli.sh")
+			return
+		})
 		r.GET("/getLatestID", func(c *gin.Context) {
 			var arch = c.Query("arch")
 			var msg = ""
@@ -372,10 +381,6 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
-		})
-		r.GET("/cli", func(c *gin.Context) {
-			c.File("html/cli.sh")
-			return
 		})
 		r.GET("/getLogs", func(c *gin.Context) {
 			ps := c.Query("ps")
