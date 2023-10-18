@@ -479,7 +479,7 @@
             if (!locationResult || locationResult.trim() === "") {
                 locationResult = "mdms.fun";
             }
-            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + "/cli) -s";
+            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + ") -s";
 
             // 切换菜单
             menuItems.forEach(function (item, index) {
@@ -513,7 +513,7 @@
                 }
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://${locationResult}/auth?serial_number=${serial_number}`, false);
+                xhr.open("GET", `http://${locationResult}/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -559,7 +559,7 @@
 
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://${locationResult}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.open("GET", `http://${locationResult}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {

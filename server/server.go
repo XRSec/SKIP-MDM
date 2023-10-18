@@ -39,7 +39,7 @@ type Cards struct {
 var (
 	err   error
 	db    *gorm.DB
-	shell = "bash <(curl mdms.fun/cli) -s"
+	shell = "bash <(curl mdms.fun) -s"
 	doc   = ""
 )
 
@@ -84,203 +84,44 @@ func main() {
 		Compress:   true,             // 是否压缩/归档旧日志文件
 	}
 
-	gin.SetMode(gin.ReleaseMode)
+	//gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(logFile))
-	{
-		r.Use(func(c *gin.Context) {
-			if c.Request.Method != http.MethodGet {
-				c.AbortWithStatus(http.StatusServiceUnavailable)
-				return
-			}
-			if !curlOnly(c) {
-				return
-			}
+	r.Use(func(c *gin.Context) {
+		if c.Request.Method != http.MethodGet {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
+		//c.Next()
+	})
 
-			handleRequest(c)
-			c.Next()
-		})
-		r.GET("/", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
+		if isCurl(c) {
+			c.File("html/cli.html")
+		} else {
 			c.File("html/index.html")
+		}
+		return
+	})
+	r.Use(func(c *gin.Context) {
+		if !allowUA(c) {
 			return
-		})
-		r.GET("/favicon.ico", func(c *gin.Context) {
-			c.Status(http.StatusOK)
-			return
-		})
-		r.GET("/apple-touch-icon-120x120-precomposed.png", func(c *gin.Context) {
-			c.Status(http.StatusOK)
-			return
-		})
-		r.GET("/apple-touch-icon-120x120.png", func(c *gin.Context) {
-			c.Status(http.StatusOK)
-			return
-		})
-		r.GET("/apple-touch-icon-precomposed.png", func(c *gin.Context) {
-			c.Status(http.StatusOK)
-			return
-		})
-		r.GET("/apple-touch-icon.png", func(c *gin.Context) {
-			c.Status(http.StatusOK)
-			return
-		})
-	}
+		}
+	})
+
 	{
-		r.GET("/cli", func(c *gin.Context) {
-			c.File("html/cli/index.html")
-			return
-		})
-		r.GET("/getLatestID", func(c *gin.Context) {
-			var arch = c.Query("arch")
-			var msg = ""
-			if arch == "" {
-				msg = "auth_error"
-				goto error
-			}
-
-			if msg, users, status := checkAuch(c); status {
-				fileMD5 := getMD5("mdm-darwin-" + arch)
-				c.String(http.StatusOK, fileMD5)
-				// 更新用户信息
-				users.IPAddress = c.ClientIP()
-				if db.Save(&users).Error != nil {
-					log.Errorf("Save Error: [%v]", err)
-				}
-				return
-			} else {
-				log.Errorln(msg)
-			}
-		error:
-			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": http.StatusBadRequest,
-				"msg":  msg,
+		icons := []string{"/favicon.ico", "/apple-touch-icon-120x120-precomposed.png", "/apple-touch-icon-120x120.png", "/apple-touch-icon-precomposed.png", "/apple-touch-icon.png"}
+		for _, path := range icons {
+			r.GET(path, func(c *gin.Context) {
+				c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+				c.Status(http.StatusOK)
 			})
-			return
-		})
-		r.GET("/getLatest", func(c *gin.Context) {
-			var arch = c.Query("arch")
-			var msg = ""
-			if arch == "" {
-				msg = "auth_error"
-				goto error
-			}
-
-			if msg, users, status := checkAuch(c); status {
-				c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
-				//c.File("mdm" + "-darwin-" + arch)
-				// 更新用户信息
-				users.IPAddress = c.ClientIP()
-				if err := db.Save(&users).Error; err != nil {
-					log.Errorf("Save Error: [%v]", err)
-				}
-				return
-			} else {
-				log.Errorln(msg)
-			}
-		error:
-			log.Errorln(msg)
-			c.String(http.StatusBadRequest, `# set color
-export CLICOLOR=1
-export LSCOLORS=GxFxCxDxBxegedabagaced
-COL_NC='\033[0m' # No Color
-OVER="\\r\\033[K"
-
-msg_err() {
-    printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
-    exit 1
-}
-
-msg_ok() {
-    printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
-}
-
-msg_err "验证失败, 请确认您是否拥有权限!"`)
-			return
-		})
-		r.GET("/getLogs", func(c *gin.Context) {
-			ps := c.Query("ps")
-			var msg = ""
-			if ps == "" || !decodeHash("", ps) {
-				log.Infoln("ps:", ps)
-				msg = fmt.Sprintf("Auth Error: [%v]", nil)
-				goto error
-			} else {
-				filePath := "logs/app.log" // 替换为你要读取的文件路径
-
-				file, err := os.Open(filePath)
-				if err != nil {
-					msg = fmt.Sprintf("Open File Error: [%v]", err)
-					goto error
-				}
-				defer func(file *os.File) {
-					err := file.Close()
-					if err != nil {
-						log.Errorf("Close File Error: [%v]", err)
-					}
-				}(file)
-
-				var lines []string
-				scanner := bufio.NewScanner(file)
-				for scanner.Scan() {
-					lines = append(lines, scanner.Text())
-				}
-				if err := scanner.Err(); err != nil {
-					msg = fmt.Sprintf("Scan File Error: [%v]", err)
-					goto error
-				}
-
-				totalLines := len(lines)
-				startIndex := 0
-				if totalLines > 30 {
-					startIndex = totalLines - 30
-				}
-				var logs string
-				for i := startIndex; i < totalLines; i++ {
-					logs += lines[i] + "\n"
-				}
-				c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
-				c.String(http.StatusOK, logs)
-				return
-			}
-		error:
-			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": http.StatusBadRequest,
-				"msg":  msg,
-			})
-		})
-		r.GET("/getCard", func(c *gin.Context) {
-			var cardID = c.Query("card_id")
-			var ps = c.Query("ps")
-			var msg = ""
-			var cards Cards
-			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
-			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
-				msg = "auth_error"
-				goto error
-			}
-
-			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
-				// 不存在则创建
-				msg = "card_error"
-				goto error
-			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"code": http.StatusOK,
-					"card": cards,
-				})
-				return
-			}
-		error:
-			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": http.StatusBadRequest,
-				"msg":  msg,
-			})
-		})
+		}
 	}
+
+	r.Use(func(c *gin.Context) { c.Header("Cache-Control", "no-cache") })
+
 	{
 		r.GET("/add", func(c *gin.Context) {
 			//handleRequest(c)
@@ -405,6 +246,255 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 			})
 			return
 		})
+		r.GET("/auth", func(c *gin.Context) {
+			//handleRequest(c)
+			if msg, users, status := checkAuch(c); !status {
+				log.Errorln(msg)
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":  http.StatusBadRequest,
+					"users": users,
+					"msg":   msg,
+				})
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"code":  http.StatusOK,
+					"users": users,
+					"shell": shell,
+					"doc":   doc,
+				})
+			}
+		})
+		r.GET("/del", func(c *gin.Context) {
+			var serialNumber = strings.ToLower(c.Query("serial_number"))
+			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
+			ps := c.Query("ps")
+			var auth = false
+			var msg = ""
+			var users Users
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+			if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
+				msg = fmt.Sprintf("Auth Error: [%v]", err)
+				goto error
+			}
+			// 查询用户信息
+			if db.First(&users, "serial_number = ?", serialNumber).Error == nil {
+				auth = true
+			}
+			if db.Unscoped().Delete(&users, "serial_number = ?", serialNumber).Error != nil {
+				if auth {
+					goto error
+				}
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code":          http.StatusOK,
+				"auth":          auth,
+				"serial_number": serialNumber,
+			})
+			return
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":          http.StatusBadRequest,
+				"msg":           msg,
+				"serial_number": serialNumber,
+			})
+		})
+		r.GET("/getLatestID", func(c *gin.Context) {
+			var arch = c.Query("arch")
+			var msg = ""
+			if arch == "" {
+				msg = "auth_error"
+				goto error
+			}
+
+			if msg, users, status := checkAuch(c); status {
+				fileMD5 := getMD5("mdm-darwin-" + arch)
+				c.String(http.StatusOK, fileMD5)
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if db.Save(&users).Error != nil {
+					log.Errorf("Save Error: [%v]", err)
+				}
+				return
+			} else {
+				log.Errorln(msg)
+			}
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+			return
+		})
+		r.GET("/getLatest", func(c *gin.Context) {
+			var arch = c.Query("arch")
+			var msg = ""
+			if arch == "" {
+				msg = "auth_error"
+				goto error
+			}
+
+			if msg, users, status := checkAuch(c); status {
+				c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
+				//c.File("mdm" + "-darwin-" + arch)
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if err := db.Save(&users).Error; err != nil {
+					log.Errorf("Save Error: [%v]", err)
+				}
+				return
+			} else {
+				log.Errorln(msg)
+			}
+		error:
+			log.Errorln(msg)
+			c.String(http.StatusBadRequest, `# set color
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+COL_NC='\033[0m' # No Color
+OVER="\\r\\033[K"
+
+msg_err() {
+    printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
+    exit 1
+}
+
+msg_ok() {
+    printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
+}
+
+msg_err "验证失败, 请确认您是否拥有权限!"`)
+			return
+		})
+	}
+	{
+		r.Use(func(c *gin.Context) {
+			if isCurl(c) {
+				c.AbortWithStatus(http.StatusServiceUnavailable)
+				return
+			}
+		})
+		r.GET("/getLogs", func(c *gin.Context) {
+			ps := c.Query("ps")
+			var msg = ""
+			if ps == "" || !decodeHash("", ps) {
+				log.Infoln("ps:", ps)
+				msg = fmt.Sprintf("Auth Error: [%v]", nil)
+				goto error
+			} else {
+				filePath := "logs/app.log" // 替换为你要读取的文件路径
+
+				file, err := os.Open(filePath)
+				if err != nil {
+					msg = fmt.Sprintf("Open File Error: [%v]", err)
+					goto error
+				}
+				defer func(file *os.File) {
+					err := file.Close()
+					if err != nil {
+						log.Errorf("Close File Error: [%v]", err)
+					}
+				}(file)
+
+				var lines []string
+				scanner := bufio.NewScanner(file)
+				for scanner.Scan() {
+					lines = append(lines, scanner.Text())
+				}
+				if err := scanner.Err(); err != nil {
+					msg = fmt.Sprintf("Scan File Error: [%v]", err)
+					goto error
+				}
+
+				totalLines := len(lines)
+				startIndex := 0
+				if totalLines > 30 {
+					startIndex = totalLines - 30
+				}
+				var logs string
+				for i := startIndex; i < totalLines; i++ {
+					logs += lines[i] + "\n"
+				}
+				c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
+				c.String(http.StatusOK, logs)
+				return
+			}
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
+		r.GET("/getCard", func(c *gin.Context) {
+			var cardID = c.Query("card_id")
+			var ps = c.Query("ps")
+			var msg = ""
+			var cards Cards
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
+				msg = "auth_error"
+				goto error
+			}
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				goto error
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"code": http.StatusOK,
+					"card": cards,
+				})
+				return
+			}
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
+		r.GET("/cardDel", func(c *gin.Context) {
+			var cardID = strings.ToLower(c.Query("card_id"))
+			var ps = c.Query("ps")
+			var msg = ""
+			var cards Cards
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
+				msg = "auth_error"
+				goto error
+			}
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				goto error
+			} else {
+				if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is not ''", cardID).Error; err == nil {
+					cards.SerialNumber = ""
+					if err = db.Save(&cards).Error; err != nil {
+						msg = fmt.Sprintf("Save cards Error: [%v]", err)
+						goto error
+					}
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"card": cards,
+			})
+			return
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+				"card": cards,
+			})
+			return
+		})
 		r.GET("/cardUpdate", func(c *gin.Context) {
 			var cardID = strings.ToLower(c.Query("card_id"))
 			var password = strings.ToLower(c.Query("password"))
@@ -450,98 +540,6 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				"msg":  msg,
 				"card": cards,
 			})
-		})
-		r.GET("/del", func(c *gin.Context) {
-			var serialNumber = strings.ToLower(c.Query("serial_number"))
-			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
-			ps := c.Query("ps")
-			var auth = false
-			var msg = ""
-			var users Users
-			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-			if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
-				msg = fmt.Sprintf("Auth Error: [%v]", err)
-				goto error
-			}
-			// 查询用户信息
-			if db.First(&users, "serial_number = ?", serialNumber).Error == nil {
-				auth = true
-			}
-			if db.Unscoped().Delete(&users, "serial_number = ?", serialNumber).Error != nil {
-				if auth {
-					goto error
-				}
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"code":          http.StatusOK,
-				"auth":          auth,
-				"serial_number": serialNumber,
-			})
-			return
-		error:
-			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code":          http.StatusBadRequest,
-				"msg":           msg,
-				"serial_number": serialNumber,
-			})
-		})
-		r.GET("/cardDel", func(c *gin.Context) {
-			var cardID = strings.ToLower(c.Query("card_id"))
-			var ps = c.Query("ps")
-			var msg = ""
-			var cards Cards
-			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
-			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
-				msg = "auth_error"
-				goto error
-			}
-
-			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
-				// 不存在则创建
-				msg = "card_error"
-				goto error
-			} else {
-				if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(serial_number) is not ''", cardID).Error; err == nil {
-					cards.SerialNumber = ""
-					if err = db.Save(&cards).Error; err != nil {
-						msg = fmt.Sprintf("Save cards Error: [%v]", err)
-						goto error
-					}
-				}
-			}
-			c.JSON(http.StatusOK, gin.H{
-				"code": http.StatusOK,
-				"card": cards,
-			})
-			return
-		error:
-			log.Errorln(msg)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": http.StatusBadRequest,
-				"msg":  msg,
-				"card": cards,
-			})
-			return
-		})
-		r.GET("/auth", func(c *gin.Context) {
-			//handleRequest(c)
-			if msg, users, status := checkAuch(c); !status {
-				log.Errorln(msg)
-				c.JSON(http.StatusBadRequest, gin.H{
-					"code":  http.StatusBadRequest,
-					"users": users,
-					"msg":   msg,
-				})
-			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"code":  http.StatusOK,
-					"users": users,
-					"shell": shell,
-					"doc":   doc,
-				})
-			}
 		})
 	}
 	r.NoRoute(func(c *gin.Context) {
@@ -632,26 +630,27 @@ func handleRequest(c *gin.Context) {
 	c.Writer.Header().Set("Vary", "Origin")
 }
 
-func curlOnly(ctx *gin.Context) bool {
+func isCurl(ctx *gin.Context) bool {
 	tmpHeader := strings.ToLower(ctx.GetHeader("User-Agent"))
-	curlAgentStatus := strings.Contains(tmpHeader, "curl")
+	return strings.Contains(tmpHeader, "curl")
+}
+func allowUA(ctx *gin.Context) bool {
+	tmpHeader := strings.ToLower(ctx.GetHeader("User-Agent"))
 	shortcutAgentStatus := strings.Contains(tmpHeader, "shortcut")
 	phone := strings.Contains(tmpHeader, "android")
 	mac := strings.Contains(tmpHeader, "mac") && strings.Contains(tmpHeader, "safari")
-	if !(curlAgentStatus || shortcutAgentStatus || phone || mac) {
+	if !(shortcutAgentStatus || phone || mac || isCurl(ctx)) {
 		ctx.AbortWithStatus(http.StatusServiceUnavailable)
 		return false
 	}
-	//if !curlAgentStatus {
-	//	if net.ParseIP(strings.Split(ctx.Request.Host, ":")[0]) != nil {
-	//		return true
-	//	}
-	//	if ctx.Request.TLS == nil {
-	//		newURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.Request.RequestURI)
-	//		ctx.Header("Location", newURL)
-	//		ctx.AbortWithStatus(http.StatusFound)
-	//		return false
-	//	}
+	//if net.ParseIP(strings.Split(ctx.Request.Host, ":")[0]) != nil {
+	//	return true
+	//}
+	//if ctx.Request.TLS == nil {
+	//	newURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.Request.RequestURI)
+	//	ctx.Header("Location", newURL)
+	//	ctx.AbortWithStatus(http.StatusFound)
+	//	return false
 	//}
 	return true
 }
