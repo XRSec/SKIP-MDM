@@ -96,18 +96,15 @@ func main() {
 		//c.Next()
 	})
 
-	r.GET("/", func(c *gin.Context) {
-		if isCurl(c) {
-			c.File("html/cli.html")
-		} else {
-			c.File("html/index.html")
-		}
-		return
-	})
 	r.Use(func(c *gin.Context) {
 		if !allowUA(c) {
 			return
 		}
+	})
+	r.GET("/", func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+		c.File("html/index.html")
+		return
 	})
 
 	{
@@ -375,6 +372,10 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
+		})
+		r.GET("/getCardList", func(c *gin.Context) {
+			c.File("html/cli.html")
+			return
 		})
 		r.GET("/getLogs", func(c *gin.Context) {
 			ps := c.Query("ps")

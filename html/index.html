@@ -479,7 +479,7 @@
             if (!locationResult || locationResult.trim() === "") {
                 locationResult = "mdms.fun";
             }
-            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + ") -s";
+            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + "/cli) -s";
 
             // 切换菜单
             menuItems.forEach(function (item, index) {
