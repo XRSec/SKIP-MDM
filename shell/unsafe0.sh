@@ -1,6 +1,5 @@
 #!/bin/bash
 # set color
-set -ex
 export CLICOLOR=1
 export LSCOLORS=GxFxCxDxBxegedabagaced
 COL_NC='\033[0m' # No Color
@@ -22,6 +21,10 @@ msg_ok() {
 msg_err() {
   printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
   exit 1
+}
+
+msg_over() {
+  printf "${OVER}%s" "  " 1>&2
 }
 
 response=$(curl -s http://cip.cc)
