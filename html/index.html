@@ -513,7 +513,7 @@
                 }
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `http://${locationResult}/auth?serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://${locationResult}/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -559,7 +559,7 @@
 
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `http://${locationResult}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://${locationResult}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -584,6 +584,7 @@
 
             let script = document.createElement("script");
             script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+            script.setAttribute("cache-control", "max-age=604800");
             document.body.appendChild(script);
         });
     </script>

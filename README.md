@@ -21,7 +21,7 @@ gzexe *.sh
 | /cli         |                                                 | 验证程序         |
 | /getLatestID | ?serial_number=序列号                              | 获取最新版本程序的哈希值 |
 | /getLatest   | ?serial_number=序列号                              | 获取最新版本程序     |
-| /getLogs     | ?serial_number=序列号                              | 获取日志         |
+| /getLogs     | ?serial_number=序列号&q=字符串                        | 获取日志         |
 | /add         | ?serial_number=序列号&card_id=卡号&password=密码       | 添加授权用户       |
 | /add         | ?serial_number=序列号&ps=管理员密码                     | 添加授权用户       |
 | /getCard     | ?card_id=card_id&ps=管理员密码                       | 获取卡密信息       |

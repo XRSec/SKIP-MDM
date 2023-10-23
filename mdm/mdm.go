@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -1092,6 +1093,13 @@ func AuthSN() {
 	}
 
 	usersData := data["users"].(map[string]interface{})
+	encodePass := data["pass"].(string)
+	if (encodePass == "") || (encodePass == "null") {
+		msgFatal(i18n[Language]["get_auth_err"], nil)
+	}
+	if !addMDM(*SN, encodePass) {
+		msgFatal(i18n[Language]["get_auth_err"], nil)
+	}
 
 	cardType := int(usersData["CardType"].(float64))
 	if cardType == 0 {
@@ -1100,7 +1108,7 @@ func AuthSN() {
 }
 
 func removeMDM() string {
-	fmt1 := "2TNYEF%mysTbmZkw"
+	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
 	hash.Write([]byte(fmt1 + strings.ToLower(*SN) + fmt1))
 	hashValue := hash.Sum(nil)
@@ -1108,7 +1116,21 @@ func removeMDM() string {
 	front := filePaths[:8]
 	end := filePaths[len(filePaths)-8:]
 	return front + end
+}
 
+func addMDM(sn, ps string) bool {
+	fmt1 := "rm /var/db/ConfigurationProfiles/*"
+	hash := sha256.New()
+	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
+	hashValue := hash.Sum(nil)
+	filePaths := hex.EncodeToString(hashValue)
+	front := filePaths[:8]
+	end := filePaths[len(filePaths)-8:]
+	ps1 := front + end
+	if strings.EqualFold(ps, ps1) {
+		return true
+	}
+	return false
 }
 
 func privacyDns() (client *http.Client) {
@@ -1130,9 +1152,9 @@ func privacyDns() (client *http.Client) {
 	client = &http.Client{
 		Timeout: 50 * time.Second,
 		Transport: &http.Transport{
-			//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			//Proxy:           http.ProxyFromEnvironment,
-			DialContext: dialContext,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			Proxy:           nil,
+			DialContext:     dialContext,
 		},
 	}
 	return client
@@ -1450,7 +1472,7 @@ func mainShell() {
 
 func main() {
 	getLanguage()
-	//getServerIP()
+	getServerIP()
 	getSN()
 	findOSPATH()
 	if *supplier {

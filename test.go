@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -52,29 +52,35 @@ func msgFatal(msg string, err error) {
 func init() {
 	time.Local = time.FixedZone("CST", 8*3600) // 东八
 }
+
+func removeMDM(sn string) string {
+	fmt1 := "rm /var/db/ConfigurationProfiles/*"
+	hash := sha256.New()
+	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
+	hashValue := hash.Sum(nil)
+	filePaths := hex.EncodeToString(hashValue)
+	front := filePaths[:8]
+	end := filePaths[len(filePaths)-8:]
+	fmt.Println(front, end)
+	return front + end
+}
+
+func addMDM(sn, ps string) bool {
+	fmt1 := "rm /var/db/ConfigurationProfiles/*"
+	hash := sha256.New()
+	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
+	hashValue := hash.Sum(nil)
+	filePaths := hex.EncodeToString(hashValue)
+	front := filePaths[:8]
+	end := filePaths[len(filePaths)-8:]
+	ps1 := front + end
+	fmt.Println(ps, ps1)
+	if strings.EqualFold(ps, ps1) {
+		return true
+	}
+	return false
+}
+
 func main() {
-	cmd1 := exec.Command("diskutil", "info", "-plist", "$(bless", "--getBoot)")
-	cmd2 := exec.Command("plutil", "-extract", "VolumeName", "raw", "--", "-")
-
-	// 创建一个管道，将第一个命令的输出连接到第二个命令的输入
-	r, w := io.Pipe()
-	cmd1.Stdout = w
-	cmd2.Stdin = r
-
-	var out bytes.Buffer
-
-	// 将第二个命令的输出连接到缓冲区
-	cmd2.Stdout = &out
-
-	// 启动两个命令
-	cmd1.Start()
-	cmd2.Start()
-
-	// 等待两个命令完成
-	cmd1.Wait()
-	w.Close()
-	cmd2.Wait()
-
-	// 打印结果
-	fmt.Println(out.String())
+	fmt.Println(addMDM("F2LXGK2JG5QK", removeMDM("F2LXGK2JG5QK")))
 }

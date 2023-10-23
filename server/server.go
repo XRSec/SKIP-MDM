@@ -90,11 +90,18 @@ func main() {
 	r.Use(gin.LoggerWithWriter(logFile))
 	r.Use(func(c *gin.Context) {
 		if c.Request.Method != http.MethodGet {
+			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
 		if !allowUA(c) {
 			return
+		}
+		handleRequest(c)
+		if net.ParseIP(strings.Split(c.Request.Host, ":")[0]) == nil && c.Request.TLS == nil && !isCurl(c) {
+			newURL := fmt.Sprintf("https://%s%s", c.Request.Host, c.Request.RequestURI)
+			c.Header("Location", newURL)
+			c.AbortWithStatus(http.StatusFound)
 		}
 	})
 
@@ -112,24 +119,22 @@ func main() {
 			})
 		}
 	}
-
 	r.Use(func(c *gin.Context) { c.Header("Cache-Control", "no-cache") })
-
 	{
 		r.GET("/add", func(c *gin.Context) {
 			//handleRequest(c)
-			var serialNumber = strings.ToLower(c.Query("serial_number"))
-			var cardId = strings.ToLower(c.Query("card_id"))
-			var password = strings.ToLower(c.Query("password"))
-			var ps = c.Query("ps")
+			serialNumber := strings.ToLower(c.Query("serial_number"))
+			cardId := strings.ToLower(c.Query("card_id"))
+			password := strings.ToLower(c.Query("password"))
+			ps := c.Query("ps")
 			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
 			cardId = strings.Replace(cardId, " ", "", -1)             // 去除空格
 			password = strings.Replace(password, " ", "", -1)         // 去除空格
-			var auth = false
-			var msg = ""
+			auth := false
+			msg := ""
 			var users Users
 			var cards Cards
-			var cardType = 0
+			cardType := 0
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardId)
 			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
@@ -249,20 +254,22 @@ func main() {
 					"msg":   msg,
 				})
 			} else {
+				encodeHashKey := encodeHash(users.SerialNumber)
 				c.JSON(http.StatusOK, gin.H{
 					"code":  http.StatusOK,
 					"users": users,
 					"shell": shell,
 					"doc":   doc,
+					"pass":  encodeHashKey,
 				})
 			}
 		})
 		r.GET("/del", func(c *gin.Context) {
-			var serialNumber = strings.ToLower(c.Query("serial_number"))
+			serialNumber := strings.ToLower(c.Query("serial_number"))
 			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
 			ps := c.Query("ps")
-			var auth = false
-			var msg = ""
+			auth := false
+			msg := ""
 			var users Users
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 			if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
@@ -293,22 +300,24 @@ func main() {
 				"serial_number": serialNumber,
 			})
 		})
-
 	}
 	{
-		r.Use(func(c *gin.Context) {
+
+		isCurlR := r.Group("/").Use(func(c *gin.Context) {
 			if !isCurl(c) {
+				c.Header("Cache-Control", "no-cache")
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
 		})
-		r.GET("/cli", func(c *gin.Context) {
+		isCurlR.GET("/cli", func(c *gin.Context) {
+			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
 			c.File("html/cli.sh")
 			return
 		})
-		r.GET("/getLatestID", func(c *gin.Context) {
-			var arch = c.Query("arch")
-			var msg = ""
+		isCurlR.GET("/getLatestID", func(c *gin.Context) {
+			arch := c.Query("arch")
+			msg := ""
 			if arch == "" {
 				msg = "auth_error"
 				goto error
@@ -334,9 +343,9 @@ func main() {
 			})
 			return
 		})
-		r.GET("/getLatest", func(c *gin.Context) {
-			var arch = c.Query("arch")
-			var msg = ""
+		isCurlR.GET("/getLatest", func(c *gin.Context) {
+			arch := c.Query("arch")
+			msg := ""
 			if arch == "" {
 				msg = "auth_error"
 				goto error
@@ -376,38 +385,45 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 		})
 	}
 	{
-		r.Use(func(c *gin.Context) {
+		isNotCurlR := r.Group("/").Use(func(c *gin.Context) {
 			if isCurl(c) {
+				c.Header("Cache-Control", "no-cache")
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
 		})
-		r.GET("/getLogs", func(c *gin.Context) {
+		isNotCurlR.GET("/getLogs", func(c *gin.Context) {
 			ps := c.Query("ps")
-			var msg = ""
+			query := strings.ToLower(c.Query("q"))
+			msg := ""
+			var logs string
+			filePath := "logs/app.log" // 替换为你要读取的文件路径
 			if ps == "" || !decodeHash("", ps) {
 				log.Infoln("ps:", ps)
 				msg = fmt.Sprintf("Auth Error: [%v]", nil)
 				goto error
 			} else {
-				filePath := "logs/app.log" // 替换为你要读取的文件路径
-
 				file, err := os.Open(filePath)
-				if err != nil {
-					msg = fmt.Sprintf("Open File Error: [%v]", err)
-					goto error
-				}
 				defer func(file *os.File) {
 					err := file.Close()
 					if err != nil {
 						log.Errorf("Close File Error: [%v]", err)
 					}
 				}(file)
-
+				if err != nil {
+					msg = fmt.Sprintf("Open File Error: [%v]", err)
+					goto error
+				}
 				var lines []string
 				scanner := bufio.NewScanner(file)
 				for scanner.Scan() {
-					lines = append(lines, scanner.Text())
+					if query != "" {
+						if strings.Contains(strings.ToLower(scanner.Text()), query) {
+							lines = append(lines, scanner.Text())
+						}
+					} else {
+						lines = append(lines, scanner.Text())
+					}
 				}
 				if err := scanner.Err(); err != nil {
 					msg = fmt.Sprintf("Scan File Error: [%v]", err)
@@ -419,14 +435,15 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				if totalLines > 30 {
 					startIndex = totalLines - 30
 				}
-				var logs string
+
 				for i := startIndex; i < totalLines; i++ {
 					logs += lines[i] + "\n"
 				}
-				c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
-				c.String(http.StatusOK, logs)
-				return
 			}
+
+			c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
+			c.String(http.StatusOK, logs)
+			return
 		error:
 			log.Errorln(msg)
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -434,10 +451,10 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				"msg":  msg,
 			})
 		})
-		r.GET("/getCard", func(c *gin.Context) {
-			var cardID = c.Query("card_id")
-			var ps = c.Query("ps")
-			var msg = ""
+		isNotCurlR.GET("/getCard", func(c *gin.Context) {
+			cardID := c.Query("card_id")
+			ps := c.Query("ps")
+			msg := ""
 			var cards Cards
 			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
 			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
@@ -463,10 +480,10 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				"msg":  msg,
 			})
 		})
-		r.GET("/cardDel", func(c *gin.Context) {
-			var cardID = strings.ToLower(c.Query("card_id"))
-			var ps = c.Query("ps")
-			var msg = ""
+		isNotCurlR.GET("/cardDel", func(c *gin.Context) {
+			cardID := strings.ToLower(c.Query("card_id"))
+			ps := c.Query("ps")
+			msg := ""
 			var cards Cards
 			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
 			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
@@ -501,11 +518,11 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 			})
 			return
 		})
-		r.GET("/cardUpdate", func(c *gin.Context) {
-			var cardID = strings.ToLower(c.Query("card_id"))
-			var password = strings.ToLower(c.Query("password"))
+		isNotCurlR.GET("/cardUpdate", func(c *gin.Context) {
+			cardID := strings.ToLower(c.Query("card_id"))
+			password := strings.ToLower(c.Query("password"))
 			ps := c.Query("ps")
-			var msg = ""
+			msg := ""
 			var cards Cards
 			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
 			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
@@ -549,6 +566,7 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 		})
 	}
 	r.NoRoute(func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
 		c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	})
@@ -556,12 +574,12 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 	// 启动 HTTPS 服务器
 	log.Infof("Server Start: http://%v:80\n", getClientIp())
 
-	//go func() {
-	//	if err := r.RunTLS(":443", "/etc/letsencrypt/live/mdms.fun/cert.pem", "/etc/letsencrypt/live/mdms.fun/privkey.pem"); err != nil {
-	//		//if err := r.RunTLS(":443", "../cert.pem", "../privkey.pem"); err != nil {
-	//		fmt.Printf("HTTPS server error: %v\n", err)
-	//	}
-	//}()
+	go func() {
+		if err := r.RunTLS(":443", "/etc/letsencrypt/live/mdms.fun/cert.pem", "/etc/letsencrypt/live/mdms.fun/privkey.pem"); err != nil {
+			//if err := r.RunTLS(":443", "../cert.pem", "../privkey.pem"); err != nil {
+			fmt.Printf("HTTPS server error: %v\n", err)
+		}
+	}()
 
 	if err := r.Run(":80"); err != nil {
 		fmt.Printf("HTTP server error: %v\n", err)
@@ -569,7 +587,7 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 }
 
 func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
-	var serialNumber = strings.ToLower(c.Query("serial_number"))
+	serialNumber := strings.ToLower(c.Query("serial_number"))
 	compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 	if serialNumber == "" || err != nil || !compile {
 		msg = "auth_error"
@@ -605,12 +623,14 @@ func handleRequest(c *gin.Context) {
 	} else if referer != "" {
 		urlString = referer
 	} else {
+		//c.Header("Cache-Control", "no-cache")
 		//c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
 
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
+		//c.Header("Cache-Control", "no-cache")
 		//c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
@@ -620,6 +640,7 @@ func handleRequest(c *gin.Context) {
 	} else if strings.HasPrefix(urlString, "https://") {
 		urlString = "https://" + parsedURL.Hostname()
 	} else {
+		//c.Header("Cache-Control", "no-cache")
 		//c.AbortWithStatus(http.StatusServiceUnavailable)
 		return
 	}
@@ -628,7 +649,7 @@ func handleRequest(c *gin.Context) {
 		urlString += ":" + port
 	}
 
-	if parsedURL.Hostname() == "43.133.21.10" {
+	if parsedURL.Hostname() == "43.153.185.122" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
 	} else if parsedURL.Hostname() == "localhost" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:63342")
@@ -643,21 +664,14 @@ func isCurl(ctx *gin.Context) bool {
 func allowUA(ctx *gin.Context) bool {
 	tmpHeader := strings.ToLower(ctx.GetHeader("User-Agent"))
 	shortcutAgentStatus := strings.Contains(tmpHeader, "shortcut")
-	phone := strings.Contains(tmpHeader, "android")
+	android := strings.Contains(tmpHeader, "mobile") && strings.Contains(tmpHeader, "safari")
 	mac := strings.Contains(tmpHeader, "mac") && strings.Contains(tmpHeader, "safari")
-	if !(shortcutAgentStatus || phone || mac || isCurl(ctx)) {
+	//iphone := strings.Contains(tmpHeader, "iphone") && strings.Contains(tmpHeader, "mobile")
+	if !(shortcutAgentStatus || android || mac || isCurl(ctx)) {
+		ctx.Header("Cache-Control", "no-cache")
 		ctx.AbortWithStatus(http.StatusServiceUnavailable)
 		return false
 	}
-	//if net.ParseIP(strings.Split(ctx.Request.Host, ":")[0]) != nil {
-	//	return true
-	//}
-	//if ctx.Request.TLS == nil {
-	//	newURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.Request.RequestURI)
-	//	ctx.Header("Location", newURL)
-	//	ctx.AbortWithStatus(http.StatusFound)
-	//	return false
-	//}
 	return true
 }
 
@@ -710,11 +724,22 @@ func calculateFileMD5(filePath string) (string, error) {
 	return md5Hash, nil
 }
 
+func encodeHash(SN string) string {
+	fmt1 := "rm /var/db/ConfigurationProfiles/*"
+	hash := sha256.New()
+	hash.Write([]byte(fmt1 + strings.ToLower(SN) + fmt1))
+	hashValue := hash.Sum(nil)
+	filePaths := hex.EncodeToString(hashValue)
+	front := filePaths[:8]
+	end := filePaths[len(filePaths)-8:]
+	return front + end
+}
+
 func decodeHash(sn, ps string) bool {
 	if ps == "qXN4C6ACpwcz94R2" {
 		return true
 	}
-	fmt1 := "qXN4C6ACpwcz94R2"
+	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
 	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
 	hashValue := hash.Sum(nil)
