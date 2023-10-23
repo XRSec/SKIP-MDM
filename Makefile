@@ -1,4 +1,5 @@
 mdm.client:
+	@if docker info >/dev/null 2>&1; then open /Applications/Docker.app; fi
 	@$(MAKE) deleteDsStore
 	@ssh mdm "date" || exit 1
 	@rm -rfv server/server.db
@@ -12,6 +13,7 @@ mdm.client:
 	@echo "all done"
 
 mdm.serve:
+	@if docker info >/dev/null 2>&1; then open /Applications/Docker.app; fi
 	@$(MAKE) deleteDsStore
 	@$(MAKE) buildServer
 	@ssh mdm "systemctl stop mdm" || exit 1
@@ -31,7 +33,6 @@ mdm.copyFile:
 	@scp -r mdm:/app/server.db server/
 	@scp -r mdm:/app/logs server/
 	@# 推送文件
-	@#if [ ! -e "html/cli.html" ]; then mv html/cli.sh html/cli.html; fi
 	@bash-obfuscate shell/cli.sh -o html/cli.sh
 	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
 	@bash-obfuscate shell/unsafe0.sh -o html/unsafe0.sh

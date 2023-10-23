@@ -119,7 +119,6 @@ var i18n = map[string]map[string]string{
 		"delete_mdm_file_err":     "Failed to delete supervision file, please restart and enter recovery mode to disable supervision",
 		"delete_mdm_database_err": "Failed to delete supervision database, please restart and enter recovery mode to disable supervision",
 		"get_user_info_err":       "Unable to get user information",
-		"in_put_y":                "Please enter y and press Enter to remove all profiles",
 		"disabled_mdm_ok":         "Deactivation of regulatory procedures completed",
 		"reboot_by_disable":       "Please restart the computer. Run the program again in desktop mode and choose to disable supervision (more people choose)",
 
@@ -298,7 +297,6 @@ var i18n = map[string]map[string]string{
 		"delete_mdm_file_err":     "删除监管文件失败, 请重启进入恢复模式停用监管",
 		"delete_mdm_database_err": "删除监管数据库失败, 请重启进入恢复模式停用监管",
 		"get_user_info_err":       "无法获取用户信息",
-		"in_put_y":                "请输入 y 再按回车 以移除全部描述文件",
 		"disabled_mdm_ok":         "监管程序停用完成",
 		"reboot_by_disable":       "请重启电脑. 在桌面模式再次运行程序, 选择 停用监管(更多人选择)",
 
@@ -819,8 +817,7 @@ func disableMdm() {
 
 		execCmd(false, "dscacheutil", "-flushcache")
 		execCmd(false, "killall", "-HUP", "mDNSResponder")
-		msgInfo(i18n[Language]["in_put_y"])
-		execCmd(false, "profiles", "remove", "-all") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
+		execCmd(false, "profiles", "remove", "-all", "-f") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
 		msgLast(1)
 		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient")
 		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient.daemon")

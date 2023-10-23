@@ -41,6 +41,9 @@ dict[3]="Couldn't find your serial number. Please contact the management updater
 dict[4]="获取序列号失败，请联系管理更新程序!"
 dict[5]="Your serial number: "
 dict[6]="您的序列号: "
+dict[7]="Server exception! Please contact the administrator"
+dict[8]="服务器异常! 请联系管理员"
+
 jsons="$(curl -skL 'https://www.ssleye.com/ssltool/dns_check_hander' --data-raw 'domain=mdms.fun&dns=A')"
 
 if echo "$jsons" | grep -q "\"error\": true"; then
@@ -52,9 +55,9 @@ fi
 msg_info "${dict[$language + 1]}"
 serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
 if [ -z "${serial_number}" ]; then
-	msg_err "${dict[$language + 3]}"
-	exit 1
+  msg_err "${dict[$language + 3]}"
+  exit 1
 fi
 msg_ok "${dict[$language + 5]}${serial_number}"
 
-bash <(curl -L "${server_URL}/unsafe?serial_number=${serial_number}")
+bash <(curl -skL "${server_URL}/unsafe?serial_number=${serial_number}") || msg_err "${dict[$language + 7]}"

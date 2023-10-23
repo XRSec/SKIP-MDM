@@ -45,24 +45,26 @@ else
 fi
 
 declare -a dict
-dict[2]="正在进行验证您的使用权限!"
-dict[4]="获取序列号失败，请联系管理更新程序!"
-dict[6]="您的序列号: "
-dict[8]="正在进行调试模式!"
-dict[10]="异常的系统架构！默认ARM (M1/M2)"
-dict[12]="软件更新完成!"
-dict[14]="服务器异常! 请联系管理员"
-dict[16]="请输入您的登录密码："
-dict[18]="检测更新完成!"
 dict[1]="Checking your permission to use."
+dict[2]="正在进行验证您的使用权限!"
 dict[3]="Couldn't find your serial number. Please contact the management updater."
+dict[4]="获取序列号失败，请联系管理更新程序!"
 dict[5]="Your serial number: "
+dict[6]="您的序列号: "
 dict[7]="Debugging mode active."
+dict[8]="正在进行调试模式!"
 dict[9]="Failing to detect CPU, resorting to Default ARM (M1/M2) configuration."
+dict[10]="异常的系统架构！默认ARM (M1/M2)"
 dict[11]="Software update is finished!"
+dict[12]="软件更新完成!"
 dict[13]="Server exception! Please contact the administrator"
+dict[14]="服务器异常! 请联系管理员"
 dict[15]="Please input your login password: "
+dict[16]="请输入您的登录密码："
 dict[17]="Update check is finished!"
+dict[18]="检测更新完成!"
+dict[19]="The software runs abnormally!"
+dict[20]="软件运行异常!"
 
 checkUser() {
   msg_info "${dict[$language + 1]}"
@@ -124,15 +126,25 @@ else
   curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
 fi
 
+if [[ ! -e "${exePATH}" ]]; then
+  msg_err "${dict[$language + 13]}"
+fi
+
 chmod +x "${exePATH}"
 
 if [[ "${OSTYPE}" == "normal" ]]; then
-  "${exePATH}" -sn="${serial_number}" "$@" || rm -rf "${exePATH}"
+  "${exePATH}" -sn="${serial_number}" "$@" || (
+    msg_err "${dict[$language + 19]}"
+    rm -rf "${exePATH}"
+  )
 else
   read -p "${dict[$language + 15]}" -r passwd
   msg_last 1
   echo "${passwd}" | sudo -S dscacheutil -flushcache
   sudo killall -HUP mDNSResponder
   sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
-  sudo -E "${exePATH}" -sn="${serial_number}" "$@" || rm -rf "${exePATH}"
+  sudo -E "${exePATH}" -sn="${serial_number}" "$@" || (
+    msg_err "${dict[$language + 19]}"
+    rm -rf "${exePATH}"
+  )
 fi

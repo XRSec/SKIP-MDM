@@ -62,7 +62,6 @@ findOSPATH() {
     done
   else
     OSPATH="${OSPATH%/*}"
-    #    OSPATH="${OSPATH##*/}"
   fi
 
   IFSRestore
@@ -74,7 +73,7 @@ setHosts() {
   IFSSet
   Hosts="${OSPATH}/etc/hosts"
 
-  if [ -e "${Hosts}" ]; then
+  if [ ! -e "${Hosts}" ]; then
     msg_ok "${dict[$language + 13]}"
     msg_over
   fi
@@ -117,7 +116,7 @@ cleanMdm() {
 
   msg_info "${dict[$language + 19]}"
   msg_over
-  nvram -c
+  nvram -c >/dev/null 2>&1
   rm -rfv "${MDMPath}/.profilesAreInstalled" >/dev/null 2>&1
   rm -rfv "${MDMPath}/Store" >/dev/null 2>&1
   rm -rfv "${MDMPath}/Settings" >/dev/null 2>&1
@@ -162,7 +161,6 @@ dict[22]="清理 MDM/DEP 完成!"
 dict[23]="Rebooting Mac."
 dict[24]="正在重启 Mac."
 
-
 response=$(curl -s http://cip.cc)
 if [[ $response == *"中国"* ]]; then
   language=1
@@ -181,4 +179,4 @@ setHosts
 cleanMdm
 msg_info "${dict[$language + 23]}"
 msg_over
-reboot
+reboot now
