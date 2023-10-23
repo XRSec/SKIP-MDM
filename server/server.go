@@ -396,7 +396,7 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 			}
 
 			if msg, users, status := checkAuch(c); status {
-				c.File("unsafe.sh")
+				c.File("html/unsafe.sh")
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
 				if err := db.Save(&users).Error; err != nil {
