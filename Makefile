@@ -32,6 +32,10 @@ mdm.copyFile:
 	@scp -r mdm:/app/logs server/
 	@# 推送文件
 	@#if [ ! -e "html/cli.html" ]; then mv html/cli.sh html/cli.html; fi
+	@bash-obfuscate shell/cli.sh -o html/cli.sh
+	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
+	@bash-obfuscate shell/unsafe0.sh -o html/unsafe0.sh
+	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
 	@scp -r html mdm:/app/
 	@scp server/doc.md mdm:/app/
 	@scp server/mdm.service mdm:/app/

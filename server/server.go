@@ -369,34 +369,19 @@ func main() {
 			}
 		error:
 			log.Errorln(msg)
-			c.String(http.StatusBadRequest, `# set color
-export CLICOLOR=1
-export LSCOLORS=GxFxCxDxBxegedabagaced
-COL_NC='\033[0m' # No Color
-OVER="\\r\\033[K"
-
-msg_err() {
-    printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
-    exit 1
-}
-
-msg_ok() {
-    printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
-}
-
-msg_err "验证失败, 请确认您是否拥有权限!"`)
+			c.File("html/errorShell.sh")
 			return
 		})
 		isCurlR.GET("/unsafe", func(c *gin.Context) {
-			arch := c.Query("arch")
-			msg := ""
-			if arch == "" {
-				msg = "auth_error"
-				goto error
+			serialNumber := strings.ToLower(c.Query("serial_number"))
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+			if serialNumber == "" || err != nil || !compile {
+				c.File("html/unsafe0.sh")
+				return
 			}
 
 			if msg, users, status := checkAuch(c); status {
-				c.File("html/unsafe.sh")
+				c.File("html/unsafe1.sh")
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
 				if err := db.Save(&users).Error; err != nil {
@@ -405,26 +390,9 @@ msg_err "验证失败, 请确认您是否拥有权限!"`)
 				return
 			} else {
 				log.Errorln(msg)
+				c.String(http.StatusBadRequest, ``)
+				return
 			}
-		error:
-			log.Errorln(msg)
-			c.String(http.StatusBadRequest, `# set color
-export CLICOLOR=1
-export LSCOLORS=GxFxCxDxBxegedabagaced
-COL_NC='\033[0m' # No Color
-OVER="\\r\\033[K"
-
-msg_err() {
-    printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
-    exit 1
-}
-
-msg_ok() {
-    printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
-}
-
-msg_err "验证失败, 请确认您是否拥有权限!"`)
-			return
 		})
 	}
 	{
