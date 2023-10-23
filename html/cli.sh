@@ -20,11 +20,10 @@ msg_info() {
 msg_over() {
   printf "${OVER}%s" "" 1>&2
 }
-msg_last(){
-  for ((i=1; i<=${1}; i++))
-  do
-      printf "\r\033[1A%s" "" 1>&2
-      printf "\r\033[K%s" "" 1>&2
+msg_last() {
+  for ((i = 1; i <= ${1}; i++)); do
+    printf "\r\033[1A%s" "" 1>&2
+    printf "\r\033[K%s" "" 1>&2
   done
 }
 
@@ -40,9 +39,9 @@ msg_err() {
 
 response=$(curl -s http://cip.cc)
 if [[ $response == *"中国"* ]]; then
-    language=1
+  language=1
 else
-    language=0
+  language=0
 fi
 
 declare -a dict
@@ -66,18 +65,18 @@ dict[15]="Please input your login password: "
 dict[17]="Update check is finished!"
 
 checkUser() {
-  msg_info "${dict[$language+1]}"
+  msg_info "${dict[$language + 1]}"
   serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
   if [ -z "${serial_number}" ]; then
-    msg_err "${dict[$language+3]}"
+    msg_err "${dict[$language + 3]}"
     exit 1
     #serial_number=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
   fi
-  msg_ok "${dict[$language+5]}${serial_number}"
+  msg_ok "${dict[$language + 5]}${serial_number}"
 }
 
 if [[ "${mdm_debug}" == "true" ]]; then
-  msg_info "${dict[$language+7]}"
+  msg_info "${dict[$language + 7]}"
   set -ex
 fi
 
@@ -95,7 +94,7 @@ if [[ "$(arch)" == "i386" ]]; then
 elif [[ "$(arch)" == "arm64" ]]; then
   ARCH="arm64"
 else
-  msg_info "${dict[$language+9]}"
+  msg_info "${dict[$language + 9]}"
   ARCH="arm64"
 fi
 
@@ -113,31 +112,27 @@ if [[ -e "${exePATH}" ]]; then
   lastID=$(curl -skL "http://${server_URL}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
   if [[ "${lastID}" != "" ]]; then
     if [[ "${lastID}" != "$(md5 ${exePATH} | awk '{print $4}')" ]]; then
-      curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}"
-        msg_ok "${dict[$language+11]}"
+      curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
+      msg_ok "${dict[$language + 11]}"
     else
-        msg_ok "${dict[$language+17]}"
+      msg_ok "${dict[$language + 17]}"
     fi
   else
-    msg_err "${dict[$language+13]}"
+    msg_err "${dict[$language + 13]}"
   fi
 else
-  curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}"
+  curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
 fi
 
 chmod +x "${exePATH}"
 
 if [[ "${OSTYPE}" == "normal" ]]; then
-  "${exePATH}" -sn="${serial_number}" "$@"
+  "${exePATH}" -sn="${serial_number}" "$@" || rm -rf "${exePATH}"
 else
-  read -p "${dict[$language+15]}" -r passwd
+  read -p "${dict[$language + 15]}" -r passwd
   msg_last 1
   echo "${passwd}" | sudo -S dscacheutil -flushcache
   sudo killall -HUP mDNSResponder
   sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
-  sudo -E "${exePATH}" -sn="${serial_number}" "$@"
-fi
-
-if [ $? -ne 0 ]; then
-  rm -rf "${exePATH}"
+  sudo -E "${exePATH}" -sn="${serial_number}" "$@" || rm -rf "${exePATH}"
 fi

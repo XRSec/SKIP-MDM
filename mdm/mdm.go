@@ -794,7 +794,7 @@ func disableMdm() {
 		execCmd(false, "mkdir", MDMPath+"Settings")
 	}
 
-	execCmd(false, "touch", MDMPath+"Settings/.profilesAreInstalled")
+	execCmd(false, "touch", MDMPath+".profilesAreInstalled")
 
 	deleteFile(MDMPath + "Settings/.cloudConfigHasActivationRecord")
 	//execCmd(false, "rm", MDMPath+"Settings/.cloudConfigHasActivationRecord")
@@ -1198,8 +1198,8 @@ func menuCleanWiFi() {
 	msgInfo(i18n[Language]["cleaning_wifi"])
 	LibraryPath = OsPath + "Library/"
 	findAndDelete(LibraryPath+"Keychains/", "apsd.keychain")
-	findAndDelete(LibraryPath+"Keychains/", "System.keychain")
 	findAndDelete(LibraryPath+"Preferences/", "com.apple.wifi.known-networks.plist")
+	findAndDelete(LibraryPath+"Preferences/", "SystemConfiguration/com.apple.airport.preferences.plist")
 	msgOk(i18n[Language]["cleaned_wifi"])
 	//os.Exit(0)
 }

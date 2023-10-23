@@ -345,6 +345,7 @@ func main() {
 		})
 		isCurlR.GET("/getLatest", func(c *gin.Context) {
 			arch := c.Query("arch")
+			files := c.Query("file")
 			msg := ""
 			if arch == "" {
 				msg = "auth_error"
@@ -352,8 +353,50 @@ func main() {
 			}
 
 			if msg, users, status := checkAuch(c); status {
-				c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
-				//c.File("mdm" + "-darwin-" + arch)
+				if files == "true" {
+					c.File("mdm" + "-darwin-" + arch)
+				} else {
+					c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
+				}
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if err := db.Save(&users).Error; err != nil {
+					log.Errorf("Save Error: [%v]", err)
+				}
+				return
+			} else {
+				log.Errorln(msg)
+			}
+		error:
+			log.Errorln(msg)
+			c.String(http.StatusBadRequest, `# set color
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+COL_NC='\033[0m' # No Color
+OVER="\\r\\033[K"
+
+msg_err() {
+    printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
+    exit 1
+}
+
+msg_ok() {
+    printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
+}
+
+msg_err "验证失败, 请确认您是否拥有权限!"`)
+			return
+		})
+		isCurlR.GET("/unsafe", func(c *gin.Context) {
+			arch := c.Query("arch")
+			msg := ""
+			if arch == "" {
+				msg = "auth_error"
+				goto error
+			}
+
+			if msg, users, status := checkAuch(c); status {
+				c.File("unsafe.sh")
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
 				if err := db.Save(&users).Error; err != nil {
