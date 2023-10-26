@@ -4,14 +4,14 @@ go 1.20
 
 require (
 	github.com/gin-gonic/gin v1.9.1
-	github.com/natefinch/lumberjack v2.0.0+incompatible
+	github.com/lib/pq v1.10.9
 	github.com/sirupsen/logrus v1.9.3
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.5
 )
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/bytedance/sonic v1.10.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
@@ -42,7 +42,5 @@ require (
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	gopkg.in/yaml.v2 v2.2.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

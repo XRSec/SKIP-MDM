@@ -1,3 +1,144 @@
-z="
-";KHz='p/md';mGz='set ';JHz='"/tm';vIz='er=$';uKz='lall';GFz='入您的登';bz=''\''';hGz='"tru';WJz='RL}/';nBz=';32m';iIz='ATH}';AJz='RCH}';uIz='numb';QGz='"${d';jGz=']; t';jHz='l -s';iDz='acti';Bz='rt C';REz='re u';cKz='15]}';FJz=']]; ';DFz='rd: ';QDz='管理更新';dCz='[1]=';Wz='T_YE';wEz='ease';gDz='ng m';ZJz='t?se';YBz='); d';sDz='ct C';hKz='pass';TKz='"$@"';VKz='(';qEz='="服务';TDz='"You';ZEz='更新完成';FIz='&dns';BCz='onse';TBz='= 1;';UEz=' fin';rFz='Plat';vCz='t fi';YDz=' "';nJz='"htt';THz='elif';JGz=' -z ';tIz='ial_';eEz=' exc';cz='INFO';aIz='awk ';HGz=' $4}';mz='="\r';LCz='espo';RIz='rue"';RBz='for ';yHz='ata-';sHz='ol/d';MFz='ck i';eGz='_deb';jJz='skLo';HLz=' gre';xGz='reco';qz='[H\0';bGz='r}"';BGz='OPla';dHz='="ar';bFz='运行异常';fBz='%s" ';LBz='over';CHz='"${H';pKz='flus';WBz='1}; ';GJz='then';wJz='${AR';Iz='GxFx';gBz='"" 1';NEz='M2)"';TIz='er_U';LFz=' che';hIz='[ -e';YKz='rf "';YHz=' "ar';pHz='ye.c';iJz='rl -';QIz='": t';Dz='LOR=';TFz='="Th';wGz='PE="';SCz='lang';JFz='="Up';JBz='slee';SJz='{exe';YFz='rmal';OFz='nish';bEz='[13]';iEz='se c';MBz='}';kHz='kL '\''';yJz='file';lKz='-S d';uFz='rtDe';QLz=' -E ';CJz='{las';DEz=' con';GDz='t th';uDz='reso';qBz='C}] ';QHz='ARCH';ZCz='are ';nDz='[9]=';QCz='; th';yCz='seri';HFz='录密码：';UKz=' || ';dBz='1>&2';ALz='der';SEz='pdat';Nz='ed';BDz='umbe';cHz='n';uJz='r}&a';SIz='serv';NBz='${OV';lHz='http';QFz='[18]';iFz='ngua';pCz='行验证您';mFz='r=$(';KJz='ePAT';LHz='(arc';iBz='done';mIz='{ser';fHz='r';PHz='" ]]';TJz='PATH';OIz='\"er';vGz='OSTY';dEz='rver';xIz='arch';ez='{COL';kJz=' ${e';oGz='if t';Sz=' # N';wz='info';RCz='en';oCz='"正在进';qDz=' to ';jCz='ssio';qGz='open';lz='OVER';VEz='ishe';nCz='[2]=';CBz='}...';GIz='=A'\'')';cJz='${se';tCz='"Cou';wBz='✗${C';xCz='our ';kKz='udo ';wIz='er}&';wHz='der'\''';dGz='{mdm';PGz='err ';Qz='\033';aGz=']}${';ABz='}  %';BFz='n pa';yGz='very';gFz=' "${';RHz='="am';lBz='ER} ';Uz='lor';qJz='}/ge';fKz='swd';VBz='= ${';FLz='v gr';pGz='ype ';cEz='="Se';kIz='kL "';YJz='ates';EKz='7]}"';Cz='LICO';aKz='read';DJz='tID}';JLz=' mdm';sGz='ev/n';AIz='raw ';wDz='g to';NFz='s fi';qKz='hcac';WIz='ho "';rGz=' >/d';eBz='33[K';AGz=' '\''/I';rHz='slto';VGz='3]}"';dJz='ber}';OKz='"${e';Kz='Bxeg';NLz='do x';BBz='s ${';KDz=' upd';KKz='d +x';SDz='[5]=';NDz='"获取序';iGz='e" ]';RFz='="检测';UIz='RL="';rJz='tLat';fIz='nt $';fDz='uggi';yKz='spon';KCz='[ $r';CGz='tfor';KIz='ons"';CKz=' + 1';uCz='ldn'\''';Rz='[0m'\''';EIz='.fun';DIz='mdms';QKz=' -sn';qCz='的使用权';TGz='guag';PFz='ed!"';yz='  ${';dz='="[$';qHz='om/s';uHz='heck';UGz='e + ';XKz='rm -';oIz='URL}';rKz='he';nIz='ver_';mJz='TH} ';eDz='"Deb';nGz='-ex';Tz='o Co';CLz='-ex ';OCz='"中国"';fFz='{';oEz='ator';JIz='"$js';fGz='ug}"';IHz='al"';UHz=' [[ ';KGz='"${s';ECz='-s h';XIz='${js';IDz='nage';tDz='PU, ';NJz=' '\''{p';hEz='Plea';Hz='ORS=';gCz='g yo';XJz='getL';rEz='器异常!';oJz='p://';IIz='cho ';pFz='d1 -';GEz='on."';OBz='ER}%';ZIz='" | ';uGz='2>&1';WKz='19]}';UBz=' i <';ZFz='ly!"';DBz='${CO';MIz='rep ';KBz='p 3';PKz='TH}"';oKz='il -';ZHz='m64"';JJz='${ex';NGz='mber';DKz='1]}"';VCz='else';eFz='r() ';UJz='} "h';NHz='== "';FCz='ttp:';Ez='1';KFz='date';QEz='ftwa';AEz=' ARM';LLz='1}'\'' ';gz='HT_Y';EHz='/.md';gHz='json';GLz='ep |';DCz='url ';bHz=' the';BJz='")';mKz='scac';LIz=' | g';SFz='[19]';Vz='LIGH';Gz='SCOL';sKz='sudo';sFz='form';RGz='ict[';HIz='if e';VIz='$(ec';fz='_LIG';WDz=' num';MKz='YPE}';GHz='ean"';uBz=') {';RJz='Lo $';HKz='-e "';TCz='uage';sIz='?ser';nKz='heut';hFz='[$la';EEz='figu';lCz=' use';GKz='[ ! ';sz='J" #';aJz='_num';bDz='列号: ';YEz='="软件';yDz='ault';dKz='" -r';Xz='LLOW';hBz='>&2';KEz='构！默认';xBz='exit';mEz='dmin';pDz='ling';lEz='he a';kEz='ct t';SBz='((i ';FDz='ntac';VHz='"$(a';bCz='ict';CFz='sswo';oDz='"Fai';sJz='est?';Lz='edab';kFz=' 1]}';aBz='\r\0';OGz='}" ]';xHz=' --d';yBz=' 1';EDz='e co';cDz='"';XHz='" ==';qFz='c IO';Yz='='\''\0';MJz=' awk';AKz='=tru';HBz='" 1>';bKz=' -p ';xEz=' inp';gGz=' == ';CDz='r. P';OLz='args';MEz='(M1/';nHz='www.';dIz='msg/';ZKz='H}"';vHz='_han';hHz='s="$';bIz='-F'\''"';RKz='="${';nz='[K"';rDz='dete';gKz='echo';iHz='(cur';jKz=' | s';OHz='i386';vKz=' -HU';gEz='on! ';EJz='" !=';pIz='/get';BKz='e"';Az='expo';JCz='if [';LDz='ater';XBz='i++)';BIz=''\''dom';yEz='ut y';gIz='4}'\'')';XGz='${di';jDz='ve."';FBz='}" "';hJz='| cu';mBz=' [\0';ZGz=' + 5';JDz='ment';eKz=' pas';oFz='g -r';fJz='h=${';pz='tf "';KLz='wk '\''';ODz='列号失败';pJz='_URL';iz='W}~$';mDz='式!"';Mz='agac';jz='_NC}';pEz='[14]';CIz='ain=';aDz='"您的序';GGz='rint';xJz='CH}&';lIz='://$';PEz='="So';rIz='stID';hz='ELLO';eIz='{pri';wCz='nd y';vDz='rtin';NKz=' "no';YCz='decl';lJz='xePA';TEz='e is';Zz='33[1';lFz='al_n';PCz='* ]]';nEz='istr';tJz='r=${';fCz='ckin';pBz='OL_N';HHz='norm';MLz='| su';HEz='[10]';BEz=' (M1';SKz='r}" ';tz=' 清理屏';WHz='rch)';ILz='p -i';WCz='=0';eCz='"Che';aEz='!"';YIz='ons}';QJz=' -sk';kDz='[8]=';VFz='re r';vz='msg_';YGz='ct[$';sBz='n" "';PIz='ror\';SHz='d64"';rz='33[2';AHz='exeP';xKz='NSRe';dDz='[7]=';BHz='ATH=';eJz='&arc';gJz='}" |';fEz='epti';hDz='ode ';oBz='✓${C';FGz='r/{p';UDz='r se';DHz='OME}';uz='幕';jFz='ge +';XDz='ber:';kz=']"';LEz='ARM ';QBz='last';cBz=' "" ';EGz='ialN';MGz='l_nu';XFz='abno';PLz='l -9';ELz='ep -';Fz='rt L';hCz='ur p';EFz='[16]';WEz='d!"';VDz='rial';tBz='err(';PJz='curl';IBz='&2';GCz='//ci';vFz='vice';PBz='s" "';IGz=''\'')';cFz='chec';eHz=' 9]}';MDz='[4]=';EBz='L_NC';ZBz='o';VJz='//${';jEz='onta';aHz=' ]];';oz='prin';vJz='rch=';tEz='管理员"';WGz='ok "';HJz=' "$(';FHz='m_cl';FEz='rati';kCz='n to';tGz='ull ';bBz='A%s"';JKz='chmo';rCz='限!"';mCz='."';vBz=';31m';wKz='P mD';OJz=''\'')" ';MCz='nse ';BLz=' ps ';xDz=' Def';oHz='ssle';bJz='ber=';cCz='dict';LKz='{OST';JEz='的系统架';Pz='NC='\''';IJz='md5 ';AFz='logi';IEz='="异常';tFz='Expe';ZDz='[6]=';aFz='[20]';HCz='p.cc';DLz='| gr';NIz='-q "';MHz='h)" ';rBz=' %s\';tKz=' kil';PDz='，请联系';LJz='H} |';ADz='al n';cIz=''\'' '\''/';FKz='13]}';xz='() {';cGz='[ "$';FFz='="请输';HDz='e ma';ACz='resp';az=';33m';jBz='ok()';RDz='程序!"';sCz='[3]=';lDz='行调试模';OEz='[11]';kGz='hen';sEz=' 请联系';tHz='ns_c';XEz='[12]';IKz='H}" ';NCz='== *';Oz='COL_';DDz='leas';jIz='ID=$';LGz='eria';CCz='=$(c';xFz='wk -';dFz='kUse';UCz='=1';DGz='mSer';WFz='uns ';CEz='/M2)';Jz='CxDx';ICz=')';aCz='-a d';kBz=' {';wFz=' | a';iCz='ermi';GBz='${1}';yFz='F'\''"'\''';IFz='[17]';nFz='iore';vEz='="Pl';uEz='[15]';iKz='wd}"';UFz='e so';SGz='$lan';yIz='=${A';mHz='s://';qIz='Late';lGz=' 7]}';XCz='fi';
-eval "$Az$Bz$Cz$Dz$Ez$z$Az$Fz$Gz$Hz$Iz$Jz$Kz$Lz$Mz$Nz$z$Oz$Pz$Qz$Rz$Sz$Tz$Uz$z$Oz$Vz$Wz$Xz$Yz$Zz$az$bz$z$cz$dz$ez$fz$gz$hz$iz$ez$jz$kz$z$lz$mz$Qz$nz$z$oz$pz$Qz$qz$rz$sz$tz$uz$z$vz$wz$xz$z$oz$pz$yz$cz$ABz$BBz$Oz$Vz$Wz$Xz$CBz$DBz$EBz$FBz$GBz$HBz$IBz$z$JBz$KBz$z$vz$LBz$z$MBz$z$vz$LBz$xz$z$oz$pz$NBz$OBz$PBz$HBz$IBz$z$MBz$z$vz$QBz$xz$z$RBz$SBz$TBz$UBz$VBz$WBz$XBz$YBz$ZBz$z$oz$pz$aBz$Zz$bBz$cBz$dBz$z$oz$pz$aBz$eBz$fBz$gBz$hBz$z$iBz$z$MBz$z$vz$jBz$kBz$z$oz$pz$NBz$lBz$mBz$Zz$nBz$oBz$pBz$qBz$rBz$sBz$GBz$HBz$IBz$z$vz$LBz$z$MBz$z$vz$tBz$uBz$z$oz$pz$NBz$lBz$mBz$Zz$vBz$wBz$pBz$qBz$rBz$sBz$GBz$HBz$IBz$z$xBz$yBz$z$MBz$z$ACz$BCz$CCz$DCz$ECz$FCz$GCz$HCz$ICz$z$JCz$KCz$LCz$MCz$NCz$OCz$PCz$QCz$RCz$z$SCz$TCz$UCz$z$VCz$z$SCz$TCz$WCz$z$XCz$z$YCz$ZCz$aCz$bCz$z$cCz$dCz$eCz$fCz$gCz$hCz$iCz$jCz$kCz$lCz$mCz$z$cCz$nCz$oCz$pCz$qCz$rCz$z$cCz$sCz$tCz$uCz$vCz$wCz$xCz$yCz$ADz$BDz$CDz$DDz$EDz$FDz$GDz$HDz$IDz$JDz$KDz$LDz$mCz$z$cCz$MDz$NDz$ODz$PDz$QDz$RDz$z$cCz$SDz$TDz$UDz$VDz$WDz$XDz$YDz$z$cCz$ZDz$aDz$bDz$cDz$z$cCz$dDz$eDz$fDz$gDz$hDz$iDz$jDz$z$cCz$kDz$oCz$lDz$mDz$z$cCz$nDz$oDz$pDz$qDz$rDz$sDz$tDz$uDz$vDz$wDz$xDz$yDz$AEz$BEz$CEz$DEz$EEz$FEz$GEz$z$cCz$HEz$IEz$JEz$KEz$LEz$MEz$NEz$z$cCz$OEz$PEz$QEz$REz$SEz$TEz$UEz$VEz$WEz$z$cCz$XEz$YEz$ZEz$aEz$z$cCz$bEz$cEz$dEz$eEz$fEz$gEz$hEz$iEz$jEz$kEz$lEz$mEz$nEz$oEz$cDz$z$cCz$pEz$qEz$rEz$sEz$tEz$z$cCz$uEz$vEz$wEz$xEz$yEz$xCz$AFz$BFz$CFz$DFz$cDz$z$cCz$EFz$FFz$GFz$HFz$cDz$z$cCz$IFz$JFz$KFz$LFz$MFz$NFz$OFz$PFz$z$cCz$QFz$RFz$ZEz$aEz$z$cCz$SFz$TFz$UFz$QEz$VFz$WFz$XFz$YFz$ZFz$z$cCz$aFz$YEz$bFz$aEz$z$cFz$dFz$eFz$fFz$z$vz$wz$gFz$cCz$hFz$iFz$jFz$kFz$cDz$z$yCz$lFz$BDz$mFz$nFz$oFz$pFz$qFz$rFz$sFz$tFz$uFz$vFz$wFz$xFz$yFz$AGz$BGz$CGz$DGz$EGz$BDz$FGz$GGz$HGz$IGz$z$JCz$JGz$KGz$LGz$MGz$NGz$OGz$QCz$RCz$z$vz$PGz$QGz$RGz$SGz$TGz$UGz$VGz$z$xBz$yBz$z$XCz$z$vz$WGz$XGz$YGz$SCz$TCz$ZGz$aGz$yCz$lFz$BDz$bGz$z$MBz$z$JCz$cGz$dGz$eGz$fGz$gGz$hGz$iGz$jGz$kGz$z$vz$wz$gFz$cCz$hFz$iFz$jFz$lGz$cDz$z$mGz$nGz$z$XCz$z$oGz$pGz$qGz$rGz$sGz$tGz$uGz$QCz$RCz$z$vGz$wGz$xGz$yGz$cDz$z$AHz$BHz$CHz$DHz$EHz$FHz$GHz$z$VCz$z$vGz$wGz$HHz$IHz$z$AHz$BHz$JHz$KHz$FHz$GHz$z$XCz$z$JCz$cGz$LHz$MHz$NHz$OHz$PHz$QCz$RCz$z$QHz$RHz$SHz$z$THz$UHz$VHz$WHz$XHz$YHz$ZHz$aHz$bHz$cHz$z$QHz$dHz$ZHz$z$VCz$z$vz$wz$gFz$cCz$hFz$iFz$jFz$eHz$cDz$z$QHz$dHz$ZHz$z$XCz$z$cFz$dFz$fHz$z$gHz$hHz$iHz$jHz$kHz$lHz$mHz$nHz$oHz$pHz$qHz$rHz$sHz$tHz$uHz$vHz$wHz$xHz$yHz$AIz$BIz$CIz$DIz$EIz$FIz$GIz$cDz$z$HIz$IIz$JIz$KIz$LIz$MIz$NIz$OIz$PIz$QIz$RIz$QCz$RCz$z$SIz$TIz$UIz$VIz$WIz$XIz$YIz$ZIz$aIz$bIz$cIz$dIz$eIz$fIz$gIz$cDz$z$VCz$z$SIz$TIz$UIz$DIz$EIz$cDz$z$XCz$z$JCz$hIz$gFz$AHz$iIz$PHz$QCz$RCz$z$QBz$jIz$iHz$jHz$kIz$lHz$lIz$mIz$nIz$oIz$pIz$qIz$rIz$sIz$tIz$uIz$vIz$mIz$tIz$uIz$wIz$xIz$yIz$AJz$BJz$z$JCz$cGz$CJz$DJz$EJz$cBz$FJz$GJz$z$JCz$cGz$CJz$DJz$EJz$HJz$IJz$JJz$KJz$LJz$MJz$NJz$GGz$HGz$OJz$FJz$GJz$z$PJz$QJz$RJz$SJz$TJz$UJz$FCz$VJz$SIz$TIz$WJz$XJz$YJz$ZJz$VDz$aJz$bJz$cJz$VDz$aJz$dJz$eJz$fJz$QHz$gJz$hJz$iJz$jJz$kJz$lJz$mJz$nJz$oJz$cJz$dEz$pJz$qJz$rJz$sJz$yCz$lFz$BDz$tJz$yCz$lFz$BDz$uJz$vJz$wJz$xJz$yJz$AKz$BKz$z$vz$WGz$XGz$YGz$SCz$TCz$CKz$DKz$z$VCz$z$vz$WGz$XGz$YGz$SCz$TCz$CKz$EKz$z$XCz$z$VCz$z$vz$PGz$QGz$RGz$SGz$TGz$UGz$FKz$cDz$z$XCz$z$VCz$z$PJz$QJz$RJz$SJz$TJz$UJz$FCz$VJz$SIz$TIz$WJz$XJz$YJz$ZJz$VDz$aJz$bJz$cJz$VDz$aJz$dJz$eJz$fJz$QHz$gJz$hJz$iJz$jJz$kJz$lJz$mJz$nJz$oJz$cJz$dEz$pJz$qJz$rJz$sJz$yCz$lFz$BDz$tJz$yCz$lFz$BDz$uJz$vJz$wJz$xJz$yJz$AKz$BKz$z$XCz$z$JCz$GKz$HKz$JJz$KJz$IKz$FJz$GJz$z$vz$PGz$QGz$RGz$SGz$TGz$UGz$FKz$cDz$z$XCz$z$JKz$KKz$gFz$AHz$iIz$cDz$z$JCz$cGz$LKz$MKz$XHz$NKz$YFz$PHz$QCz$RCz$z$OKz$lJz$PKz$QKz$RKz$yCz$lFz$BDz$SKz$TKz$UKz$VKz$z$vz$PGz$QGz$RGz$SGz$TGz$UGz$WKz$cDz$z$XKz$YKz$JJz$KJz$ZKz$z$ICz$z$VCz$z$aKz$bKz$QGz$RGz$SGz$TGz$UGz$cKz$dKz$eKz$fKz$z$vz$QBz$yBz$z$gKz$gFz$hKz$iKz$jKz$kKz$lKz$mKz$nKz$oKz$pKz$qKz$rKz$z$sKz$tKz$uKz$vKz$wKz$xKz$yKz$ALz$z$sKz$BLz$CLz$DLz$ELz$FLz$GLz$HLz$ILz$JLz$wFz$KLz$eIz$fIz$LLz$MLz$NLz$OLz$tKz$PLz$rGz$sGz$tGz$uGz$z$sKz$QLz$OKz$lJz$PKz$QKz$RKz$yCz$lFz$BDz$SKz$TKz$UKz$VKz$z$vz$PGz$QGz$RGz$SGz$TGz$UGz$WKz$cDz$z$XKz$YKz$JJz$KJz$ZKz$z$ICz$z$XCz"
+#!/bin/bash
+
+# set -ex
+
+# set color
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+COL_NC='\033[0m' # No Color
+COL_LIGHT_YELLOW='\033[1;33m'
+INFO="[${COL_LIGHT_YELLOW}~${COL_NC}]"
+OVER="\r\033[K"
+printf "\033[H\033[2J" # 清理屏幕
+# set msg
+msg_info() {
+  printf "  ${INFO}  %s ${COL_LIGHT_YELLOW}...${COL_NC}" "${1}" 1>&2
+  sleep 3
+  msg_over
+}
+
+msg_over() {
+  printf "${OVER}%s" "" 1>&2
+}
+msg_last() {
+  for ((i = 1; i <= ${1}; i++)); do
+    printf "\r\033[1A%s" "" 1>&2
+    printf "\r\033[K%s" "" 1>&2
+  done
+}
+
+msg_ok() {
+  printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
+  msg_over
+}
+
+msg_err() {
+  printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
+  exit 1
+}
+
+response=$(curl -s http://cip.cc)
+if [[ $response == *"中国"* ]]; then
+  language=1
+else
+  language=0
+fi
+
+declare -a dict
+dict[1]="Checking your permission to use."
+dict[2]="正在进行验证您的使用权限!"
+dict[3]="Couldn't find your serial number. Please contact the management updater."
+dict[4]="获取序列号失败，请联系管理更新程序!"
+dict[5]="Your serial number: "
+dict[6]="您的序列号: "
+dict[7]="Debugging mode active."
+dict[8]="正在进行调试模式!"
+dict[9]="Failing to detect CPU, resorting to Default ARM (M1/M2) configuration."
+dict[10]="异常的系统架构！默认ARM (M1/M2)"
+dict[11]="Software update is finished!"
+dict[12]="软件更新完成!"
+dict[13]="Server exception! Please contact the administrator"
+dict[14]="服务器异常! 请联系管理员"
+dict[15]="Please input your login password: "
+dict[16]="请输入您的登录密码："
+dict[17]="Update check is finished!"
+dict[18]="检测更新完成!"
+dict[19]="The software runs abnormally!"
+dict[20]="软件运行异常!"
+
+checkUser() {
+  msg_info "${dict[$language + 1]}"
+  serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
+  if [ -z "${serial_number}" ]; then
+    msg_err "${dict[$language + 3]}"
+    exit 1
+    #serial_number=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
+  fi
+  msg_ok "${dict[$language + 5]}${serial_number}"
+}
+
+if [[ "${mdm_debug}" == "true" ]]; then
+  msg_info "${dict[$language + 7]}"
+  set -ex
+fi
+
+# 检查当前运行环境
+if type open >/dev/null 2>&1; then
+  OSTYPE="recovery"
+  exePATH="${HOME}/.mdm_clean"
+else
+  OSTYPE="normal"
+  exePATH="/tmp/mdm_clean"
+fi
+
+if [[ "$(arch)" == "i386" ]]; then
+  ARCH="amd64"
+elif [[ "$(arch)" == "arm64" ]]; then
+  ARCH="arm64"
+else
+  msg_info "${dict[$language + 9]}"
+  ARCH="arm64"
+fi
+
+checkUser
+
+export server_URL="服务器地址"
+
+if [[ -e "${exePATH}" ]]; then
+  lastID=$(curl -skL "http://${server_URL}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
+  if [[ "${lastID}" != "" ]]; then
+    if [[ "${lastID}" != "$(md5 ${exePATH} | awk '{print $4}')" ]]; then
+      curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
+      msg_ok "${dict[$language + 11]}"
+    else
+      msg_ok "${dict[$language + 17]}"
+    fi
+  else
+    msg_err "${dict[$language + 13]}"
+  fi
+else
+  curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
+fi
+
+if [[ ! -e "${exePATH}" ]]; then
+  msg_err "${dict[$language + 13]}"
+fi
+
+chmod +x "${exePATH}"
+
+if [[ "${OSTYPE}" == "normal" ]]; then
+  "${exePATH}" -sn="${serial_number}" "$@" || (
+    msg_err "${dict[$language + 19]}"
+    rm -rf "${exePATH}"
+  )
+else
+  read -p "${dict[$language + 15]}" -r passwd
+  msg_last 1
+  echo "${passwd}" | sudo -S dscacheutil -flushcache
+  sudo killall -HUP mDNSResponder
+  sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
+  sudo -E "${exePATH}" -sn="${serial_number}" "$@" || (
+    msg_err "${dict[$language + 19]}"
+    rm -rf "${exePATH}"
+  )
+fi

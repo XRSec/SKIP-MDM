@@ -44,13 +44,7 @@ dict[6]="您的序列号: "
 dict[7]="Server exception! Please contact the administrator"
 dict[8]="服务器异常! 请联系管理员"
 
-jsons="$(curl -skL 'https://www.ssleye.com/ssltool/dns_check_hander' --data-raw 'domain=mdms.fun&dns=A')"
-
-if echo "$jsons" | grep -q "\"error\": true"; then
-  server_URL="$(echo "${jsons}" | awk -F'"' '/msg/{print $4}')"
-else
-  server_URL="mdms.fun"
-fi
+export server_URL="服务器地址"
 
 msg_info "${dict[$language + 1]}"
 serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')

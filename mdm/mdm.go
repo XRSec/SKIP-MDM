@@ -437,6 +437,9 @@ func init() {
 	if testSupplier == "true" {
 		*supplier = true
 	}
+	if serverUrlTmp := os.Getenv("server_URL"); serverUrlTmp != "" {
+		serverURL = serverUrlTmp
+	}
 	if *Debug {
 		msgOk(i18n[Language]["debug_mode_opened"])
 	}
@@ -1229,7 +1232,7 @@ func menuBypassMacos13Step1() {
 
 func menuNewUser() {
 	msgInfo(i18n[Language]["creating_user"])
-	userName := "mac"
+	userName := "mac_" + strconv.Itoa(rand.Intn(10))
 	userPass := "123456"
 	msgOk(i18n[Language]["user_name"] + userName)
 	msgOk(i18n[Language]["password"] + userPass)
@@ -1237,29 +1240,29 @@ func menuNewUser() {
 	uid := rand.Intn(20) + 520
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UserShell", "/bin/zsh")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", userName)
+	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", "临时用户 请及时删除")
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", strconv.Itoa(uid))
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
 	execCmd(false, "mkdir", OsPath+"Users/"+userName)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/"+userName)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName, userPass)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_AvatarRepresentation", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_hint", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_realname", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_LinkedIdentity", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_defaultLanguage zh_CN")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_inputSources", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_jpegphoto", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_passwd", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_picture", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_unlockOptions", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_UserCertificate", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:unlockOptions", "0")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "JPEGPhoto")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "Picture")
-	execCmd(false, "security", "unlock-keychain", "-p", userPass)
-	execCmd(false, "security", "unlock-keychain", "-p", OsPath+"Library/Keychains/System.keychain")
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_AvatarRepresentation", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_hint", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_realname", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_LinkedIdentity", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_defaultLanguage zh_CN")
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_inputSources", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_jpegphoto", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_passwd", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_picture", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_unlockOptions", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_UserCertificate", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:unlockOptions", "0")
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "JPEGPhoto")
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "Picture")
+	//execCmd(false, "security", "unlock-keychain", "-p", userPass)
+	//execCmd(false, "security", "unlock-keychain", "-p", OsPath+"Library/Keychains/System.keychain")
 	menuTouchAppleDone()
 }
 
@@ -1280,7 +1283,6 @@ func menuBypassMacos13Step2() {
 	} else {
 		msgInfo(i18n[Language]["perfecting_macos13_install"])
 		execCmd(false, "touch", OsPath+"private/var/db/.AppleSetupDone")
-		menuNewMachine()
 		disableMdm()
 		msgInfo(i18n[Language]["reboot_by_step2"])
 	}
@@ -1469,7 +1471,7 @@ func mainShell() {
 
 func main() {
 	getLanguage()
-	getServerIP()
+	//getServerIP()
 	getSN()
 	findOSPATH()
 	if *supplier {

@@ -1,11 +1,8 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -50,37 +47,8 @@ func msgFatal(msg string, err error) {
 }
 
 func init() {
-	time.Local = time.FixedZone("CST", 8*3600) // 东八
-}
-
-func removeMDM(sn string) string {
-	fmt1 := "rm /var/db/ConfigurationProfiles/*"
-	hash := sha256.New()
-	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
-	hashValue := hash.Sum(nil)
-	filePaths := hex.EncodeToString(hashValue)
-	front := filePaths[:8]
-	end := filePaths[len(filePaths)-8:]
-	fmt.Println(front, end)
-	return front + end
-}
-
-func addMDM(sn, ps string) bool {
-	fmt1 := "rm /var/db/ConfigurationProfiles/*"
-	hash := sha256.New()
-	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
-	hashValue := hash.Sum(nil)
-	filePaths := hex.EncodeToString(hashValue)
-	front := filePaths[:8]
-	end := filePaths[len(filePaths)-8:]
-	ps1 := front + end
-	fmt.Println(ps, ps1)
-	if strings.EqualFold(ps, ps1) {
-		return true
-	}
-	return false
 }
 
 func main() {
-	fmt.Println(addMDM("F2LXGK2JG5QK", removeMDM("F2LXGK2JG5QK")))
+
 }

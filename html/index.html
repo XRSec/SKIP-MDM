@@ -348,26 +348,6 @@
             }
         }
 
-        function getLocation() {
-            if (isValidIP(document.location.hostname)) {
-                return document.location.hostname;
-            }
-            let arr = document.location.hostname.split('.');
-            if (arr.length === 2) {
-                return document.location.hostname;
-            }
-            if (arr.length > 2 && arr[0] !== 'www') {
-                return arr.slice(1).join('.')
-            }
-            return arr.slice(1).join('.')
-        }
-
-        function isValidIP(input) {
-            // 使用正则表达式验证是否为有效的 IP 地址
-            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-            return ipRegex.test(input);
-        }
-
         function copyText() {
             // 获取要复制的文本
             let text = document.getElementById("copyText").innerText;
@@ -475,11 +455,8 @@
             toggleLanguage()
             // 默认显示第一个表单
             forms[0].style.display = 'block';
-            let locationResult = getLocation();
-            if (!locationResult || locationResult.trim() === "") {
-                locationResult = "mdms.fun";
-            }
-            document.getElementById("copyText").innerText = "bash <(curl -L " + locationResult + "/cli) -s";
+
+            document.getElementById("copyText").innerText = `bash <(curl -L ${window.location.host}/cli) -s`
 
             // 切换菜单
             menuItems.forEach(function (item, index) {
@@ -513,7 +490,7 @@
                 }
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://${locationResult}/auth?serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://${window.location.host}/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -523,7 +500,7 @@
                             } else {
                                 alert(dictionary[document.documentElement.lang]["auth_ok"])
                                 document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
-                                showDocs(response?.doc ? response.doc : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                                showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
                             }
                         } catch (error) {
                             alert('JSON Parsing error:' + error)
@@ -559,7 +536,7 @@
 
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://${locationResult}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.open("GET", `https://${window.location.host}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -569,7 +546,7 @@
                             } else {
                                 alert(dictionary[document.documentElement.lang]["add_success"])
                                 document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
-                                showDocs(response?.doc ? response.doc : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                                showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
                             }
                         } catch (error) {
                             alert('JSON Parsing error:' + error)
