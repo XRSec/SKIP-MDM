@@ -1,3 +1,4 @@
 /mdm-darwin-amd64
 /mdm-darwin-arm64
 /mdm/mdm
+/**/node_modules

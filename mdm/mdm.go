@@ -213,7 +213,7 @@ var i18n = map[string]map[string]string{
 		"exiting": "EXITING...",
 
 		// mainShell
-		"menu_welcome":      "Welcome to the MDM Assistant! (In Testing Phase)",
+		"menu_welcome":      "Welcome to the MDM Assistant!",
 		"choose_options":    "   AVAILABLE FOR SELECTION:",
 		"disable_mdm":       "Disable MDM/DEP (More People Choose)",
 		"clean_mdm":         "Clean MDM_Agent (Installed Profile)",
@@ -391,7 +391,7 @@ var i18n = map[string]map[string]string{
 		"exiting": "正在退出...",
 
 		// mainShell
-		"menu_welcome":      "欢迎使用 MDM 助手! (正在测试阶段)",
+		"menu_welcome":      "欢迎使用 MDM 助手!",
 		"choose_options":    "   可供选择:",
 		"disable_mdm":       "停用监管(更多人选择)",
 		"clean_mdm":         "清理监管(安装了监管配置文件)",
@@ -952,7 +952,7 @@ func getLanguage() {
 	httpClient := privacyDns()
 	req, err := http.NewRequest("GET", "http://cip.cc", nil)
 	if err != nil {
-		msgErr(i18n[Language]["create_request_err"], err)
+		msgErr(i18n[Language]["create_request_err"]+" :language", err)
 	}
 	req.Header.Set("User-Agent", "curl/7.64.1")
 	resp, err := httpClient.Do(req)
@@ -962,13 +962,13 @@ func getLanguage() {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			fmt.Println(i18n[Language]["close_body_err"])
+			fmt.Println(i18n[Language]["close_body_err"] + " :language")
 		}
 	}(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		msgErr(i18n[Language]["read_data_err"], err)
+		msgErr(i18n[Language]["read_data_err"]+" :language", err)
 	}
 	if strings.Contains(string(body), "中国") {
 		Language = "zh"
@@ -1040,17 +1040,17 @@ func getSN() {
 		httpClient := privacyDns()
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://%v/del?serial_number=%v&ps=%v", serverURL, tmpSN, removeMDM()), nil)
 		if err != nil {
-			msgFatal(i18n[Language]["create_request_err"], err)
+			msgFatal(i18n[Language]["create_request_err"]+"getSN", err)
 		}
 		req.Header.Set("User-Agent", "curl/7.64.1")
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			msgFatal(i18n[Language]["network_request_err"], err)
+			msgFatal(i18n[Language]["network_request_err"]+"getSN", err)
 		}
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
-				fmt.Println(i18n[Language]["close_body_err"])
+				fmt.Println(i18n[Language]["close_body_err"] + "getSN")
 			}
 		}(resp.Body)
 		if resp.StatusCode != 200 {
@@ -1065,7 +1065,7 @@ func AuthSN() {
 	httpClient := privacyDns()
 	req, err := http.NewRequest("GET", fmt.Sprintf("http://%v/auth?serial_number=%v&ps=%v", serverURL, *SN, removeMDM()), nil)
 	if err != nil {
-		msgFatal(i18n[Language]["create_request_err"], err)
+		msgFatal(i18n[Language]["create_request_err"]+" :auth", err)
 	}
 	req.Header.Set("User-Agent", "curl/7.64.1")
 	resp, err := httpClient.Do(req)
@@ -1075,21 +1075,21 @@ func AuthSN() {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			fmt.Println(i18n[Language]["close_body_err"])
+			fmt.Println(i18n[Language]["close_body_err"] + " :auth")
 		}
 	}(resp.Body)
 	if resp.StatusCode != 200 {
-		msgFatal(i18n[Language]["get_auth_err"], nil)
+		msgFatal(i18n[Language]["get_auth_err"]+" :auth", nil)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		msgFatal(i18n[Language]["read_data_err"], err)
+		msgFatal(i18n[Language]["read_data_err"]+" :auth", err)
 	}
 
 	var data map[string]interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
-		msgFatal(i18n[Language]["decode_date_err"], err)
+		msgFatal(i18n[Language]["decode_date_err"]+" :auth", err)
 	}
 
 	usersData := data["users"].(map[string]interface{})
@@ -1101,7 +1101,7 @@ func AuthSN() {
 		msgFatal(i18n[Language]["get_auth_err"], nil)
 	}
 
-	cardType := int(usersData["CardType"].(float64))
+	cardType := int(usersData["card_type"].(float64))
 	if cardType == 0 {
 		*supplier = true
 	}
@@ -1365,7 +1365,6 @@ func menuExit() {
 }
 
 func mainShell() {
-	msgOk(i18n[Language]["menu_welcome"])
 	var idNum int
 	fmt.Println(i18n[Language]["choose_options"])
 	var options []string
@@ -1473,6 +1472,9 @@ func main() {
 	getLanguage()
 	//getServerIP()
 	getSN()
+	msgOk(i18n[Language]["menu_welcome"])
+	msgOk("Wechat: xr_sec")
+	msgOk("Mail: xrsec@qq.com")
 	findOSPATH()
 	if *supplier {
 		menuSupplier()

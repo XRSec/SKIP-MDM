@@ -456,7 +456,7 @@
             // 默认显示第一个表单
             forms[0].style.display = 'block';
 
-            document.getElementById("copyText").innerText = `bash <(curl -L ${window.location.host}/cli) -s`
+            document.getElementById("copyText").innerText = `bash <(curl -L ${window.location.host.includes(":33660") ? window.location.host.replace("33660", "33659") : window.location.host}/cli) -s`
 
             // 切换菜单
             menuItems.forEach(function (item, index) {
@@ -499,7 +499,6 @@
                                 alert(dictionary[document.documentElement.lang][response?.msg])
                             } else {
                                 alert(dictionary[document.documentElement.lang]["auth_ok"])
-                                document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
                                 showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
                             }
                         } catch (error) {
@@ -545,7 +544,6 @@
                                 alert(dictionary[document.documentElement.lang][response?.msg])
                             } else {
                                 alert(dictionary[document.documentElement.lang]["add_success"])
-                                document.getElementById("copyText").innerText = response?.shell ? response?.shell : document.getElementById("copyText").innerText
                                 showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
                             }
                         } catch (error) {

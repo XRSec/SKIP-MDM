@@ -1,4 +1,5 @@
 mdm.client:
+	@#$(MAKE) dockerStart
 	@$(MAKE) deleteDsStore
 	@ssh mdm "date" || exit 1
 	@#rm -rfv server/server.db
@@ -21,6 +22,30 @@ mdm.serve:
 	@ssh mdm "systemctl start mdm"
 	@echo "all done"
 
+n1.client:
+	@#$(MAKE) dockerStart
+	@$(MAKE) deleteDsStore
+	@ssh n1 "date" || exit 1
+	@#rm -rfv server/server.db
+	@rm -rfv server/logs
+	@$(MAKE) buildClient
+	@$(MAKE) n1.upload
+	@$(MAKE) n1.copyFile
+	@rm -rfv mdm-*-*
+	@echo "all done"
+	@echo "all done"
+
+n1.serve:
+	@$(MAKE) dockerStart
+	@$(MAKE) deleteDsStore
+	@$(MAKE) n1.buildServer
+	@ssh n1 "systemctl stop mdm" || exit 1
+	@scp mdm-linux-arm64 n1:/app/
+	@$(MAKE) n1.copyFile
+	@rm -rfv mdm-*-*
+	@ssh n1 "systemctl start mdm"
+	@echo "all done"
+
 ikuai.client:
 	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; open smb://192.168.0.88/docker/MDM; sleep 10; done
 	@#rm -rf server/server.db
@@ -32,7 +57,7 @@ ikuai.client:
 	@cp -v server/doc.md /Volumes/MDM*/
 	@cp -rv html /Volumes/MDM*/
 	@if [[ ! -e "/Volumes/MDM*/zoneinfo.zip" ]]; then cp -v server/zoneinfo.zip /Volumes/MDM*/; fi
-	@if [[ ! -e "/Volumes/MDM*/bash-obfuscate" ]]; then cp -v server/bash-obfuscate /Volumes/MDM*/; fi
+	@#if [[ ! -e "/Volumes/MDM*/bash-obfuscate" ]]; then cp -v server/bash-obfuscate /Volumes/MDM*/; fi
 	@#cp -v /Volumes/MDM*/server.db server/
 	@rm -rf mdm-darwin-*
 	@echo "all done"
@@ -43,7 +68,7 @@ ikuai.serve:
 	@$(MAKE) buildServer
 	@docker build -f server/Dockerfile.ext -t mdm .
 	@docker save mdm > mdm.tar
-	@mv mdm.tar /Volumes/docker*/
+	@mv -v mdm.tar /Volumes/docker*/
 	@rm mdm-linux-*
 	@$(MAKE) ikuai.client
 	@read -p "请删除您的容器 并 输入您的 iKuai Token：" -r token; \
@@ -66,8 +91,22 @@ mdm.copyFile:
 	@scp -r html mdm:/app/
 	@scp server/doc.md mdm:/app/
 	@if ! ssh mdm "ls /app/zoneinfo.zip > /dev/null 2>&1"; then scp server/zoneinfo.zip mdm:/app/zoneinfo.zip; fi
+	@#if ! ssh mdm "ls /app/bash-obfuscate > /dev/null 2>&1"; then scp server/bash-obfuscate mdm:/app/bash-obfuscate; fi
 	@scp server/mdm.service mdm:/app/
 	@#scp Makefile mdm:/app/
+
+n1.copyFile:
+	@# 更新文件
+	@scp -r n1:/app/server.db server/
+	@scp -r n1:/app/logs server/
+	@# 推送文件
+	@$(MAKE) n1.obfuscate
+	@scp -r html n1:/app/
+	@scp server/doc.md n1:/app/
+	@if ! ssh n1 "ls /app/zoneinfo.zip > /dev/null 2>&1"; then scp server/zoneinfo.zip n1:/app/zoneinfo.zip; fi
+	@#if ! ssh n1 "ls /app/bash-obfuscate > /dev/null 2>&1"; then scp server/bash-obfuscate n1:/app/bash-obfuscate; fi
+	@scp server/mdm.service n1:/app/
+	@#scp Makefile n1:/app/
 
 dockerStart:
 	@if ! docker info >/dev/null 2>&1; then open /Applications/Docker.app; fi
@@ -77,19 +116,30 @@ mdm.upload:
 	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* mdm:/app/; fi
 	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* mdm:/app/; fi
 
+n1.upload:
+	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* n1:/app/; fi
+	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* n1:/app/; fi
+
 ikuai.upload:
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; cp -v mdm-darwin-amd64* /Volumes/docker*/; fi
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; cp -v mdm-darwin-arm64* /Volumes/docker*/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; cp -v mdm-darwin-amd64* /Volumes/MDM*/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; cp -v mdm-darwin-arm64* /Volumes/MDM*/; fi
 
 buildServer:
-
+	@#if [ ! -e "mdm-darwin-amd64" ]; then cd mdm; CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-linux-amd64; fi
 	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static" ./server; fi
-	@upx -9 mdm-linux-amd64
+	@#upx -9 mdm-linux-amd64
 	@chmod +x mdm-linux-amd64
 
+n1.buildServer:
+	@#if [ ! -e "mdm-darwin-arm64" ]; then cd mdm; CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-linux-arm64; fi
+	@if [ ! -e "mdm-linux-arm64" ]; then xgo --targets=linux/arm64 -ldflags="-s -w -extldflags -static" ./server; fi
+	@upx -9 mdm-linux-arm64
+	@chmod +x mdm-linux-arm64
+
 buildClient:
-	@if [ ! -e "mdm-darwin-amd64" ]; then cd mdm; CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-darwin-amd64; fi
-	@if [ ! -e "mdm-darwin-arm64" ]; then cd mdm; CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-darwin-arm64; fi
+	@if [ ! -e "mdm-darwin-amd64" ]; then xgo --targets=darwin/amd64,darwin/arm64 -ldflags="-s -w -extldflags -static" ./mdm; fi
+	@#if [ ! -e "mdm-darwin-amd64" ]; then cd mdm; CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-darwin-amd64; fi
+	@#if [ ! -e "mdm-darwin-arm64" ]; then cd mdm; CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-darwin-arm64; fi
 	@#upx -9 mdm-darwin-amd64
 	@$(MAKE) getMD5
 
@@ -98,7 +148,7 @@ ikuai.obfuscate:
 	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
 	@cp -v shell/unsafe0.sh html/unsafe0.sh
 	@cp -v shell/cli.sh html/cli.sh
-	@if [[ "$(md5sum /Volumes/MDM*/cli.sh | cut -d' ' -f1)" != "$(md5sum html/cli.sh | cut -d' ' -f1)" ]]; then find /Volumes/MDM*/html -name 'cli-*.sh' -exec rm -fv '{}' \;; fi
+	@if [[ "$(md5sum /Volumes/MDM*/cli.sh | cut -d' ' -f1)" != "$(md5sum html/cli.sh | cut -d' ' -f1)" ]]; then find "/Volumes/MDM*/html" -name 'cli-*.sh' -exec rm -fv '{}' \;; fi
 	@if [[ "$(md5sum /Volumes/MDM*/unsafe0.sh | cut -d' ' -f1)" != "$(md5sum html/unsafe0.sh | cut -d' ' -f1)" ]]; then find /Volumes/MDM*/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;; fi
 
 mdm.obfuscate:
@@ -108,6 +158,14 @@ mdm.obfuscate:
 	@cp -v shell/cli.sh html/cli.sh
 	@if [[ $(ssh mdm "md5sum /app/html/cli.sh | cut -d' ' -f1") != $(md5sum html/cli.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'cli-*.sh' -exec rm -fv '{}' \;"; fi
 	@if [[ $(ssh mdm "md5sum /app/html/unsafe0.sh | cut -d' ' -f1") != $(md5sum html/unsafe0.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;"; fi
+
+n1.obfuscate:
+	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
+	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
+	@cp -v shell/unsafe0.sh html/unsafe0.sh
+	@cp -v shell/cli.sh html/cli.sh
+	@if [[ $(ssh n1 "md5sum /app/html/cli.sh | cut -d' ' -f1") != $(md5sum html/cli.sh | cut -d' ' -f1) ]]; then ssh n1 "find /app/html -name 'cli-*.sh' -exec rm -fv '{}' \;"; fi
+	@if [[ $(ssh n1 "md5sum /app/html/unsafe0.sh | cut -d' ' -f1") != $(md5sum html/unsafe0.sh | cut -d' ' -f1) ]]; then ssh n1 "find /app/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;"; fi
 
 deleteDsStore:
 	@find "${PWD}" -name ".DS_Store" -exec rm -fv {} \;

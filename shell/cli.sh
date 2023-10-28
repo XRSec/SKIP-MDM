@@ -102,6 +102,9 @@ fi
 
 checkUser
 
+msg_ok "Wechat: xr_sec"
+msg_ok "Mail: xrsec@qq.com"
+
 export server_URL="服务器地址"
 
 if [[ -e "${exePATH}" ]]; then
