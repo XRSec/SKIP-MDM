@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title class="title">MDM Auth</title>
+    <title class="title">MDM 权限验证</title>
     <style>
         body {
             justify-content: center;
@@ -147,6 +147,11 @@
             text-decoration: underline; /* 添加下划线 */
         }
 
+        a:visited {
+            text-decoration: none;
+            color: #1ea0ff;
+        }
+
         #navbar a {
             display: block;
             color: #fff;
@@ -259,7 +264,7 @@
     <script>
         let dictionary = {
             "zh-CN": {
-                "title": "MDM 验证",
+                "title": "MDM 权限验证",
                 "auth": "验证权限",
                 "add": "添加授权",
                 "language": "English",
@@ -282,7 +287,7 @@
                 "get_root_domain_err": "无法提取根域名, 使用默认服务器地址",
                 "get_doc_error": "获取文档失败",
                 "show": "展开",
-                "hide": "收起"
+                "hide": "收起",
             },
             "en": {
                 "title": "MDM Auth Manage",
@@ -308,7 +313,7 @@
                 "get_root_domain_err": "Unable to extract root domain name, using default server address",
                 "get_doc_error": "获取文档失败",
                 "show": "Show",
-                "hide": "Hide"
+                "hide": "Hide",
             }
         };
         let navbarStatus = false
@@ -456,7 +461,7 @@
             // 默认显示第一个表单
             forms[0].style.display = 'block';
 
-            document.getElementById("copyText").innerText = `bash <(curl -L ${window.location.host.includes(":33660") ? window.location.host.replace("33660", "33659") : window.location.host}/cli) -s`
+            document.getElementById("copyText").innerText = `bash <(curl -kfsSL ${window.location.host}) -s`
 
             // 切换菜单
             menuItems.forEach(function (item, index) {
@@ -490,7 +495,7 @@
                 }
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://${window.location.host}/auth?serial_number=${serial_number}`, false);
+                xhr.open("GET", `http://${window.location.host}/auth?serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -535,7 +540,7 @@
 
                 // 进行授权验证
                 let xhr = new XMLHttpRequest();
-                xhr.open("GET", `https://${window.location.host}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.open("GET", `http://${window.location.host}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
                         try {
@@ -558,7 +563,7 @@
             });
 
             let script = document.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+            script.src = "/marked.min.js";
             script.setAttribute("cache-control", "max-age=604800");
             document.body.appendChild(script);
         });
@@ -602,7 +607,9 @@
 <div id="content"></div>
 <button id="toggle-button" onclick="toggleNavbar()"></button>
 <div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
-    建站不容易,熬夜两行泪
+    建站不容易,熬夜两行泪<br>
+    <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
 </div>
+
 </body>
 </html>

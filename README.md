@@ -18,10 +18,9 @@ gzexe *.sh
 | 接口           | 参数                                              | 说明           |
 |--------------|-------------------------------------------------|--------------|
 | /            |                                                 | 执行程序         |
-| /cli         |                                                 | 验证程序         |
 | /getLatestID | ?serial_number=序列号                              | 获取最新版本程序的哈希值 |
 | /getLatest   | ?serial_number=序列号                              | 获取最新版本程序     |
-| /getLogs     | ?serial_number=序列号&q=字符串                        | 获取日志         |
+| /getLogs     | ?ps=管理员密码&q=字符串                                 | 获取日志         |
 | /add         | ?serial_number=序列号&card_id=卡号&password=密码       | 添加授权用户       |
 | /add         | ?serial_number=序列号&ps=管理员密码                     | 添加授权用户       |
 | /getCard     | ?card_id=card_id&ps=管理员密码                       | 获取卡密信息       |
@@ -47,3 +46,10 @@ make build
 # 卡密生成
 
 - http://www.txttool.com/kami/
+
+# CDN
+
+```ini
+/add;/auth;/del;/cli;/getLatestID;/getLatest;/getLogs;/getCard;/cardDel;/cardUpdate
+/favicon.ico;/apple-touch-icon*.png;/*.js
+```

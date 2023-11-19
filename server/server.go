@@ -7,51 +7,43 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/deta/deta-go/deta"
-	"github.com/deta/deta-go/service/base"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"regexp"
-	"runtime"
-	"strconv"
 	"strings"
 	"time"
 )
 
 type Users struct {
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-	SerialNumber string `json:"key"`
-	IPAddress    string `json:"ip_address"`
-	CardID       string `json:"card_id"`
-	CardType     int    `json:"card_type"`
+	gorm.Model
+	SerialNumber string `gorm:"column:serial_number;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	IPAddress    string `gorm:"column:ip_address;size:60" sql:"type:VARCHAR(60) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardID       string `gorm:"column:card_id;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardType     int    `gorm:"column:card_type;size:3" sql:"type:VARCHAR(3) CHARACTER SET utf8 COLLATE utf8_bin"` // 0 tmp 1 all
 }
 
 type Cards struct {
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-	CardID       string `json:"key"`
-	PassWord     string `json:"password"`
-	SerialNumber string `json:"serial_number"`
+	gorm.Model
+	CardID       string `gorm:"column:card_id;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	PassWord     string `gorm:"column:password;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 }
 
 var (
-	err             error
-	db_users        *base.Base
-	db_cards        *base.Base
-	doc             = ""
-	serverURL       = "mdms.fun"
-	backupServerURL = "server.mdms.fun"
-	httpPort        = 80
-	httpsPort       = 443
+	err        error
+	db         *gorm.DB
+	doc        = ""
+	debug      = "true"
+	serverURL  = "mdms.fun"
+	serverPort = "6"
 )
 
 func init() {
@@ -62,19 +54,20 @@ func init() {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	db, err := deta.New(deta.WithProjectKey("c0adxwswryd_Y8FYx1PMp1bi31xY3aHXqo8kLuJ85WKy"))
+	//db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
+	db, err = gorm.Open(mysql.Open("mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
+		//Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		log.Errorf("连接数据库失败%v", err)
 		return
 	}
-	db_users, err = base.New(db, "mdm_users")
-	if err != nil {
-		log.Errorf("数据库db_users 连接失败%v", err)
+	if err = db.AutoMigrate(&Users{}); err != nil {
+		log.Errorf("数据库迁移失败%v", err)
 		return
 	}
-	db_cards, err = base.New(db, "mdm_cards")
-	if err != nil {
-		log.Errorf("数据库db_cards 连接失败%v", err)
+	if err = db.AutoMigrate(&Cards{}); err != nil {
+		log.Errorf("数据库迁移失败%v", err)
 		return
 	}
 	if docs, err := getDocs(); err == nil {
@@ -85,7 +78,8 @@ func init() {
 }
 
 func getTimeGap(CreatedAt string) bool {
-	targetTime, err := time.Parse("2006-01-02 15:04:05", CreatedAt)
+	//2023-10-23 23:42:18.804 +0800 CST
+	targetTime, err := time.Parse("2006-01-02 15:04:05.000 -0700 MST", CreatedAt)
 	if err != nil {
 		log.Errorf("时间转换失败%v", err)
 		return false
@@ -107,78 +101,68 @@ func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
 		return msg, users, false
 	}
 	// 查询用户信息
-	if err := db_users.Get(serialNumber, &users); err != nil {
+	if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
 		msg = "auth_error"
 		return msg, users, false
 	}
-	if users.CardType == 0 && !getTimeGap(users.CreatedAt) {
+	if users.CardType == 0 && !getTimeGap(users.CreatedAt.String()) {
 		msg = "time_error"
 		return msg, users, false
 	}
 	return msg, users, true
 }
 
+// Deprecated: 已经被废弃
 func handleRequest(c *gin.Context) {
 	// 从请求头中获取Origin或Referer
 	origin := c.Request.Header.Get("Origin")
 	referer := c.Request.Header.Get("Referer")
 	var urlString string
+	c.Writer.Header().Set("Vary", "Origin")
 
 	if origin != "" {
 		urlString = origin
 	} else if referer != "" {
 		urlString = referer
 	} else {
-		//c.Header("Cache-Control", "no-cache")
+		proto := "http"
+		if c.Request.TLS != nil {
+			proto = "https"
+		}
+		urlString = proto + "://" + c.Request.Host
 		//c.AbortWithStatus(http.StatusServiceUnavailable)
-		return
+		//return
 	}
 
-	parsedURL, err := url.Parse(urlString)
-	if err != nil {
-		//c.Header("Cache-Control", "no-cache")
-		//c.AbortWithStatus(http.StatusServiceUnavailable)
-		return
-	}
-
-	if strings.HasPrefix(urlString, "http://") {
-		urlString = "http://" + parsedURL.Hostname()
-	} else if strings.HasPrefix(urlString, "https://") {
-		urlString = "https://" + parsedURL.Hostname()
-	} else {
-		//c.Header("Cache-Control", "no-cache")
-		//c.AbortWithStatus(http.StatusServiceUnavailable)
-		return
-	}
-
-	if port := parsedURL.Port(); port != "" {
-		urlString += ":" + port
-	}
-
-	if parsedURL.Hostname() == "43.153.185.122" {
+	if strings.Contains(urlString, "81.68.230.131") {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
-	} else if parsedURL.Hostname() == "localhost" {
+	} else if strings.Contains(urlString, "localhost") {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:63342")
+	} else if !strings.Contains(urlString, serverURL) && debug != "true" {
+		c.AbortWithStatus(http.StatusServiceUnavailable)
+		return
 	}
-	c.Writer.Header().Set("Vary", "Origin")
+
+	if tmpHosts := strings.Split(serverURL, ":"); len(tmpHosts) == 2 && tmpHosts[1] != serverPort {
+		c.AbortWithStatus(http.StatusServiceUnavailable)
+		return
+	}
 }
 
-func isCurl(ctx *gin.Context) bool {
-	tmpHeader := strings.ToLower(ctx.GetHeader("User-Agent"))
-	return strings.Contains(tmpHeader, "curl")
+func isCurl(c *gin.Context) bool {
+	return strings.Contains(strings.ToLower(c.GetHeader("User-Agent")), "curl")
 }
-func allowUA(ctx *gin.Context) bool {
-	tmpHeader := strings.ToLower(ctx.GetHeader("User-Agent"))
+
+func isWeb(c *gin.Context) bool {
+	tmpHeader := strings.ToLower(c.GetHeader("User-Agent"))
 	shortcutAgentStatus := strings.Contains(tmpHeader, "shortcut")
 	android := strings.Contains(tmpHeader, "mobile") && strings.Contains(tmpHeader, "safari")
 	mac := strings.Contains(tmpHeader, "mac") && strings.Contains(tmpHeader, "safari")
 	//iphone := strings.Contains(tmpHeader, "iphone") && strings.Contains(tmpHeader, "mobile")
-	if !(shortcutAgentStatus || android || mac || isCurl(ctx)) {
-		ctx.Header("Cache-Control", "no-cache")
-		ctx.AbortWithStatus(http.StatusServiceUnavailable)
-		return false
+	if shortcutAgentStatus || android || mac {
+		return true
 	}
-	return true
+	return false
 }
 
 func getClientIp() string {
@@ -200,7 +184,7 @@ func getClientIp() string {
 func getMD5(filePath string) string {
 	data, err := os.ReadFile(filePath + ".md5")
 	if err != nil {
-		log.Errorf("Read File Error: [%v]", err)
+		log.Errorf("读取文件失败：%v", err)
 		if fileMD5, err := calculateFileMD5(filePath); err == nil {
 			return fileMD5
 		}
@@ -230,10 +214,12 @@ func calculateFileMD5(filePath string) (string, error) {
 	return md5Hash, nil
 }
 
-func encodeHash(SN string) string {
+func encodeHash(sn string) string {
 	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
-	hash.Write([]byte(fmt1 + strings.ToLower(SN) + fmt1))
+	roundedTime := time.Now().Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().Minute()+15)/15)*15) * time.Minute).Format("200601021504")
+	data := fmt1 + strings.ToLower(sn) + roundedTime + fmt1
+	hash.Write([]byte(data))
 	hashValue := hash.Sum(nil)
 	filePaths := hex.EncodeToString(hashValue)
 	front := filePaths[:8]
@@ -245,14 +231,7 @@ func decodeHash(sn, ps string) bool {
 	if ps == "qXN4C6ACpwcz94R2" {
 		return true
 	}
-	fmt1 := "rm /var/db/ConfigurationProfiles/*"
-	hash := sha256.New()
-	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
-	hashValue := hash.Sum(nil)
-	filePaths := hex.EncodeToString(hashValue)
-	front := filePaths[:8]
-	end := filePaths[len(filePaths)-8:]
-	ps1 := front + end
+	ps1 := encodeHash(sn)
 	if strings.EqualFold(ps, ps1) {
 		return true
 	}
@@ -284,7 +263,8 @@ func (f *MyFormatter) Format(entry *log.Entry) ([]byte, error) {
 	return []byte(fmt.Sprintf("[LOG] %v | %-5v | %-12v | %v\n", entry.Time.Format("2006/01/02 - 15:04:05"), entry.Level.String(), fmt.Sprintf("%v:%v", strings.Replace(entry.Caller.Func.Name(), "main.", "", -1), entry.Caller.Line), entry.Message)), nil
 }
 
-func replaceServer(defaultPath, tmpPath, filePath, Host string) {
+// Deprecated: 已经被废弃
+func replaceServer(defaultPath, filePath, Host string) {
 	if _, err := os.Stat(filePath); err != nil {
 		// 读取文件内容
 		content, err := os.ReadFile(defaultPath)
@@ -296,15 +276,15 @@ func replaceServer(defaultPath, tmpPath, filePath, Host string) {
 		newContent := strings.Replace(string(content), "服务器地址", Host, -1)
 
 		// 写入新内容
-		err = os.WriteFile(tmpPath, []byte(newContent), 0)
+		err = os.WriteFile(filePath+"_tmp", []byte(newContent), 0)
 		if err != nil {
 			log.Errorf("Write File Error: [%v]", err)
 		}
-		_, err = exec.Command("bash-obfuscate", tmpPath, "-o", filePath).Output()
+		_, err = exec.Command("bash-obfuscate", filePath+"_tmp", "-o", filePath).Output()
 		if err != nil {
 			log.Errorf("Obfuscate File Error: [%v]", err)
 		}
-		if err := os.Remove(tmpPath); err != nil {
+		if err := os.Remove(filePath + "_tmp"); err != nil {
 			log.Errorf("Remove File Error: [%v]", err)
 		}
 	}
@@ -312,7 +292,6 @@ func replaceServer(defaultPath, tmpPath, filePath, Host string) {
 
 func main() {
 	log.Infoln("Run models...")
-
 	// 配置日志输出到文件
 	logFile := &lumberjack.Logger{
 		Filename:   "./logs/app.log", // 日志文件路径
@@ -329,41 +308,71 @@ func main() {
 	r.Use(gin.LoggerWithWriter(logFile))
 	r.Use(func(c *gin.Context) {
 		if c.Request.Method != http.MethodGet {
-			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
-		if !allowUA(c) {
+		handleRequest(c)
+		// 禁止IP访问 禁止CNAME访问
+		if hosts := strings.Split(c.Request.Host, ":"); (net.ParseIP(hosts[0]) != nil || !strings.Contains(c.Request.Host, serverURL)) && debug != "true" {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
-		handleRequest(c)
-		// 非 IP 访问 自动重定向
-		if hosts := strings.Split(c.Request.Host, ":"); net.ParseIP(hosts[0]) == nil && c.Request.TLS == nil && !isCurl(c) {
-			newURL := fmt.Sprintf("https://%v%v", hosts[0], c.Request.RequestURI)
-			if strings.Contains(c.Request.Host, backupServerURL) {
-				newURL = fmt.Sprintf("https://%v:%v%v", hosts[0], httpsPort, c.Request.RequestURI)
-			}
-
-			c.Header("Location", newURL)
-			c.AbortWithStatus(http.StatusFound)
+		c.Next()
+	})
+	r.Use(func(c *gin.Context) {
+		c.Next()
+		if c.Writer.Status() == http.StatusServiceUnavailable {
+			c.File("html/error.html")
 		}
 	})
-
-	{
-		r.GET("/", func(c *gin.Context) {
-			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+	r.GET("/", func(c *gin.Context) {
+		c.Header("Cache-Control", "no-cache")
+		if isWeb(c) {
 			c.File("html/index.html")
+		} else if isCurl(c) {
+			fileTmp := fmt.Sprintf("html/cli-%v.sh", c.Request.Host)
+			//c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+			replaceServer("html/cli.sh", fileTmp, c.Request.Host)
+			c.File(fileTmp)
+		} else {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+		}
+		return
+	})
+	{
+		staticR := r.Use(func(c *gin.Context) {
+			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+		})
+		staticR.GET("/marked.min.js", func(c *gin.Context) {
+			if !isWeb(c) {
+				c.AbortWithStatus(http.StatusServiceUnavailable)
+				return
+			}
+			c.File("html/marked.min.js")
 			return
+		})
+		staticR.GET("/robots.txt", func(c *gin.Context) {
+			c.String(http.StatusOK, "User-agent: *\nDisallow: /")
 		})
 		icons := []string{"/favicon.ico", "/apple-touch-icon-120x120-precomposed.png", "/apple-touch-icon-120x120.png", "/apple-touch-icon-precomposed.png", "/apple-touch-icon.png"}
 		for _, path := range icons {
-			r.GET(path, func(c *gin.Context) {
-				c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+			staticR.GET(path, func(c *gin.Context) {
+				if !isWeb(c) {
+					c.AbortWithStatus(http.StatusServiceUnavailable)
+					return
+				}
 				c.Status(http.StatusOK)
 			})
 		}
 	}
-	r.Use(func(c *gin.Context) { c.Header("Cache-Control", "no-cache") })
+
+	r.Use(func(c *gin.Context) {
+		if !(isWeb(c) || isCurl(c)) {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
+		c.Header("Cache-Control", "no-cache")
+	})
 	{
 		r.GET("/add", func(c *gin.Context) {
 			//handleRequest(c)
@@ -386,10 +395,10 @@ func main() {
 			if serialNumber == "" || cardId == "" || password == "" || err != nil || !compile || !compile1 || !compile2 {
 				if ps != "" && serialNumber != "" && compile && decodeHash(serialNumber, ps) {
 					// 判断序列号是否存在
-					if err = db_users.Get(serialNumber, &users); err != nil {
+					if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 						// 序列号不存在则创建
 						users.CardType = 1
-						if tmpKey, err := db_users.Put(&Users{CreatedAt: time.Now().Format("2006-01-02 15:04:05"), UpdatedAt: time.Now().Format("2006-01-02 15:04:05"), SerialNumber: serialNumber, IPAddress: c.ClientIP(), CardType: users.CardType}); err != nil || tmpKey != serialNumber {
+						if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: users.CardType}).Error; err != nil {
 							msg = "create_error"
 							goto error
 						}
@@ -410,8 +419,7 @@ func main() {
 						users.CardType = 1
 						// 更新用户信息
 						users.IPAddress = c.ClientIP()
-						users.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
-						if tmpKey, err := db_users.Put(&users); err != nil || tmpKey != serialNumber {
+						if err = db.Save(&users).Error; err != nil {
 							msg = "create_error"
 							goto error
 						}
@@ -433,7 +441,7 @@ func main() {
 				cardType = 1
 			}
 			// 先判断卡密是否正确
-			if err = db_cards.Get(cardId, &cards); err != nil || cards.PassWord != password {
+			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardId, password).Error; err != nil {
 				msg = "auth_error"
 				goto error
 			}
@@ -444,34 +452,29 @@ func main() {
 			}
 
 			// 判断序列号是否存在
-			if err = db_users.Get(serialNumber, &users); err != nil {
+			if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 				// 序列号不存在则创建
-				if tmpKey, err := db_users.Put(&Users{CreatedAt: time.Now().Format("2006-01-02 15:04:05"), UpdatedAt: time.Now().Format("2006-01-02 15:04:05"), IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardID: cardId, CardType: cardType}); err != nil || tmpKey != serialNumber {
+				if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardID: cardId, CardType: cardType}).Error; err != nil {
 					msg = "create_error"
 					goto error
 				}
 			} else {
 				// 序列号存在则更新
-				// 序列号权限更新判断
 				if users.CardType != cardType && cardType > users.CardType {
 					auth = true
 				}
 				// 更新用户信息
 				if cardType == 0 {
-					users.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
+					users.CreatedAt = time.Now()
 				}
-				users.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 				users.IPAddress = c.ClientIP()
-				users.CardID = cardId
-
-				if tmpKey, err := db_users.Put(&users); err != nil || tmpKey != serialNumber {
+				if err = db.Save(&users).Error; err != nil {
 					msg = "create_error"
 					goto error
 				}
 			}
 			cards.SerialNumber = serialNumber
-			cards.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
-			if tmpKey, err := db_cards.Put(&cards); err != nil || tmpKey != serialNumber {
+			if err = db.Save(&cards).Error; err != nil {
 				msg = "create_error"
 				goto error
 			}
@@ -502,13 +505,23 @@ func main() {
 					"msg":   msg,
 				})
 			} else {
-				encodeHashKey := encodeHash(users.SerialNumber)
-				c.JSON(http.StatusOK, gin.H{
-					"code":  http.StatusOK,
-					"users": users,
-					"doc":   doc,
-					"pass":  encodeHashKey,
-				})
+				ps := strings.ToLower(c.Query("ps"))
+				compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+				if ps == "" || err != nil || !compile || !decodeHash(users.SerialNumber, ps) {
+					c.JSON(http.StatusOK, gin.H{
+						"code":  http.StatusOK,
+						"doc":   doc,
+						"users": users,
+					})
+				} else {
+					encodeHashKey := encodeHash(strings.ToLower(users.SerialNumber))
+					c.JSON(http.StatusOK, gin.H{
+						"code":  http.StatusOK,
+						"pass":  encodeHashKey,
+						"users": users,
+					})
+				}
+
 			}
 			return
 		})
@@ -525,14 +538,12 @@ func main() {
 				goto error
 			}
 			// 查询用户信息
-			if err := db_users.Get(serialNumber, &users); err == nil {
+			if db.First(&users, "serial_number = ?", serialNumber).Error == nil {
 				auth = true
 			}
+			if db.Unscoped().Delete(&users, "serial_number = ?", serialNumber).Error != nil {
+				goto error
 
-			if err := db_users.Delete(serialNumber); err != nil {
-				if auth {
-					goto error
-				}
 			}
 
 			c.JSON(http.StatusOK, gin.H{
@@ -554,17 +565,9 @@ func main() {
 
 		isCurlR := r.Group("/").Use(func(c *gin.Context) {
 			if !isCurl(c) {
-				c.Header("Cache-Control", "no-cache")
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
-		})
-		isCurlR.GET("/cli", func(c *gin.Context) {
-			fileTmp := fmt.Sprintf("html/cli-%v.sh", c.Request.Host)
-			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
-			replaceServer("html/cli.sh", fileTmp+"_tmp", fileTmp, c.Request.Host)
-			c.File(fileTmp)
-			return
 		})
 		isCurlR.GET("/getLatestID", func(c *gin.Context) {
 			arch := c.Query("arch")
@@ -574,18 +577,17 @@ func main() {
 				goto error
 			}
 
-			if msg, users, status := checkAuch(c); status {
+			if msg2, users, status := checkAuch(c); status {
 				fileMD5 := getMD5("mdm-darwin-" + arch)
 				c.String(http.StatusOK, fileMD5)
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
-				users.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
-				if tmpKey, err := db_users.Put(&users); err != nil || tmpKey != users.SerialNumber {
+				if db.Save(&users).Error != nil {
 					log.Errorf("Save Error: [%v]", err)
 				}
 				return
 			} else {
-				log.Errorln(msg)
+				msg = msg2
 			}
 		error:
 			log.Errorln(msg)
@@ -604,7 +606,7 @@ func main() {
 				goto error
 			}
 
-			if msg, users, status := checkAuch(c); status {
+			if msg2, users, status := checkAuch(c); status {
 				if files == "true" {
 					c.File("mdm" + "-darwin-" + arch)
 				} else {
@@ -612,13 +614,12 @@ func main() {
 				}
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
-				users.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
-				if tmpKey, err := db_users.Put(&users); err != nil || tmpKey != users.SerialNumber {
+				if err := db.Save(&users).Error; err != nil {
 					log.Errorf("Save Error: [%v]", err)
 				}
 				return
 			} else {
-				log.Errorln(msg)
+				msg = msg2
 			}
 		error:
 			log.Errorln(msg)
@@ -631,7 +632,7 @@ func main() {
 			if serialNumber == "" || err != nil || !compile {
 				fileTmp := fmt.Sprintf("html/unsafe0-%v.sh", c.Request.Host)
 				c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
-				replaceServer("html/unsafe0.sh", fileTmp+"_tmp", fileTmp, c.Request.Host)
+				replaceServer("html/unsafe0.sh", fileTmp, c.Request.Host)
 				c.File(fileTmp)
 				return
 			}
@@ -640,14 +641,13 @@ func main() {
 				c.File("html/unsafe1.sh")
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
-				users.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
-				if tmpKey, err := db_users.Put(&users); err != nil || tmpKey != users.SerialNumber {
+				if err := db.Save(&users).Error; err != nil {
 					log.Errorf("Save Error: [%v]", err)
 				}
 				return
 			} else {
 				log.Errorln(msg)
-				c.String(http.StatusBadRequest, ``)
+				c.File("html/errorShell.sh")
 				return
 			}
 		})
@@ -655,7 +655,6 @@ func main() {
 	{
 		isNotCurlR := r.Group("/").Use(func(c *gin.Context) {
 			if isCurl(c) {
-				c.Header("Cache-Control", "no-cache")
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
@@ -729,7 +728,8 @@ func main() {
 				msg = "auth_error"
 				goto error
 			}
-			if err = db_cards.Get(cardID, &cards); err != nil {
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
 				// 不存在则创建
 				msg = "card_error"
 				goto error
@@ -758,17 +758,14 @@ func main() {
 				goto error
 			}
 
-			if err = db_cards.Get(cardID, &cards); err != nil {
-				// 不存在则创建
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
 				msg = "card_error"
 				goto error
 			} else {
-				if cards.SerialNumber != "" {
-					cards.SerialNumber = ""
-					if tmpKey, err := db_cards.Put(&cards); err != nil || tmpKey != cardID {
-						msg = fmt.Sprintf("Save cards Error: [%v]", err)
-						goto error
-					}
+				cards.SerialNumber = ""
+				if err = db.Save(&cards).Error; err != nil {
+					msg = fmt.Sprintf("Save cards Error: [%v]", err)
+					goto error
 				}
 			}
 			c.JSON(http.StatusOK, gin.H{
@@ -798,10 +795,9 @@ func main() {
 				goto error
 			}
 			// 查询卡密信息
-
-			if err = db_cards.Get(cardID, &cards); err != nil {
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
 				// 不存在则创建
-				if tmpKey, err := db_cards.Put(&Cards{CreatedAt: time.Now().Format("2006-01-02 15:04:05"), UpdatedAt: time.Now().Format("2006-01-02 15:04:05"), CardID: cardID, PassWord: password, SerialNumber: ""}); err != nil || tmpKey != cardID {
+				if err = db.Create(&Cards{CardID: cardID, PassWord: password, SerialNumber: ""}).Error; err != nil {
 					msg = fmt.Sprintf("Create Error: [%v]", err)
 					goto error
 				}
@@ -813,7 +809,7 @@ func main() {
 				}
 				cards.PassWord = password
 
-				if tmpKey, err := db_cards.Put(&cards); err != nil || tmpKey != cardID {
+				if err = db.Save(&cards).Error; err != nil {
 					msg = fmt.Sprintf("Save cards Error: [%v]", err)
 					goto error
 				}
@@ -840,56 +836,10 @@ func main() {
 		return
 	})
 
-	// 启动 HTTPS 服务器
+	// 启动 HTTP 服务器
+	log.Infof("Server Start: http://%v:%v\n", getClientIp(), serverPort)
 
-	certDir := "/etc/letsencrypt/live/mdms.fun/"
-	certFile := ""
-	privkeyFile := ""
-	//arch, _ := exec.Command("arch").Output()
-
-	if fileByte, _ := os.ReadFile("/proc/1/cgroup"); strings.Contains(string(fileByte), "/docker/") || runtime.GOARCH == "arm64" {
-		httpPort = 33659
-		httpsPort = 33660
-		//certDir = "/certs/"
-	}
-	log.Infof("Server Start: http://%v:%v\n", getClientIp(), httpPort)
-
-	fileList, err := os.ReadDir(certDir)
-	if err != nil {
-		log.Fatal("读取文件列表时出错:", err)
-	}
-
-	for _, file := range fileList {
-		if !file.IsDir() {
-			if strings.Contains(file.Name(), "cert") {
-				if certFile != "" {
-					if result := strings.Compare(certFile, file.Name()); result < 0 {
-						certFile = file.Name()
-					}
-				} else {
-					certFile = file.Name()
-				}
-			}
-			if strings.Contains(file.Name(), "privkey") {
-				if certFile != "" {
-					if result := strings.Compare(privkeyFile, file.Name()); result < 0 {
-						privkeyFile = file.Name()
-					}
-				} else {
-					privkeyFile = file.Name()
-				}
-			}
-		}
-	}
-
-	go func() {
-		if err := r.RunTLS(":"+strconv.Itoa(httpsPort), path.Join(certDir, certFile), path.Join(certDir, privkeyFile)); err != nil {
-			//if err := r.RunTLS(":443", "../cert.pem", "../privkey.pem"); err != nil {
-			log.Errorf("HTTPS server error: %v\n", err)
-		}
-	}()
-
-	if err := r.Run(":" + strconv.Itoa(httpPort)); err != nil {
+	if err := r.Run(":" + serverPort); err != nil {
 		log.Errorf("HTTP server error: %v\n", err)
 	}
 }

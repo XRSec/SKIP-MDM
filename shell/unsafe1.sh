@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set +ex
+
 export CLICOLOR=1
 export LSCOLORS=GxFxCxDxBxegedabagaced
 COL_NC='\033[0m' # No Color
@@ -36,14 +38,14 @@ IFSRestore() {
 
 findOSPATH() {
   IFSSet
-  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\- Data|Data|System|\n|private|macOS Base System")
+  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\- Data|Data|\- 数据|System|\n|private|macOS Base System")
 
   if [ -z "${OSPATH}" ]; then
-    msg_err "${dict[$language + 1]}"
+    msg_err "${dict[$mdm_lang + 1]}"
   fi
 
   if [ "$(echo "${OSPATH}" | wc -l)" -gt 1 ]; then
-    msg_info "${dict[$language + 3]}"
+    msg_info "${dict[$mdm_lang + 3]}"
     msg_over
     # shellcheck disable=SC2039
     select variable in ${OSPATH}; do
@@ -51,13 +53,13 @@ findOSPATH() {
         tempPath="${variable%/*}"
         tempPath2="${tempPath##*/}"
         printf "  "
-        msg_info "${dict[$language + 5]} ${tempPath2} ${dict[$language + 7]}"
+        msg_info "${dict[$mdm_lang + 5]} ${tempPath2} ${dict[$mdm_lang + 7]}"
         msg_over
         OSPATH="${tempPath}"
         IFSRestore
         break
       else
-        msg_info "${dict[$language + 9]}"
+        msg_info "${dict[$mdm_lang + 9]}"
       fi
     done
   else
@@ -68,53 +70,45 @@ findOSPATH() {
 }
 
 setHosts() {
-  msg_info "${dict[$language + 11]}"
+  msg_info "${dict[$mdm_lang + 11]}"
   msg_over
   IFSSet
   Hosts="${OSPATH}/etc/hosts"
 
   if [ ! -e "${Hosts}" ]; then
-    msg_ok "${dict[$language + 13]}"
+    msg_ok "${dict[$mdm_lang + 13]}"
     msg_over
   fi
   # https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd
   for file in ${Hosts}; do
     if [[ "$(awk 'END {print}' "${file}")" != "" ]]; then
-      tee -a "${file}" >/dev/null <<-EOF
-
-EOF
+      echo "" >>"${file}" 2>/dev/null
     fi
 
     if [[ "$(grep -c "^0.0.0.0 iprofiles.apple.com" "${file}")" -eq '0' ]]; then
-      tee -a "${file}" >/dev/null <<-EOF
-0.0.0.0 iprofiles.apple.com
-EOF
+      echo "0.0.0.0 iprofiles.apple.com" >>"${file}" 2>/dev/null
     fi
 
     if [[ "$(grep -c "^0.0.0.0 mdmenrollment.apple.com" "${file}")" -eq '0' ]]; then
-      tee -a "${file}" >/dev/null <<-EOF
-0.0.0.0 mdmenrollment.apple.com
-EOF
+      echo "0.0.0.0 mdmenrollment.apple.com" >>"${file}" 2>/dev/null
     fi
 
     if [[ "$(grep -c "^0.0.0.0 deviceenrollment.apple.com" "${file}")" -eq '0' ]]; then
-      tee -a "${file}" >/dev/null <<-EOF
-0.0.0.0 deviceenrollment.apple.com
-EOF
+      echo "0.0.0.0 deviceenrollment.apple.com" >>"${file}" 2>/dev/null
     fi
   done
 
-  msg_ok "${dict[$language + 15]}"
+  msg_ok "${dict[$mdm_lang + 15]}"
   msg_over
   IFSRestore
 }
 
 cleanMdm() {
-  if [ "$(basename "${MDMPath}")" != "ConfigurationProfiles" ]; then
-    msg_err "${dict[$language + 17]}"
+  if [ -d "${MDMPath}" ]; then
+    msg_err "${dict[$mdm_lang + 17]}"
   fi
 
-  msg_info "${dict[$language + 19]}"
+  msg_info "${dict[$mdm_lang + 19]}"
   msg_over
   nvram -c >/dev/null 2>&1
   rm -rfv "${MDMPath}/.profilesAreInstalled" >/dev/null 2>&1
@@ -131,8 +125,30 @@ cleanMdm() {
   touch "${MDMPath}/Settings/.cloudConfigNoActivationRecord" >/dev/null 2>&1
   touch "${MDMPath}/Settings/.cloudConfigUserSkippedEnrollment" >/dev/null 2>&1
 
-  msg_ok "${dict[$language + 21]}"
+  msg_ok "${dict[$mdm_lang + 21]}"
   msg_over
+}
+
+checkUser() {
+  if [ "$(find "${OSPATH}/Users" -type d -maxdepth 1 ! -name "Shared" ! -name "/" | wc -l >/dev/null 2>&1)" -eq 1 ]; then
+    read username
+    account_id="${RANDOM}"
+    username="apple_${account_id}"
+    passw="123456"
+    msg_ok "Name: ${username}"
+    msg_ok "Name: ${passw}"
+    dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" UserShell "/bin/zsh"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" RealName "${dict[$mdm_lang + 25]}"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" UniqueID "${account_id}"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" PrimaryGroupID "20"
+    mkdir "${OSPATH}/Users/$username"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" NFSHomeDirectory "/Users/$username"
+    dscl -f "$dscl_path" localhost -passwd "/Local/Default/Users/$username" "$passw"
+    dscl -f "$dscl_path" localhost -append "/Local/Default/Groups/admin" GroupMembership $username
+    touch "${OSPATH}/private/var/db/.AppleSetupDone"
+  fi
 }
 
 declare -a dict
@@ -148,25 +164,31 @@ dict[9]="Input Error."
 dict[10]="输入错误."
 dict[11]="Blocking MDM/DEP."
 dict[12]="正在屏蔽 MDM/DEP."
-dict[13]="New System, Pass Block!"
-dict[14]="新系统, 跳过屏蔽"
+dict[13]="Unable to Open Hosts file"
+dict[14]="无法打开 Hosts 文件"
 dict[15]="Blocked MDM/DEP!"
 dict[16]="屏蔽 MDM/DEP 完成!"
-dict[17]="MDM/DEP Dir Error!"
-dict[18]="MDM/DEP 目录错误!"
+dict[17]="Please exit the terminal, go to disk utility, expand all disks (arrow) to find ${OSPATH} - DATA, select mount, then exit disk utility and return to the terminal to rerun the program",
+dict[18]="请退出终端, 前往磁盘工具, 将磁盘全部展开(箭头) 找到 ${OSPATH} - DATA , 选择装载, 接着退出磁盘工具回到终端重新运行程序"
 dict[19]="Cleaning MDM/DEP."
 dict[20]="正在清理 MDM/DEP."
 dict[21]="Cleaned MDM/DEP!"
 dict[22]="清理 MDM/DEP 完成!"
 dict[23]="Rebooting Mac."
 dict[24]="正在重启 Mac."
+dict[25]="Temp User Please Delete"
+dict[26]="临时用户 请及时删除"
 
-response=$(curl -s http://cip.cc)
-if [[ $response == *"中国"* ]]; then
-  language=1
-else
-  language=0
+if [[ -z "$mdm_lang" ]]; then
+  response=$(curl -ksSL http://cip.cc)
+  if [[ $response == *"中国"* ]]; then
+    mdm_lang=1
+  else
+    mdm_lang=0
+  fi
 fi
+
+export mdm_lang
 
 if type open >/dev/null 2>&1; then
   exit 0
@@ -177,6 +199,8 @@ MDMPath="${OSPATH}/var/db/ConfigurationProfiles"
 LibraryPath="${OSPATH}/Library"
 setHosts
 cleanMdm
-msg_info "${dict[$language + 23]}"
+checkUser
+
+msg_info "${dict[$mdm_lang + 23]}"
 msg_over
 reboot now

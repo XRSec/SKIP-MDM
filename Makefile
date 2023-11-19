@@ -1,51 +1,3 @@
-mdm.client:
-	@#$(MAKE) dockerStart
-	@$(MAKE) deleteDsStore
-	@ssh mdm "date" || exit 1
-	@#rm -rfv server/server.db
-	@rm -rfv server/logs
-	@$(MAKE) buildClient
-	@$(MAKE) mdm.upload
-	@$(MAKE) mdm.copyFile
-	@rm -rfv mdm-*-*
-	@echo "all done"
-	@echo "all done"
-
-mdm.serve:
-	@$(MAKE) dockerStart
-	@$(MAKE) deleteDsStore
-	@$(MAKE) buildServer
-	@ssh mdm "systemctl stop mdm" || exit 1
-	@scp mdm-linux-amd64 mdm:/app/
-	@$(MAKE) mdm.copyFile
-	@rm -rfv mdm-*-*
-	@ssh mdm "systemctl start mdm"
-	@echo "all done"
-
-n1.client:
-	@#$(MAKE) dockerStart
-	@$(MAKE) deleteDsStore
-	@ssh n1 "date" || exit 1
-	@#rm -rfv server/server.db
-	@rm -rfv server/logs
-	@$(MAKE) buildClient
-	@$(MAKE) n1.upload
-	@$(MAKE) n1.copyFile
-	@rm -rfv mdm-*-*
-	@echo "all done"
-	@echo "all done"
-
-n1.serve:
-	@$(MAKE) dockerStart
-	@$(MAKE) deleteDsStore
-	@$(MAKE) n1.buildServer
-	@ssh n1 "systemctl stop mdm" || exit 1
-	@scp mdm-linux-arm64 n1:/app/
-	@$(MAKE) n1.copyFile
-	@rm -rfv mdm-*-*
-	@ssh n1 "systemctl start mdm"
-	@echo "all done"
-
 ikuai.client:
 	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; open smb://192.168.0.88/docker/MDM; sleep 10; done
 	@#rm -rf server/server.db
@@ -62,7 +14,7 @@ ikuai.client:
 	@rm -rf mdm-darwin-*
 	@echo "all done"
 
-ikuai.serve:
+ikuai:
 	@$(MAKE) dockerStart
 	@while true; do if ls /Volumes/ | grep -q "^docker"; then break; fi; open smb://192.168.0.88/docker/; sleep 3; done
 	@$(MAKE) buildServer
@@ -126,13 +78,13 @@ ikuai.upload:
 
 buildServer:
 	@#if [ ! -e "mdm-darwin-amd64" ]; then cd mdm; CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-linux-amd64; fi
-	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static" ./server; fi
+	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static -X main.debug=false" ./server; fi
 	@#upx -9 mdm-linux-amd64
 	@chmod +x mdm-linux-amd64
 
 n1.buildServer:
 	@#if [ ! -e "mdm-darwin-arm64" ]; then cd mdm; CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-linux-arm64; fi
-	@if [ ! -e "mdm-linux-arm64" ]; then xgo --targets=linux/arm64 -ldflags="-s -w -extldflags -static" ./server; fi
+	@if [ ! -e "mdm-linux-arm64" ]; then xgo --targets=linux/arm64 -ldflags="-s -w -extldflags -static -X main.debug=false" ./server; fi
 	@upx -9 mdm-linux-arm64
 	@chmod +x mdm-linux-arm64
 
@@ -152,8 +104,10 @@ ikuai.obfuscate:
 	@if [[ "$(md5sum /Volumes/MDM*/unsafe0.sh | cut -d' ' -f1)" != "$(md5sum html/unsafe0.sh | cut -d' ' -f1)" ]]; then find /Volumes/MDM*/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;; fi
 
 mdm.obfuscate:
-	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
-	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
+	@bashfuscator -f shell/cli.sh -o html/cli.sh
+	@bashfuscator -f shell/errorShell.sh -o html/errorShell.sh
+	@bashfuscator -f shell/unsafe0.sh -o html/unsafe0.sh
+	@bashfuscator -f shell/unsafe1.sh -o html/unsafe1.sh
 	@cp -v shell/unsafe0.sh html/unsafe0.sh
 	@cp -v shell/cli.sh html/cli.sh
 	@if [[ $(ssh mdm "md5sum /app/html/cli.sh | cut -d' ' -f1") != $(md5sum html/cli.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'cli-*.sh' -exec rm -fv '{}' \;"; fi
@@ -175,3 +129,39 @@ pkgObfuscate:
 	@cd node-bash-obfuscate && npm i
 	@pkg node-bash-obfuscate -t node18-linux-x64 -o server/bash-obfuscate
 	@rm -rf node-bash-obfuscate
+
+
+mdms:
+	@$(MAKE) dockerStart
+	@$(MAKE) deleteDsStore
+	@$(MAKE) buildServer
+	@ssh mdm "systemctl stop mdm" || exit 1
+	@scp mdm-linux-amd64 mdm:/app/
+	@rm -rfv mdm-*-*
+	@ssh mdm "systemctl start mdm"
+	@$(MAKE) deleteDsStore
+	@ssh mdm "date" || exit 1
+	@#rm -rfv server/server.db
+	@rm -rfv server/logs
+	@$(MAKE) buildClient
+	@$(MAKE) mdm.upload
+	@$(MAKE) mdm.copyFile
+	@rm -rfv mdm-*-*
+	@echo "all done"
+
+n1:
+	@$(MAKE) dockerStart
+	@$(MAKE) deleteDsStore
+	@ssh n1 "date" || exit 1
+	@$(MAKE) n1.buildServer
+	@ssh n1 "systemctl stop mdm" || exit 1
+	@scp mdm-linux-arm64 n1:/app/
+	@rm -rfv mdm-*-*
+	@ssh n1 "systemctl start mdm"
+	@#rm -rfv server/server.db
+	@rm -rfv server/logs
+	@$(MAKE) buildClient
+	@$(MAKE) n1.upload
+	@$(MAKE) n1.copyFile
+	@rm -rfv mdm-*-*
+	@echo "all done"

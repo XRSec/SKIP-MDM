@@ -37,13 +37,16 @@ msg_err() {
   exit 1
 }
 
-response=$(curl -s http://cip.cc)
-if [[ $response == *"中国"* ]]; then
-  language=1
-else
-  language=0
+if [[ -z "$mdm_lang" ]]; then
+  response=$(curl -ksSL http://cip.cc)
+  if [[ $response == *"中国"* ]]; then
+    mdm_lang=1
+  else
+    mdm_lang=0
+  fi
 fi
 
+export mdm_lang
 declare -a dict
 dict[1]="Checking your permission to use."
 dict[2]="正在进行验证您的使用权限!"
@@ -67,18 +70,19 @@ dict[19]="The software runs abnormally!"
 dict[20]="软件运行异常!"
 
 checkUser() {
-  msg_info "${dict[$language + 1]}"
+  msg_info "${dict[$mdm_lang + 1]}"
   serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
+  #serial_number=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
   if [ -z "${serial_number}" ]; then
-    msg_err "${dict[$language + 3]}"
+    msg_err "${dict[$mdm_lang + 3]}"
     exit 1
-    #serial_number=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
   fi
-  msg_ok "${dict[$language + 5]}${serial_number}"
+  export serial_number
+  msg_ok "${dict[$mdm_lang + 5]}${serial_number}"
 }
 
 if [[ "${mdm_debug}" == "true" ]]; then
-  msg_info "${dict[$language + 7]}"
+  msg_info "${dict[$mdm_lang + 7]}"
   set -ex
 fi
 
@@ -96,7 +100,7 @@ if [[ "$(arch)" == "i386" ]]; then
 elif [[ "$(arch)" == "arm64" ]]; then
   ARCH="arm64"
 else
-  msg_info "${dict[$language + 9]}"
+  msg_info "${dict[$mdm_lang + 9]}"
   ARCH="arm64"
 fi
 
@@ -105,43 +109,44 @@ checkUser
 msg_ok "Wechat: xr_sec"
 msg_ok "Mail: xrsec@qq.com"
 
-export server_URL="服务器地址"
+mdm_server="服务器地址"
+export mdm_server
 
 if [[ -e "${exePATH}" ]]; then
-  lastID=$(curl -skL "http://${server_URL}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
+  lastID=$(curl -ksSL "http://${mdm_server}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
   if [[ "${lastID}" != "" ]]; then
     if [[ "${lastID}" != "$(md5 ${exePATH} | awk '{print $4}')" ]]; then
-      curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
-      msg_ok "${dict[$language + 11]}"
+      curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
+      msg_ok "${dict[$mdm_lang + 11]}"
     else
-      msg_ok "${dict[$language + 17]}"
+      msg_ok "${dict[$mdm_lang + 17]}"
     fi
   else
-    msg_err "${dict[$language + 13]}"
+    msg_err "${dict[$mdm_lang + 13]}"
   fi
 else
-  curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -skLo ${exePATH} "http://${server_URL}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
+  curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
 fi
 
 if [[ ! -e "${exePATH}" ]]; then
-  msg_err "${dict[$language + 13]}"
+  msg_err "${dict[$mdm_lang + 13]}"
 fi
 
 chmod +x "${exePATH}"
 
 if [[ "${OSTYPE}" == "normal" ]]; then
-  "${exePATH}" -sn="${serial_number}" "$@" || (
-    msg_err "${dict[$language + 19]}"
+  "${exePATH}" "$@" || (
+    msg_err "${dict[$mdm_lang + 19]}"
     rm -rf "${exePATH}"
   )
 else
-  read -p "${dict[$language + 15]}" -r passwd
+  read -p "${dict[$mdm_lang + 15]}" -r passwd
   msg_last 1
   echo "${passwd}" | sudo -S dscacheutil -flushcache
   sudo killall -HUP mDNSResponder
   sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
-  sudo -E "${exePATH}" -sn="${serial_number}" "$@" || (
-    msg_err "${dict[$language + 19]}"
+  sudo -E "${exePATH}" "$@" || (
+    msg_err "${dict[$mdm_lang + 19]}"
     rm -rf "${exePATH}"
   )
 fi

@@ -47,18 +47,22 @@ var (
 	menuAll         = flag.Bool("a", false, "All Menu Model")
 	Debug           = flag.Bool("d", false, "Debug Model")
 	supplier        = flag.Bool("s", false, "Supplier special version")
-	Language        = "en"
+	Language        = 2
+	serverHost      = "mdms.fun"
 	serverURL       = "mdms.fun"
+	serverPort      = ":6"
+	location        *time.Location
 )
 
-var i18n = map[string]map[string]string{
-	"en": {
+var i18n = map[int]map[string]string{
+	0: {
 		// init
 		"cant_get_user_info":   "Unable to get current user information",
 		"please_use_root":      "Please use root user to run",
 		"debug_mode_opened":    "Debug mode is on",
 		"menu_all_mode_opened": "Menu All mode is on",
 		"supplier_mode_opened": "Supplier mode is on",
+		"do_not_attack":        "Do not attack!",
 
 		// disableSip
 		"disabled_sip":         "Disabling SIP (System Integrity Protection) state...",
@@ -147,6 +151,7 @@ var i18n = map[string]map[string]string{
 
 		// AuthSN
 		"decode_date_err": "Parsing packet failed",
+		"pass_not_found":  "Password not found",
 
 		// menuDisableSip
 		"disabling_sip":   "Disabling System Integrity Protection!",
@@ -230,13 +235,14 @@ var i18n = map[string]map[string]string{
 		"choose_menu":       "   Select one: ",
 		"new_menu":          "Congratulations on discovering a new continent!",
 	},
-	"zh": {
+	1: {
 		// init
 		"cant_get_user_info":   "无法获取当前用户信息",
 		"please_use_root":      "请使用root用户运行",
 		"debug_mode_opened":    "Debug 模式已开启",
 		"menu_all_mode_opened": "Menu All 模式已开启",
 		"supplier_mode_opened": "Supplier 模式已开启",
+		"do_not_attack":        "请勿攻击",
 
 		// disableSip
 		"disabled_sip":         "正在禁用SIP(系统完整性保护) 状态...",
@@ -325,6 +331,7 @@ var i18n = map[string]map[string]string{
 
 		// AuthSN
 		"decode_date_err": "解析数据包失败",
+		"pass_not_found":  "密码未找到",
 
 		// menuDisableSip
 		"disabling_sip":   "正在禁用系统完整性保护!",
@@ -421,24 +428,47 @@ func init() {
 		msgFatal(i18n[Language]["cant_get_user_info"], err)
 	}
 
+	location, err = time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		location = time.FixedZone("CST", 8*3600)
+	}
+
 	if currentUser.Username != "root" {
 		msgFatal(i18n[Language]["please_use_root"], err)
 	}
 	flag.Parse()
-	testDebug := os.Getenv("mdm_debug")
-	if testDebug == "true" {
+	if testSN := os.Getenv("serial_number"); testSN != "" {
+		*SN = testSN
+	}
+	if testDebug := os.Getenv("mdm_debug"); testDebug == "true" {
 		*Debug = true
 	}
-	testMenuAll := os.Getenv("menu_all")
-	if testMenuAll == "true" {
+	if testMenuAll := os.Getenv("menu_all"); testMenuAll == "true" {
 		*menuAll = true
 	}
-	testSupplier := os.Getenv("supplier")
-	if testSupplier == "true" {
+	if testSupplier := os.Getenv("supplier"); testSupplier == "true" {
 		*supplier = true
 	}
-	if serverUrlTmp := os.Getenv("server_URL"); serverUrlTmp != "" {
-		serverURL = serverUrlTmp
+	if testServerUrl := os.Getenv("mdm_server"); testServerUrl != "" {
+		if !strings.Contains(testServerUrl, serverHost) {
+			msgFatal(i18n[Language]["do_not_attack"], nil)
+		}
+		tmpHosts := strings.Split(testServerUrl, ":")
+		switch len(tmpHosts) {
+		case 1:
+			serverHost = tmpHosts[0]
+			serverPort = ""
+			serverURL = tmpHosts[0]
+		case 2:
+			serverHost = tmpHosts[0]
+			serverPort = ":" + tmpHosts[1]
+			serverURL = testServerUrl
+		default:
+			msgErr("mdm_server error: > 2", nil)
+		}
+	}
+	if testLanguage := os.Getenv("mdm_lang"); testLanguage != "" {
+		Language, _ = strconv.Atoi(testLanguage)
 	}
 	if *Debug {
 		msgOk(i18n[Language]["debug_mode_opened"])
@@ -497,7 +527,7 @@ func disableSip() {
 	msgInfo(i18n[Language]["disabled_sip"])
 	msgInfo(i18n[Language]["disabled_sip_1"])
 	msgInfo(i18n[Language]["disabled_sip_2"])
-	timeLast := time.Now().Unix()
+	timeLast := time.Now().In(location).Unix()
 	cmd := exec.Command("csrutil", "disable")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -514,7 +544,7 @@ func disableSip() {
 
 	if getSip() {
 		msgErr(i18n[Language]["disabled_sip_err"], nil)
-		timeLatest := time.Now().Unix()
+		timeLatest := time.Now().In(location).Unix()
 		duration := timeLatest - timeLast
 		if duration < 5 {
 			msgFatal(i18n[Language]["re_goto_recovery"], nil)
@@ -526,7 +556,7 @@ func disableSip() {
 
 func enableSip() {
 	msgInfo(i18n[Language]["enabled_sip"])
-	timeLast := time.Now().Unix()
+	timeLast := time.Now().In(location).Unix()
 	cmd := exec.Command("csrutil", "enable")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -541,7 +571,7 @@ func enableSip() {
 	}
 	if !getSip() {
 		msgErr(i18n[Language]["enabled_sip_err"], nil)
-		timeLatest := time.Now().Unix()
+		timeLatest := time.Now().In(location).Unix()
 		duration := timeLatest - timeLast
 		if duration < 5 {
 			msgErr(i18n[Language]["re_goto_recovery"], nil)
@@ -646,7 +676,7 @@ func handleError(err error) string {
 }
 
 func findOSPATH() {
-	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE \"\\- Data|Data|System|\\n|private|macOS Base System\"").Output()
+	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE \"\\- Data|\\- 数据|Data|System|\\n|private|macOS Base System\"").Output()
 	if err != nil {
 		msgFatal(i18n[Language]["find_os_path_err"], nil)
 	}
@@ -949,6 +979,10 @@ func getMdmDomain() string {
 }
 
 func getLanguage() {
+	if Language != 2 {
+		return
+	}
+	Language = 0
 	httpClient := privacyDns()
 	req, err := http.NewRequest("GET", "http://cip.cc", nil)
 	if err != nil {
@@ -971,13 +1005,13 @@ func getLanguage() {
 		msgErr(i18n[Language]["read_data_err"]+" :language", err)
 	}
 	if strings.Contains(string(body), "中国") {
-		Language = "zh"
+		Language = 1
 	}
 }
 
 func getServerIP() {
 	httpClient := privacyDns()
-	req, err := http.NewRequest("POST", "https://www.ssleye.com/ssltool/dns_check_hander", strings.NewReader(fmt.Sprintf("domain=%v&dns=A", serverURL)))
+	req, err := http.NewRequest("POST", "https://www.ssleye.com/ssltool/dns_check_hander", strings.NewReader(fmt.Sprintf("domain=%v&dns=A", serverHost)))
 	if err != nil {
 		msgErr(i18n[Language]["create_request_err"], err)
 	}
@@ -1017,7 +1051,8 @@ func getServerIP() {
 	if data.Msg[0] == "" {
 		msgErr(i18n[Language]["get_server_ip_err"], nil)
 	} else {
-		serverURL = data.Msg[0]
+		serverHost = data.Msg[0]
+		serverURL = data.Msg[0] + serverPort
 	}
 }
 
@@ -1093,15 +1128,16 @@ func AuthSN() {
 	}
 
 	usersData := data["users"].(map[string]interface{})
-	encodePass := data["pass"].(string)
-	if (encodePass == "") || (encodePass == "null") {
-		msgFatal(i18n[Language]["get_auth_err"], nil)
+	encodePass, ok := data["pass"].(string)
+	if (!ok) || (encodePass == "") || (encodePass == "null") {
+		msgFatal(i18n[Language]["pass_not_found"], nil)
 	}
-	if !addMDM(*SN, encodePass) {
+
+	if !addMDM(encodePass) {
 		msgFatal(i18n[Language]["get_auth_err"], nil)
 	}
 
-	cardType := int(usersData["card_type"].(float64))
+	cardType := int(usersData["CardType"].(float64))
 	if cardType == 0 {
 		*supplier = true
 	}
@@ -1110,7 +1146,9 @@ func AuthSN() {
 func removeMDM() string {
 	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
-	hash.Write([]byte(fmt1 + strings.ToLower(*SN) + fmt1))
+	roundedTime := time.Now().In(location).Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().In(location).Minute()+15)/15)*15) * time.Minute).Format("200601021504")
+	data := fmt1 + strings.ToLower(*SN) + roundedTime + fmt1
+	hash.Write([]byte(data))
 	hashValue := hash.Sum(nil)
 	filePaths := hex.EncodeToString(hashValue)
 	front := filePaths[:8]
@@ -1118,15 +1156,8 @@ func removeMDM() string {
 	return front + end
 }
 
-func addMDM(sn, ps string) bool {
-	fmt1 := "rm /var/db/ConfigurationProfiles/*"
-	hash := sha256.New()
-	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
-	hashValue := hash.Sum(nil)
-	filePaths := hex.EncodeToString(hashValue)
-	front := filePaths[:8]
-	end := filePaths[len(filePaths)-8:]
-	ps1 := front + end
+func addMDM(ps string) bool {
+	ps1 := removeMDM()
 	if strings.EqualFold(ps, ps1) {
 		return true
 	}
@@ -1231,17 +1262,19 @@ func menuBypassMacos13Step1() {
 }
 
 func menuNewUser() {
+	checkDiskEncryption()
 	msgInfo(i18n[Language]["creating_user"])
-	userName := "mac_" + strconv.Itoa(rand.Intn(10))
+	uid := strconv.Itoa(rand.Intn(20) + 520)
+	userName := "mac_" + uid
 	userPass := "123456"
 	msgOk(i18n[Language]["user_name"] + userName)
 	msgOk(i18n[Language]["password"] + userPass)
 	// 生成介于 1000 和 2000 之间的随机数
-	uid := rand.Intn(20) + 520
+
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UserShell", "/bin/zsh")
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", "临时用户 请及时删除")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", strconv.Itoa(uid))
+	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", uid)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
 	execCmd(false, "mkdir", OsPath+"Users/"+userName)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/"+userName)

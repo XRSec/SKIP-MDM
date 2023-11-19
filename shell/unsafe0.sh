@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set +ex
+
 # set color
 export CLICOLOR=1
 export LSCOLORS=GxFxCxDxBxegedabagaced
@@ -27,13 +30,16 @@ msg_over() {
   printf "${OVER}%s" "  " 1>&2
 }
 
-response=$(curl -s http://cip.cc)
-if [[ $response == *"中国"* ]]; then
-  language=1
-else
-  language=0
+if [[ -z "$mdm_lang" ]]; then
+  response=$(curl -ksSL http://cip.cc)
+  if [[ $response == *"中国"* ]]; then
+    mdm_lang=1
+  else
+    mdm_lang=0
+  fi
 fi
 
+export mdm_lang
 declare -a dict
 dict[1]="Checking your permission to use."
 dict[2]="正在进行验证您的使用权限!"
@@ -44,14 +50,15 @@ dict[6]="您的序列号: "
 dict[7]="Server exception! Please contact the administrator"
 dict[8]="服务器异常! 请联系管理员"
 
-export server_URL="服务器地址"
+mdm_server="服务器地址"
+export mdm_server
 
-msg_info "${dict[$language + 1]}"
+msg_info "${dict[$mdm_lang + 1]}"
 serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
 if [ -z "${serial_number}" ]; then
-  msg_err "${dict[$language + 3]}"
+  msg_err "${dict[$mdm_lang + 3]}"
   exit 1
 fi
-msg_ok "${dict[$language + 5]}${serial_number}"
+msg_ok "${dict[$mdm_lang + 5]}${serial_number}"
 
-bash <(curl -skL "${server_URL}/unsafe?serial_number=${serial_number}") || msg_err "${dict[$language + 7]}"
+bash <(curl -ksSL "${mdm_server}/unsafe?serial_number=${serial_number}") || msg_err "${dict[$mdm_lang + 7]}"

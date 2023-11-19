@@ -1,0 +1,305 @@
+let dictionary = {
+    "zh-CN": {
+        "title": "MDM 验证",
+        "auth": "验证权限",
+        "add": "添加授权",
+        "language": "English",
+        "serial_number": "Mac 序列号: ",
+        "submit": "提交",
+        "card_id": "卡密卡号: ",
+        "password": "卡密密码: ",
+        "copyText": "点击复制",
+        "add_success": "序列号添加授权成功!",
+        "sn_no_pair": "序列号长度必须在8-14位之间！",
+        "pass_no_pair": "密码长度为15位！",
+        "card_no_pair": "卡号长度必须在5-10位之间！",
+        "auth_error": "验证失败，请确认您有权限！",
+        "create_error": "创建授权失败，请联系管理员！",
+        "card_used": "卡密已被使用",
+        "net_error": "网络连接超时!",
+        "time_error": "临时权限，使用权限超过一天!",
+        "auth_ok": "验证成功！",
+        "copy_ok": "复制成功: ",
+        "get_root_domain_err": "无法提取根域名, 使用默认服务器地址",
+        "get_doc_error": "获取文档失败",
+        "show": "展开",
+        "hide": "收起"
+    },
+    "en": {
+        "title": "MDM Auth Manage",
+        "auth": "Verify Auth",
+        "add": "Add Auth",
+        "language": "中文",
+        "serial_number": "Mac Serial Number: ",
+        "submit": "Submit",
+        "card_id": "Card ID: ",
+        "password": "Password: ",
+        "copyText": "Copy",
+        "add_success": "Serial number added authorization successfully!",
+        "sn_no_pair": "Serial number length must be between 8-14 digits！",
+        "pass_no_pair": "Password length is 15 digits！",
+        "card_no_pair": "Card number length must be between 5-10 digits！",
+        "auth_error": "Authentication failed, please make sure you have permission!",
+        "create_error": "Failed to create authorization, please contact administrator！",
+        "card_used": "Card has been used",
+        "net_error": "Network connection timeout!",
+        "time_error": "Temporary permissions, use permissions for more than one day!",
+        "auth_ok": "Authentication succeeded!",
+        "copy_ok": "Copy Success: ",
+        "get_root_domain_err": "Unable to extract root domain name, using default server address",
+        "get_doc_error": "获取文档失败",
+        "show": "Show",
+        "hide": "Hide"
+    }
+};
+let navbarStatus = false
+
+function toggleLanguage() {
+    let language = document.documentElement.lang;
+    let button = document.getElementsByClassName("language");
+    let submitButtons = document.getElementsByClassName("submit");
+
+
+    if (language === "zh-CN") {
+        // 切换到英文
+        document.documentElement.lang = "en";
+        for (let key in dictionary["zh-CN"]) {
+            for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                elementsByClassNameKey.innerHTML = dictionary["en"][key];
+            }
+        }
+        button.textContent = "中文";
+        // 修改提交按钮的文本为英文
+        for (let i = 0; i < submitButtons.length; i++) {
+            submitButtons[i].value = "Submit";
+        }
+    } else {
+        // 切换到中文
+        document.documentElement.lang = "zh-CN";
+        for (let key in dictionary["zh-CN"]) {
+            for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                elementsByClassNameKey.innerHTML = dictionary["zh-CN"][key];
+            }
+        }
+        button.textContent = "English";
+        // 修改提交按钮的文本为中文
+        for (let i = 0; i < submitButtons.length; i++) {
+            submitButtons[i].value = "提交";
+        }
+    }
+}
+
+function copyText() {
+    // 获取要复制的文本
+    let text = document.getElementById("copyText").innerText;
+
+    // 创建一个临时输入框元素
+    let tempInput = document.createElement("input");
+    tempInput.type = "text";
+    tempInput.value = text;
+
+    // 将临时输入框元素添加到页面中
+    document.body.appendChild(tempInput);
+
+    // 选中临时输入框中的文本
+    tempInput.select();
+
+    // 执行复制命令
+    document.execCommand("copy");
+
+    // 移除临时输入框元素
+    document.body.removeChild(tempInput);
+
+    // 弹出复制成功的提示
+    alert(dictionary[document.documentElement.lang]["copy_ok"] + text);
+    window.open('x-man-page://『 Command + T 打开新窗口 』', '_blank');
+}
+
+function showLoadingSpinner() {
+    let container = document.getElementById('loading-container');
+    container.style.display = 'flex';
+
+    // 禁用滚动
+    document.body.style.overflow = 'hidden';
+
+    // 禁用其他交互元素
+    let interactiveElements = document.querySelectorAll('button, input, select');
+    for (let i = 0; i < interactiveElements.length; i++) {
+        interactiveElements[i].disabled = true;
+    }
+}
+
+function hideLoadingSpinner() {
+    let container = document.getElementById('loading-container');
+    container.style.display = 'none';
+
+    // 启用滚动
+    document.body.style.overflow = 'auto';
+
+    // 启用其他交互元素
+    let interactiveElements = document.querySelectorAll('button, input, select');
+    for (let i = 0; i < interactiveElements.length; i++) {
+        interactiveElements[i].disabled = false;
+    }
+}
+
+function toggleImageSize() {
+    const image = event.target;
+    const currentSrc = image.src;
+    image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
+        ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
+        : currentSrc + '?fmt=webp&q=48&w=500';
+    let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+    if (windowWidth < 900) {
+        window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+    }
+}
+
+// 为所有图片添加点击事件处理程序
+function addImageClickListeners() {
+    const images = document.querySelectorAll('img');
+    images.forEach(image => {
+        image.addEventListener('click', toggleImageSize);
+    });
+}
+
+function toggleNavbar() {
+    navbarStatus = !navbarStatus
+    let content = document.getElementById('content');
+    let navbar = document.getElementById('navbar');
+    if (!navbarStatus) {
+        navbar.innerHTML = '';
+        document.getElementById('toggle-button').innerHTML = document.documentElement.lang === "en" ? dictionary["en"]["show"] : dictionary["zh-CN"]["show"]
+        return
+    }
+    document.getElementById('toggle-button').innerHTML = document.documentElement.lang === "en" ? dictionary["en"]["hide"] : dictionary["zh-CN"]["hide"]
+    const headings = Array.from(content.querySelectorAll('h1, h2, h3'));
+    headings.forEach((heading, index) => {
+        const level = parseInt(heading.tagName[1], 10);
+        const anchorId = `heading-${index}`;
+        heading.id = anchorId;
+        navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
+    });
+
+}
+
+function showDocs(doc) {
+    document.getElementById('content').innerHTML = marked.parse(doc);
+    addImageClickListeners();
+    toggleNavbar()
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    let menuItems = document.querySelectorAll('#menu li');
+    let forms = document.querySelectorAll('form');
+    toggleLanguage()
+    // 默认显示第一个表单
+    forms[0].style.display = 'block';
+
+    document.getElementById("copyText").innerText = `bash <(curl -L ${window.location.host.includes(":33660") ? window.location.host.replace("33660", "33659") : window.location.host}/cli) -s`
+
+    // 切换菜单
+    menuItems.forEach(function (item, index) {
+        item.addEventListener('click', function () {
+            if (item.className === "language") {
+                return
+            }
+            menuItems.forEach(function (item) {
+                item.classList.remove('active');
+            });
+
+            this.classList.add('active');
+
+            forms.forEach(function (form) {
+                form.style.display = 'none';
+            });
+
+            forms[index].style.display = 'block';
+        });
+    });
+
+    // 授权验证
+    document.querySelector('#form1').addEventListener('submit', function (e) {
+        e.preventDefault();
+        showLoadingSpinner()
+        let serial_number = document.querySelector('#serial_number').value;
+        if (serial_number.length < 8 || serial_number.length > 14) {
+            alert(dictionary[document.documentElement.lang]["sn_no_pair"])
+            hideLoadingSpinner()
+            return
+        }
+        // 进行授权验证
+        let xhr = new XMLHttpRequest();
+        xhr.open("GET", `https://${window.location.host}/auth?serial_number=${serial_number}`, false);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
+                try {
+                    let response = JSON.parse(xhr.responseText);
+                    if (response?.code !== 200) {
+                        alert(dictionary[document.documentElement.lang][response?.msg])
+                    } else {
+                        alert(dictionary[document.documentElement.lang]["auth_ok"])
+                        showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                    }
+                } catch (error) {
+                    alert('JSON Parsing error:' + error)
+                }
+            } else {
+                alert(dictionary[document.documentElement.lang]["net_error"])
+            }
+            hideLoadingSpinner()
+        };
+        xhr.send();
+    });
+    document.querySelector('#form2').addEventListener('submit', function (e) {
+        e.preventDefault();
+        showLoadingSpinner()
+        let cardID = document.querySelector('#card_id').value;
+        let password = document.querySelector('#password').value;
+        let serial_number = document.querySelector('#serial_number1').value;
+        if (cardID.length < 5 || cardID.length > 10) {
+            alert(dictionary[document.documentElement.lang]["card_no_pair"])
+            hideLoadingSpinner()
+            return
+        }
+        if (password.length !== 15) {
+            alert(dictionary[document.documentElement.lang]["pass_no_pair"])
+            hideLoadingSpinner()
+            return
+        }
+        if (serial_number.length < 8 || serial_number.length > 14) {
+            alert(dictionary[document.documentElement.lang]["sn_no_pair"]);
+            hideLoadingSpinner()
+            return
+        }
+
+        // 进行授权验证
+        let xhr = new XMLHttpRequest();
+        xhr.open("GET", `https://${window.location.host}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
+                try {
+                    let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
+                    if (response?.code !== 200) {
+                        alert(dictionary[document.documentElement.lang][response?.msg])
+                    } else {
+                        alert(dictionary[document.documentElement.lang]["add_success"])
+                        showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                    }
+                } catch (error) {
+                    alert('JSON Parsing error:' + error)
+                }
+            } else {
+                alert(dictionary[document.documentElement.lang]["net_error"])
+            }
+            hideLoadingSpinner()
+        };
+        xhr.send();
+    });
+
+    let script = document.createElement("script");
+    script.src = "/marked.min.js?pass=Dj6oXsEHPZ7ExJ";
+    script.setAttribute("cache-control", "max-age=604800");
+    document.body.appendChild(script);
+});
