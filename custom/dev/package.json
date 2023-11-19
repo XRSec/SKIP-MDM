@@ -76,7 +76,7 @@
     "serverless-dotenv-plugin": "^6.0.0",
     "serverless-esbuild": "^1.48.5",
     "serverless-offline": "^13.2.0",
-    "start-server-and-test": "^2.0.1",
+    "start-server-and-test": "^2.0.3",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
