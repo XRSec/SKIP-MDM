@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set +ex
+
 # set color
 export CLICOLOR=1
 export LSCOLORS=GxFxCxDxBxegedabagaced

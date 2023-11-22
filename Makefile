@@ -36,7 +36,7 @@ getMD5:
 
 mdm.copyFile:
 	@# 更新文件
-	@scp -r mdm:/app/server.db server/
+	@#scp -r mdm:/app/server.db server/
 	@scp -r mdm:/app/logs server/
 	@# 推送文件
 	@$(MAKE) mdm.obfuscate
@@ -49,7 +49,7 @@ mdm.copyFile:
 
 n1.copyFile:
 	@# 更新文件
-	@scp -r n1:/app/server.db server/
+	@#scp -r n1:/app/server.db server/
 	@scp -r n1:/app/logs server/
 	@# 推送文件
 	@$(MAKE) n1.obfuscate
@@ -104,12 +104,11 @@ ikuai.obfuscate:
 	@if [[ "$(md5sum /Volumes/MDM*/unsafe0.sh | cut -d' ' -f1)" != "$(md5sum html/unsafe0.sh | cut -d' ' -f1)" ]]; then find /Volumes/MDM*/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;; fi
 
 mdm.obfuscate:
-	@bashfuscator -f shell/cli.sh -o html/cli.sh
-	@bashfuscator -f shell/errorShell.sh -o html/errorShell.sh
-	@bashfuscator -f shell/unsafe0.sh -o html/unsafe0.sh
-	@bashfuscator -f shell/unsafe1.sh -o html/unsafe1.sh
-	@cp -v shell/unsafe0.sh html/unsafe0.sh
-	@cp -v shell/cli.sh html/cli.sh
+	cp -v shell/* html/
+	@#bash-obfuscate shell/cli.sh -o html/cli.sh
+	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
+	@#bash-obfuscate shell/unsafe0.sh -o html/unsafe0.sh
+	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
 	@if [[ $(ssh mdm "md5sum /app/html/cli.sh | cut -d' ' -f1") != $(md5sum html/cli.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'cli-*.sh' -exec rm -fv '{}' \;"; fi
 	@if [[ $(ssh mdm "md5sum /app/html/unsafe0.sh | cut -d' ' -f1") != $(md5sum html/unsafe0.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;"; fi
 
