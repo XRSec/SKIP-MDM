@@ -1,3 +1,0 @@
-z="
-";Gz='SCOL';Sz='" # ';Yz='33[K';qz='" 1>';rz='&2';Bz='rt C';Qz='\\03';xz='败, 请';Mz='agac';lz='OL_N';Cz='LICO';ABz='否拥有权';Ez='1';mz='C}] ';fz='${OV';ez='tf "';Iz='GxFx';Dz='LOR=';jz=';31m';cz=') {';Xz='r\\0';Jz='CxDx';BBz='限!"';iz='33[1';Tz='No C';Uz='olor';Az='expo';pz='${1}';Oz='COL_';tz=' 1';Zz='"';hz=' [\0';kz='✗${C';wz='"验证失';Lz='edab';gz='ER} ';oz='n" "';Nz='ed';Wz='="\\';uz='}';vz='err ';Pz='NC="';sz='exit';yz='确认您是';az='msg_';nz=' %s\';bz='err(';Hz='ORS=';dz='prin';Rz='3[0m';Fz='rt L';Vz='OVER';Kz='Bxeg';
-eval "$Az$Bz$Cz$Dz$Ez$z$Az$Fz$Gz$Hz$Iz$Jz$Kz$Lz$Mz$Nz$z$Oz$Pz$Qz$Rz$Sz$Tz$Uz$z$Vz$Wz$Xz$Yz$Zz$z$az$bz$cz$z$dz$ez$fz$gz$hz$iz$jz$kz$lz$mz$nz$oz$pz$qz$rz$z$sz$tz$z$uz$z$az$vz$wz$xz$yz$ABz$BBz"
