@@ -232,7 +232,6 @@ func decodeHash(sn, ps string) bool {
 		return true
 	}
 	ps1 := encodeHash(sn)
-	log.Infoln(ps, ps1)
 	if strings.EqualFold(ps, ps1) {
 		return true
 	}
