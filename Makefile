@@ -36,7 +36,7 @@ getMD5:
 
 mdm.copyFile:
 	@# 更新文件
-	@scp -r mdm:/app/server.db server/
+	@#scp -r mdm:/app/server.db server/
 	@scp -r mdm:/app/logs server/
 	@# 推送文件
 	@$(MAKE) mdm.obfuscate
@@ -65,16 +65,16 @@ dockerStart:
 	@sleep 2
 
 mdm.upload:
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* mdm:/app/; fi
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* mdm:/app/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* mdm:/app/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* mdm:/app/; fi
 
 n1.upload:
-	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* n1:/app/; fi
-	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* n1:/app/; fi
+	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=C02GR1AKQ05N&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* n1:/app/; fi
+	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=C02GR1AKQ05N&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* n1:/app/; fi
 
 ikuai.upload:
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; cp -v mdm-darwin-amd64* /Volumes/MDM*/; fi
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=MFQ069Y9NC&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; cp -v mdm-darwin-arm64* /Volumes/MDM*/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; cp -v mdm-darwin-amd64* /Volumes/MDM*/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; cp -v mdm-darwin-arm64* /Volumes/MDM*/; fi
 
 buildServer:
 	@#if [ ! -e "mdm-darwin-amd64" ]; then cd mdm; CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-linux-amd64; fi
@@ -104,10 +104,10 @@ ikuai.obfuscate:
 	@if [[ "$(md5sum /Volumes/MDM*/unsafe0.sh | cut -d' ' -f1)" != "$(md5sum html/unsafe0.sh | cut -d' ' -f1)" ]]; then find /Volumes/MDM*/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;; fi
 
 mdm.obfuscate:
-	@bashfuscator -f shell/cli.sh -o html/cli.sh
-	@bashfuscator -f shell/errorShell.sh -o html/errorShell.sh
-	@bashfuscator -f shell/unsafe0.sh -o html/unsafe0.sh
-	@bashfuscator -f shell/unsafe1.sh -o html/unsafe1.sh
+	@bash-obfuscate shell/cli.sh -o html/cli.sh
+	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
+	@bash-obfuscate shell/unsafe0.sh -o html/unsafe0.sh
+	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
 	@cp -v shell/unsafe0.sh html/unsafe0.sh
 	@cp -v shell/cli.sh html/cli.sh
 	@if [[ $(ssh mdm "md5sum /app/html/cli.sh | cut -d' ' -f1") != $(md5sum html/cli.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'cli-*.sh' -exec rm -fv '{}' \;"; fi

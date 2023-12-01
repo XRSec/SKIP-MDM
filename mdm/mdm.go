@@ -38,6 +38,7 @@ var (
 	OsType          = false                    // true: normal false: recovery
 	OsPath          = "/Volumes/Macintosh HD/" //Volumes/Macintosh HD/
 	User            = ""
+	Pass            = ""
 	UID             = "501"
 	NewMachine      = false
 	MDMPath         string // /Volumes/Macintosh HD/var/db/ConfigurationProfiles/
@@ -445,6 +446,9 @@ func init() {
 	}
 	if testMenuAll := os.Getenv("menu_all"); testMenuAll == "true" {
 		*menuAll = true
+	}
+	if testPasswd := os.Getenv("passwd"); testPasswd != "" {
+		Pass = testPasswd
 	}
 	if testSupplier := os.Getenv("supplier"); testSupplier == "true" {
 		*supplier = true
@@ -1147,6 +1151,7 @@ func removeMDM() string {
 	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
 	roundedTime := time.Now().In(location).Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().In(location).Minute()+15)/15)*15) * time.Minute).Format("200601021504")
+	fmt.Println(roundedTime)
 	data := fmt1 + strings.ToLower(*SN) + roundedTime + fmt1
 	hash.Write([]byte(data))
 	hashValue := hash.Sum(nil)
@@ -1328,22 +1333,23 @@ func menuDisableRoot() {
 		msgFatal(i18n[Language]["not_work_normal"], nil)
 	} else {
 		checkUser()
-		fmt.Printf(i18n[Language]["input_your_password"])
-		var idstr string
-		if _, err := fmt.Scanln(&idstr); err != nil {
-			msgLast(1)
-			msgFatal(i18n[Language]["in_put_err"], nil)
-		} else {
-			msgLast(1)
+		if Pass == "" {
+			fmt.Printf(i18n[Language]["input_your_password"])
+			if _, err := fmt.Scanln(&Pass); err != nil {
+				msgLast(1)
+				msgFatal(i18n[Language]["in_put_err"], nil)
+			} else {
+				msgLast(1)
+			}
 		}
-		output, err := exec.Command("dsenableroot", "-d", "-u", User, "-p", idstr).Output()
+		output, err := exec.Command("dsenableroot", "-d", "-u", User, "-p", Pass).Output()
 		if err != nil {
 			msgFatal(i18n[Language]["disable_root_err"], nil)
 		}
 		if strings.Contains(string(output), "Successfully") {
 			msgOk(i18n[Language]["disable_root_ok"])
 		} else {
-			msgFatal(fmt.Sprintf("%v[%v]", i18n[Language]["disable_root_err_pass"], idstr), nil)
+			msgFatal(fmt.Sprintf("%v[%v]", i18n[Language]["disable_root_err_pass"], Pass), nil)
 		}
 		//msgLast(3)
 	}

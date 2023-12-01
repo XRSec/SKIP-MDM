@@ -134,7 +134,7 @@ func handleRequest(c *gin.Context) {
 		//return
 	}
 
-	if strings.Contains(urlString, "81.68.230.131") {
+	if strings.Contains(urlString, "107.148.31.165") {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", urlString)
 	} else if strings.Contains(urlString, "localhost") {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:63342")
@@ -218,6 +218,7 @@ func encodeHash(sn string) string {
 	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
 	roundedTime := time.Now().Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().Minute()+15)/15)*15) * time.Minute).Format("200601021504")
+	log.Infoln(roundedTime)
 	data := fmt1 + strings.ToLower(sn) + roundedTime + fmt1
 	hash.Write([]byte(data))
 	hashValue := hash.Sum(nil)
@@ -232,6 +233,7 @@ func decodeHash(sn, ps string) bool {
 		return true
 	}
 	ps1 := encodeHash(sn)
+	log.Infoln(ps, ps1)
 	if strings.EqualFold(ps, ps1) {
 		return true
 	}
@@ -508,6 +510,7 @@ func main() {
 				ps := strings.ToLower(c.Query("ps"))
 				compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 				if ps == "" || err != nil || !compile || !decodeHash(users.SerialNumber, ps) {
+					log.Errorln("ps can't compile")
 					c.JSON(http.StatusOK, gin.H{
 						"code":  http.StatusOK,
 						"doc":   doc,
@@ -521,7 +524,6 @@ func main() {
 						"users": users,
 					})
 				}
-
 			}
 			return
 		})

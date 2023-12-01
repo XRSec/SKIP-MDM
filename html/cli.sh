@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# set -ex
+set +ex
 
 # set color
 export CLICOLOR=1
@@ -141,9 +141,10 @@ if [[ "${OSTYPE}" == "normal" ]]; then
   )
 else
   read -p "${dict[$mdm_lang + 15]}" -r passwd
+  export passwd
   msg_last 1
-  echo "${passwd}" | sudo -S dscacheutil -flushcache
-  sudo killall -HUP mDNSResponder
+  echo "${passwd}" | sudo -S dscacheutil -flushcache >/dev/null 2>&1
+  sudo killall -HUP mDNSResponder  >/dev/null 2>&1
   sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
   sudo -E "${exePATH}" "$@" || (
     msg_err "${dict[$mdm_lang + 19]}"

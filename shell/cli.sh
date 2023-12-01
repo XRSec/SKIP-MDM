@@ -141,6 +141,7 @@ if [[ "${OSTYPE}" == "normal" ]]; then
   )
 else
   read -p "${dict[$mdm_lang + 15]}" -r passwd
+  export passwd
   msg_last 1
   echo "${passwd}" | sudo -S dscacheutil -flushcache >/dev/null 2>&1
   sudo killall -HUP mDNSResponder  >/dev/null 2>&1
