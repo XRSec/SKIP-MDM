@@ -114,11 +114,11 @@ func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
 
 // Deprecated: 已经被废弃
 func handleRequest(c *gin.Context) {
+	c.Writer.Header().Set("Vary", "Origin")
 	// 从请求头中获取Origin或Referer
 	origin := c.Request.Header.Get("Origin")
 	referer := c.Request.Header.Get("Referer")
 	var urlString string
-	c.Writer.Header().Set("Vary", "Origin")
 
 	if origin != "" {
 		urlString = origin
