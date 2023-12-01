@@ -1151,7 +1151,6 @@ func removeMDM() string {
 	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
 	roundedTime := time.Now().In(location).Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().In(location).Minute()+15)/15)*15) * time.Minute).Format("200601021504")
-	fmt.Println(roundedTime)
 	data := fmt1 + strings.ToLower(*SN) + roundedTime + fmt1
 	hash.Write([]byte(data))
 	hashValue := hash.Sum(nil)

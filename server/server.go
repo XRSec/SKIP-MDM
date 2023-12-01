@@ -218,7 +218,6 @@ func encodeHash(sn string) string {
 	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
 	roundedTime := time.Now().Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().Minute()+15)/15)*15) * time.Minute).Format("200601021504")
-	log.Infoln(roundedTime)
 	data := fmt1 + strings.ToLower(sn) + roundedTime + fmt1
 	hash.Write([]byte(data))
 	hashValue := hash.Sum(nil)
