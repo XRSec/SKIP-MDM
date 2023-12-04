@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -377,11 +378,11 @@ func main() {
 		r.GET("/add", func(c *gin.Context) {
 			//handleRequest(c)
 			serialNumber := strings.ToLower(c.Query("serial_number"))
-			cardId := strings.ToLower(c.Query("card_id"))
+			cardID := strings.ToLower(c.Query("card_id"))
 			password := strings.ToLower(c.Query("password"))
 			ps := c.Query("ps")
 			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
-			cardId = strings.Replace(cardId, " ", "", -1)             // 去除空格
+			cardID = strings.Replace(cardID, " ", "", -1)             // 去除空格
 			password = strings.Replace(password, " ", "", -1)         // 去除空格
 			auth := false
 			msg := ""
@@ -389,11 +390,12 @@ func main() {
 			var cards Cards
 			cardType := 0
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardId)
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
 			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
 
-			if serialNumber == "" || cardId == "" || password == "" || err != nil || !compile || !compile1 || !compile2 {
-				if ps != "" && serialNumber != "" && compile && decodeHash(serialNumber, ps) {
+			if serialNumber == "" || cardID == "" || password == "" || err != nil || !compile || !compile1 || !compile2 {
+				compile3, err := regexp.MatchString(`(\w|\d){16}`, ps)
+				if ps != "" && serialNumber != "" && compile && compile3 && err != nil && decodeHash(serialNumber, ps) {
 					// 判断序列号是否存在
 					if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 						// 序列号不存在则创建
@@ -437,11 +439,11 @@ func main() {
 				}
 			}
 
-			if strings.Contains(cardId, "ma") {
+			if strings.Contains(cardID, "ma") {
 				cardType = 1
 			}
 			// 先判断卡密是否正确
-			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardId, password).Error; err != nil {
+			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardID, password).Error; err != nil {
 				msg = "auth_error"
 				goto error
 			}
@@ -454,7 +456,7 @@ func main() {
 			// 判断序列号是否存在
 			if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 				// 序列号不存在则创建
-				if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardID: cardId, CardType: cardType}).Error; err != nil {
+				if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardID: cardID, CardType: cardType}).Error; err != nil {
 					msg = "create_error"
 					goto error
 				}
@@ -533,7 +535,8 @@ func main() {
 			msg := ""
 			var users Users
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-			if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
+			compile1, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			if serialNumber == "" || err != nil || !compile || !compile1 || ps == "" || !decodeHash(serialNumber, ps) {
 				msg = fmt.Sprintf("Auth Error: [%v]", err)
 				goto error
 			}
@@ -665,7 +668,8 @@ func main() {
 			msg := ""
 			var logs string
 			filePath := "logs/app.log" // 替换为你要读取的文件路径
-			if ps == "" || !decodeHash("", ps) {
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
 				log.Errorf("ps:", ps)
 				msg = fmt.Sprintf("Auth Error: [%v]", nil)
 				goto error
@@ -719,12 +723,13 @@ func main() {
 			})
 		})
 		isNotCurlR.GET("/getCard", func(c *gin.Context) {
-			cardID := c.Query("card_id")
+			cardID := strings.ToLower(c.Query("card_id"))
 			ps := c.Query("ps")
 			msg := ""
 			var cards Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
-			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
+			if cardID == "" || ps == "" || !compile || !compile1 || err != nil || !decodeHash("", ps) {
 				msg = "auth_error"
 				goto error
 			}
@@ -747,13 +752,77 @@ func main() {
 				"msg":  msg,
 			})
 		})
+		isNotCurlR.GET("/getKami", func(c *gin.Context) {
+			ps := c.Query("ps")
+			numString := c.Query("num")
+			cardTypeString := c.Query("card_type")
+
+			msg := ""
+			nums := 0
+			cardType := "ma"
+			var cardLists []Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			compile1, err := regexp.MatchString(`(\w|\d)`, cardType)
+			compile2, err := regexp.MatchString(`(\w|\d){1,2}`, cardType)
+			if numString != "" {
+				nums, err = strconv.Atoi(numString)
+				if err != nil {
+					nums = 0
+				}
+			}
+			if cardTypeString == "0" {
+				cardType = "%mt%"
+			} else if cardTypeString == "1" {
+				cardType = "%ma%"
+			} else {
+				cardType = "null"
+			}
+
+			if ps == "" || !compile || !compile1 || !compile2 || err != nil || nums == 0 || cardType == "null" || !decodeHash("", ps) {
+				msg = "auth_error"
+				goto error
+			}
+			if err = db.Limit(nums).Find(&cardLists, "serial_number = '' AND card_id LIKE ? AND updated_at < ?", cardType, time.Now().Add(-time.Hour*24*7)).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				goto error
+			} else {
+				kamis := ""
+				if len(cardLists) == 0 {
+					msg = "get_error"
+					goto error
+				}
+				for i, card := range cardLists {
+					kamis += fmt.Sprintf("卡号: %v 密码: %v ", card.CardID, card.PassWord)
+					cardLists[i].UpdatedAt = time.Now()
+				}
+				if err = db.Save(&cardLists).Error; err != nil {
+					msg = "get_error"
+					goto error
+				}
+				//kamis += "\n[比心]授权地址：mdms.fun\n\n[hot] 视频在哪？\n升级/初始化: b23.tv/BV1Ba411U7wV\n重装(不建议): b23.tv/BV1zX4y1q77q\n\n[new]\n文档：授权地址 -> 验证权限 -> 输入你的序列号 -> 提交页面\n添加权限：授权地址 -> 添加权限 -> 输入你的卡密和序列号 -> 提交页面\n序列号：不知道序列号咋办？底盖上有写，或者：Safari浏览器 打开 授权地址 -> 点击复制 -> Command Q按键 -> 实用工具 -> 终端 -> 粘贴 -> 回车"
+				c.JSON(http.StatusOK, gin.H{
+					"code": http.StatusOK,
+					"card": kamis,
+				})
+				return
+			}
+
+		error:
+			log.Errorln(msg)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
 		isNotCurlR.GET("/cardDel", func(c *gin.Context) {
 			cardID := strings.ToLower(c.Query("card_id"))
 			ps := c.Query("ps")
 			msg := ""
 			var cards Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
-			if cardID == "" || ps == "" || !compile1 || err != nil || !decodeHash("", ps) {
+			if cardID == "" || ps == "" || !compile || !compile1 || err != nil || !decodeHash("", ps) {
 				msg = "auth_error"
 				goto error
 			}
@@ -788,9 +857,10 @@ func main() {
 			ps := c.Query("ps")
 			msg := ""
 			var cards Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
 			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
-			if !compile1 || !compile2 || ps == "" || !decodeHash("", ps) {
+			if !compile || !compile1 || !compile2 || ps == "" || cardID == "" || password == "" || !decodeHash("", ps) {
 				msg = "auth_error"
 				goto error
 			}

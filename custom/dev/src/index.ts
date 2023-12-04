@@ -421,7 +421,6 @@ app.use(function (req, res, next) {
             res.sendFile(path.join(__dirname + '../html/errorShell.sh'))
         }
 
-
         if (!compile || serial_number === '') {
             res.header('Cache-Control', 'public, max-age=604800')
             const fileName = path.join(__dirname, `../html/unsafe0-${req.hostname}.sh`)

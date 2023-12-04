@@ -24,10 +24,12 @@ gzexe *.sh
 | /add         | ?serial_number=序列号&card_id=卡号&password=密码       | 添加授权用户       |
 | /add         | ?serial_number=序列号&ps=管理员密码                     | 添加授权用户       |
 | /getCard     | ?card_id=card_id&ps=管理员密码                       | 获取卡密信息       |
+| /getKami     | ?ps=管理员密码&card_type=卡类型&num=数量                  | 获取卡密         |
 | /cardUpdate  | ?card_id=card_id&password=new_password&ps=管理员密码 | 更新卡密清空绑定     |
 | /cardDel     | ?card_id=card_id&ps=管理员密码                       | 删除卡密绑定       |
 | /del         | ?serial_number=序列号&ps=管理员密码                     | 删除授权用户       |
 | /auth        | ?serial_number=序列号&ps=管理员密码                     | 验证授权用户       |
+
 ## 试验功能
 
 ```bash
