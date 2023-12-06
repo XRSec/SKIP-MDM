@@ -390,12 +390,11 @@ func main() {
 			var cards Cards
 			cardType := 0
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
 			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
 
-			if serialNumber == "" || cardID == "" || password == "" || err != nil || !compile || !compile1 || !compile2 {
+			if serialNumber == "" || cardID == "" || password == "" || err != nil || !compile || !compile2 {
 				compile3, err := regexp.MatchString(`(\w|\d){16}`, ps)
-				if ps != "" && serialNumber != "" && compile && compile3 && err != nil && decodeHash(serialNumber, ps) {
+				if ps != "" && serialNumber != "" && compile && compile3 && err == nil && decodeHash(serialNumber, ps) {
 					// 判断序列号是否存在
 					if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 						// 序列号不存在则创建
@@ -434,6 +433,10 @@ func main() {
 						return
 					}
 				} else {
+					compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+					if compile1 && err == nil {
+						return
+					}
 					msg = "auth_error"
 					goto error
 				}
@@ -793,7 +796,10 @@ func main() {
 					goto error
 				}
 				for i, card := range cardLists {
-					kamis += fmt.Sprintf("卡号: %v 密码: %v ", card.CardID, card.PassWord)
+					if i != 0 {
+						kamis += " "
+					}
+					kamis += fmt.Sprintf("卡号: %v 密码: %v", card.CardID, card.PassWord)
 					cardLists[i].UpdatedAt = time.Now()
 				}
 				if err = db.Save(&cardLists).Error; err != nil {
