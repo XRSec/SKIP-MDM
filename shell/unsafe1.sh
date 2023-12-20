@@ -180,7 +180,7 @@ dict[25]="Temp User Please Delete"
 dict[26]="临时用户 请及时删除"
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -ksSL http://cip.cc)
+  response=$(curl -ksSL http://myip.ipip.net)
   if [[ $response == *"中国"* ]]; then
     mdm_lang=1
   else

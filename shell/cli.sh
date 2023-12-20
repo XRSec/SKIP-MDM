@@ -38,7 +38,7 @@ msg_err() {
 }
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -ksSL http://cip.cc)
+  response=$(curl -ksSL http://myip.ipip.net)
   if [[ $response == *"中国"* ]]; then
     mdm_lang=1
   else

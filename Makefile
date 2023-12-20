@@ -61,20 +61,20 @@ n1.copyFile:
 	@#scp Makefile n1:/app/
 
 dockerStart:
-	@if ! docker info >/dev/null 2>&1; then open /Applications/Docker.app; fi
+	@if ! docker info >/dev/null 2>&1; then open /Applications/OrbStack.app; fi
 	@sleep 2
 
 mdm.upload:
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* mdm:/app/; fi
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* mdm:/app/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* mdm:/app/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* mdm:/app/; fi
 
 n1.upload:
-	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=C02GR1AKQ05N&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* n1:/app/; fi
-	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=C02GR1AKQ05N&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* n1:/app/; fi
+	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=C2RM4TQ93V&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* n1:/app/; fi
+	@if [ "$$(curl -s "http://server.mdms.fun:33659/getLatestID?serial_number=C2RM4TQ93V&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; scp mdm-darwin-arm64* n1:/app/; fi
 
 ikuai.upload:
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; cp -v mdm-darwin-amd64* /Volumes/MDM*/; fi
-	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C02GR1AKQ05N&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; cp -v mdm-darwin-arm64* /Volumes/MDM*/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; cp -v mdm-darwin-amd64* /Volumes/MDM*/; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; cp -v mdm-darwin-arm64* /Volumes/MDM*/; fi
 
 buildServer:
 	@#if [ ! -e "mdm-darwin-amd64" ]; then cd mdm; CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-linux-amd64; fi

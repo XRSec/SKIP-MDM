@@ -988,7 +988,7 @@ func getLanguage() {
 	}
 	Language = 0
 	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", "http://cip.cc", nil)
+	req, err := http.NewRequest("GET", "http://myip.ipip.net", nil)
 	if err != nil {
 		msgErr(i18n[Language]["create_request_err"]+" :language", err)
 	}
@@ -1270,7 +1270,7 @@ func menuNewUser() {
 	msgInfo(i18n[Language]["creating_user"])
 	uid := strconv.Itoa(rand.Intn(20) + 520)
 	userName := "mac_" + uid
-	userPass := "123456"
+	userPass := "1234"
 	msgOk(i18n[Language]["user_name"] + userName)
 	msgOk(i18n[Language]["password"] + userPass)
 	// 生成介于 1000 和 2000 之间的随机数
@@ -1298,8 +1298,8 @@ func menuNewUser() {
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:unlockOptions", "0")
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "JPEGPhoto")
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "Picture")
-	//execCmd(false, "security", "unlock-keychain", "-p", userPass)
-	//execCmd(false, "security", "unlock-keychain", "-p", OsPath+"Library/Keychains/System.keychain")
+	execCmd(false, "security", "unlock-keychain", "-p", userPass)
+	execCmd(false, "security", "unlock-keychain", "-p", OsPath+"Library/Keychains/System.keychain")
 	menuTouchAppleDone()
 }
 
