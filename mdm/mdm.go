@@ -1270,7 +1270,7 @@ func menuNewUser() {
 	msgInfo(i18n[Language]["creating_user"])
 	uid := strconv.Itoa(rand.Intn(20) + 520)
 	userName := "mac_" + uid
-	userPass := "1234"
+	userPass := "123456"
 	msgOk(i18n[Language]["user_name"] + userName)
 	msgOk(i18n[Language]["password"] + userPass)
 	// 生成介于 1000 和 2000 之间的随机数
