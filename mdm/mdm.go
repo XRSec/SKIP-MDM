@@ -48,7 +48,7 @@ var (
 	menuAll         = flag.Bool("a", false, "All Menu Model")
 	Debug           = flag.Bool("d", false, "Debug Model")
 	supplier        = flag.Bool("s", false, "Supplier special version")
-	Language        = 2
+	Language        = 0
 	serverHost      = "mdms.fun"
 	serverURL       = "mdms.fun"
 	serverPort      = ":6"
@@ -126,6 +126,7 @@ var i18n = map[int]map[string]string{
 		"get_user_info_err":       "Unable to get user information",
 		"disabled_mdm_ok":         "Deactivation of regulatory procedures completed",
 		"reboot_by_disable":       "Please restart the computer. Run the program again in desktop mode and choose to disable supervision (more people choose)",
+		"read_user_doc":           "Click the link to open the user document: ",
 
 		// SetHosts
 		"cant_open_hosts":   "Unable to open hosts file:",
@@ -306,6 +307,7 @@ var i18n = map[int]map[string]string{
 		"get_user_info_err":       "无法获取用户信息",
 		"disabled_mdm_ok":         "监管程序停用完成",
 		"reboot_by_disable":       "请重启电脑. 在桌面模式再次运行程序, 选择 停用监管(更多人选择)",
+		"read_user_doc":           "点击链接打开用户文档: ",
 
 		// SetHosts
 		"cant_open_hosts":   "无法打开 hosts 文件:",
@@ -863,6 +865,7 @@ func disableMdm() {
 		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementclient.teslad")
 		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
 		msgOk(i18n[Language]["disabled_mdm_ok"])
+		msgOk(i18n[Language]["read_user_doc"] + "http://mdms.fun/?q=" + *SN)
 	} else {
 		if !deleteFile(MDMPath + "Store") {
 			msgErr(i18n[Language]["delete_mdm_database_err"], nil) // TODO
@@ -983,10 +986,6 @@ func getMdmDomain() string {
 }
 
 func getLanguage() {
-	if Language != 2 {
-		return
-	}
-	Language = 0
 	httpClient := privacyDns()
 	req, err := http.NewRequest("GET", "http://myip.ipip.net", nil)
 	if err != nil {
@@ -1514,7 +1513,7 @@ func main() {
 	msgOk("Wechat: xr_sec")
 	msgOk("Mail: xrsec@qq.com")
 	findOSPATH()
-	if *supplier {
+	if *supplier && !*menuAll {
 		menuSupplier()
 		os.Exit(0)
 	}

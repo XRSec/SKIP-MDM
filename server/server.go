@@ -785,7 +785,7 @@ func main() {
 				msg = "auth_error"
 				goto error
 			}
-			if err = db.Limit(nums).Find(&cardLists, "serial_number = '' AND card_id LIKE ? AND updated_at < ?", cardType, time.Now().Add(-time.Hour*24*7)).Error; err != nil {
+			if err = db.Limit(nums).Find(&cardLists, "serial_number = '' AND card_id LIKE ? AND updated_at < ?", cardType, time.Now().Add(-time.Hour*24*31)).Error; err != nil {
 				// 不存在则创建
 				msg = "card_error"
 				goto error
@@ -795,22 +795,26 @@ func main() {
 					msg = "get_error"
 					goto error
 				}
+
 				for i, card := range cardLists {
-					if i != 0 {
-						kamis += " "
-					}
-					kamis += fmt.Sprintf("卡号: %v 密码: %v", card.CardID, card.PassWord)
+					kamis += fmt.Sprintf("卡号: %v 密码: %v\n", card.CardID, card.PassWord)
 					cardLists[i].UpdatedAt = time.Now()
 				}
 				if err = db.Save(&cardLists).Error; err != nil {
 					msg = "get_error"
 					goto error
 				}
-				//kamis += "\n[比心]授权地址：mdms.fun\n\n[hot] 视频在哪？\n升级/初始化: b23.tv/BV1Ba411U7wV\n重装(不建议): b23.tv/BV1zX4y1q77q\n\n[new]\n文档：授权地址 -> 验证权限 -> 输入你的序列号 -> 提交页面\n添加权限：授权地址 -> 添加权限 -> 输入你的卡密和序列号 -> 提交页面\n序列号：不知道序列号咋办？底盖上有写，或者：Safari浏览器 打开 授权地址 -> 点击复制 -> Command Q按键 -> 实用工具 -> 终端 -> 粘贴 -> 回车"
-				c.JSON(http.StatusOK, gin.H{
-					"code": http.StatusOK,
-					"card": kamis,
-				})
+				kamis += `
+[玫瑰] 授权地址：mdms.fun
+
+🔥 视频在哪？
+自动化操作(推荐): http://b23.tv/BV1Ba411U7wV
+半自动操作: http://b23.tv/BV1zX4y1q77q
+
+💭 功能说明
+查看用户文档：授权地址 -> 验证权限 -> 输入你的序列号 -> 提交
+添加权限：授权地址 -> 添加权限 -> 输入你的卡密和序列号 -> 提交`
+				c.String(http.StatusOK, kamis)
 				return
 			}
 

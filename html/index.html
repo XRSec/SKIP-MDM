@@ -562,10 +562,34 @@
                 xhr.send();
             });
 
+            // 加载 marked.js
             let script = document.createElement("script");
             script.src = "/marked.min.js";
             script.setAttribute("cache-control", "max-age=604800");
             document.body.appendChild(script);
+
+            // 检测参数
+            const queryString = window.location.search.substring(1);
+            const params = queryString.split('&');
+            let qValue = null;
+
+            // 查找第一个参数为 "q"
+            for (let i = 0; i < params.length; i++) {
+                const pair = params[i].split('=');
+                if (pair[0] === 'q') {
+                    qValue = pair[1];
+                    break;
+                }
+            }
+
+            // 打印查询参数的值
+            if (qValue !== null && qValue !== undefined && qValue !== '') {
+                // 将 q 的值赋给 #serial_number
+                document.querySelector('#serial_number').value = qValue;
+                const form = document.querySelector('#form1');
+
+                if (form) form.requestSubmit()
+            }
         });
     </script>
 </head>
@@ -608,10 +632,12 @@
 <button id="toggle-button" onclick="toggleNavbar()"></button>
 <div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
     建站不容易,熬夜两行泪<br>
-    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer" style="width: 14px;height: 14px" alt="Gov Logo">
+    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer" style="width: 14px;height: 14px"
+         alt="Gov Logo">
     <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
     <br>
-    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer" style="width: 14px;height: 14px" alt="Gov Logo">
+    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer" style="width: 14px;height: 14px"
+         alt="Gov Logo">
     <a href="https://beian.mps.gov.cn/#/query/webSearch?code=36082602000171" rel="noreferrer" target="_blank">赣公网安备36082602000171</a>
 </div>
 
