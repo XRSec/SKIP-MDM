@@ -513,7 +513,6 @@ func main() {
 				ps := strings.ToLower(c.Query("ps"))
 				compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 				if ps == "" || err != nil || !compile || !decodeHash(users.SerialNumber, ps) {
-					log.Errorln("ps can't compile")
 					c.JSON(http.StatusOK, gin.H{
 						"code":  http.StatusOK,
 						"doc":   doc,
@@ -805,7 +804,7 @@ func main() {
 					goto error
 				}
 				kamis += `
-[玫瑰] 授权地址：mdms.fun
+🌹 授权地址：mdms.fun
 
 🔥 视频在哪？
 自动化操作(推荐): http://b23.tv/BV1Ba411U7wV

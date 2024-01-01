@@ -865,7 +865,7 @@ func disableMdm() {
 		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementclient.teslad")
 		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
 		msgOk(i18n[Language]["disabled_mdm_ok"])
-		msgOk(i18n[Language]["read_user_doc"] + "http://mdms.fun/?q=" + *SN)
+		msgOk(i18n[Language]["read_user_doc"] + fmt.Sprintf("http://%v/?q=%v", serverHost, *SN))
 	} else {
 		if !deleteFile(MDMPath + "Store") {
 			msgErr(i18n[Language]["delete_mdm_database_err"], nil) // TODO
@@ -1130,7 +1130,7 @@ func AuthSN() {
 		msgFatal(i18n[Language]["decode_date_err"]+" :auth", err)
 	}
 
-	usersData := data["users"].(map[string]interface{})
+	//usersData := data["users"].(map[string]interface{})
 	encodePass, ok := data["pass"].(string)
 	if (!ok) || (encodePass == "") || (encodePass == "null") {
 		msgFatal(i18n[Language]["pass_not_found"], nil)
@@ -1140,10 +1140,10 @@ func AuthSN() {
 		msgFatal(i18n[Language]["get_auth_err"], nil)
 	}
 
-	cardType := int(usersData["CardType"].(float64))
-	if cardType == 0 {
-		*supplier = true
-	}
+	//cardType := int(usersData["CardType"].(float64))
+	//if cardType == 0 {
+	//	*supplier = true
+	//}
 }
 
 func removeMDM() string {
@@ -1513,7 +1513,7 @@ func main() {
 	msgOk("Wechat: xr_sec")
 	msgOk("Mail: xrsec@qq.com")
 	findOSPATH()
-	if *supplier && !*menuAll {
+	if *supplier {
 		menuSupplier()
 		os.Exit(0)
 	}

@@ -4,10 +4,18 @@
 
 1. <font color=red>本教程严禁外传，谢谢配合</font>
 2. 如果您时间很宝贵，请认真查阅下面的图片 <font color=red>**点击放大更清晰**</font>
-3. 重装/升级 教程：https://b23.tv/BV1Ba411U7wV
-4. 重装 教程(不建议)：https://b23.tv/BV1zX4y1q77q
+3. [自动化操作(推荐)：b23.tv/BV1Ba411U7wV](https://b23.tv/BV1Ba411U7wV)
+4. [半自动操作：b23.tv/BV1zX4y1q77q](https://b23.tv/BV1zX4y1q77q)
 
-## 一键解放双手
+## 程序使用
+
+### 自动操作
+
+>
+> 建议 **macOS** 系统版本在 **不等于** **Monterey** 时使用
+> 
+> **Monterey** 更建议使用 **半自动操作** , 然后选择 **1: 停用监管**
+>
 
 **终端输入**：`bash <(curl -kfsSL 服务器地址) -s`
 
@@ -25,7 +33,7 @@
 
 > 程序将根据当前系统模式智能提供菜单，以免菜单太多烦人
 
-### 全部菜单
+#### 全部菜单
 
 **终端输入**：`bash <(curl -kfsSL 服务器地址) -a`
 
@@ -48,7 +56,7 @@
 1. 正常开机的页面就是桌面模式
 2. 终端在：其他/实用工具 -> 终端
 
-### hello/开始页面：
+### Hello / 开始页面：
 
 1. 装系统的时候选择语言那个界面
 2. 终端在：选择语言的界面 点1-2次继续，然后按快捷键 control + option + command + t
@@ -58,7 +66,8 @@
 1. 不到万不得已没必要选择DFU
 2. DFU 是刷机速度最快的模式
 3. Apple Configurator 界面直接把下载好的 ipsw 文件拖动到要刷机的设备上，而不是右键恢复
-4. 视频教程: https://b23.tv/BV1vK411V7UL
+4. [视频教程: b23.tv/BV1vK411V7UL](https://b23.tv/BV1vK411V7UL)
+5. [一键唤起DFu模式: github.com/XRSec/DFU-Tools](https://github.com/XRSec/DFU-Tools) 一键唤起 DFu 模式
 
 ---
 
@@ -97,3 +106,8 @@
 
 **微信**：xr_sec
 
+<br>
+<br>
+<br>
+<br>
+<br>
