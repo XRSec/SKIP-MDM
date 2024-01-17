@@ -10,7 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"gorm.io/driver/mysql"
+	//"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"io"
 	"net"
@@ -55,9 +56,9 @@ func init() {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	//db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
-	db, err = gorm.Open(mysql.Open("mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
-		//Logger: logger.Default.LogMode(logger.Info),
+	db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
+		//db, err = gorm.Open(mysql.Open("mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
+		//	Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		log.Errorf("连接数据库失败%v", err)
@@ -79,8 +80,9 @@ func init() {
 }
 
 func getTimeGap(CreatedAt string) bool {
-	//2023-10-23 23:42:18.804 +0800 CST
-	targetTime, err := time.Parse("2006-01-02 15:04:05.000 -0700 MST", CreatedAt)
+	//2023-11-07T00:18:06.36721417+08:00
+	targetTime, err := time.Parse("2006-01-02 15:04:05.00000000 -0700 MST", CreatedAt) // TODO SQLITE3
+	//targetTime, err := time.Parse("2006-01-02 15:04:05.000 -0700 MST", CreatedAt) // TODO MYSQL
 	if err != nil {
 		log.Errorf("时间转换失败%v", err)
 		return false
@@ -796,7 +798,7 @@ func main() {
 				}
 
 				for i, card := range cardLists {
-					kamis += fmt.Sprintf("卡号: %v 密码: %v\n", card.CardID, card.PassWord)
+					kamis += fmt.Sprintf("卡号: %v\n密码: %v\n", card.CardID, card.PassWord)
 					cardLists[i].UpdatedAt = time.Now()
 				}
 				if err = db.Save(&cardLists).Error; err != nil {

@@ -61,7 +61,7 @@ n1.copyFile:
 	@#scp Makefile n1:/app/
 
 dockerStart:
-	@if ! docker info >/dev/null 2>&1; then open /Applications/OrbStack.app; fi
+	@if ! docker info >/dev/null 2>&1; then open /Applications/Docker.app; fi
 	@sleep 2
 
 mdm.upload:
@@ -138,10 +138,11 @@ mdms:
 	@ssh mdm "systemctl stop mdm" || exit 1
 	@scp mdm-linux-amd64 mdm:/app/
 	@rm -rfv mdm-*-*
+	@rm -rfv server/server.db
+	@scp -r mdm:/app/server.db server/
 	@ssh mdm "systemctl start mdm"
 	@$(MAKE) deleteDsStore
 	@ssh mdm "date" || exit 1
-	@#rm -rfv server/server.db
 	@rm -rfv server/logs
 	@$(MAKE) buildClient
 	@$(MAKE) mdm.upload
