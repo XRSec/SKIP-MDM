@@ -80,9 +80,7 @@ func init() {
 }
 
 func getTimeGap(CreatedAt string) bool {
-	//2023-11-07T00:18:06.36721417+08:00
-	targetTime, err := time.Parse("2006-01-02 15:04:05.00000000 -0700 MST", CreatedAt) // TODO SQLITE3
-	//targetTime, err := time.Parse("2006-01-02 15:04:05.000 -0700 MST", CreatedAt) // TODO MYSQL
+	targetTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", CreatedAt)
 	if err != nil {
 		log.Errorf("时间转换失败%v", err)
 		return false
