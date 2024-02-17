@@ -987,7 +987,7 @@ func getMdmDomain() string {
 
 func getLanguage() {
 	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", "http://myip.ipip.net", nil)
+	req, err := http.NewRequest("GET", "https://searchplugin.csdn.net/api/v1/ip/get", nil)
 	if err != nil {
 		msgErr(i18n[Language]["create_request_err"]+" :language", err)
 	}
