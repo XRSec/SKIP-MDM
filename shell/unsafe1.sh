@@ -38,7 +38,7 @@ IFSRestore() {
 
 findOSPATH() {
   IFSSet
-  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\- Data|Data|\- 数据|System|\n|private|macOS Base System")
+  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "System|\n|private|macOS Base System")
 
   if [ -z "${OSPATH}" ]; then
     msg_err "${dict[$mdm_lang + 1]}"
