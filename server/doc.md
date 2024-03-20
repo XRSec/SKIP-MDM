@@ -5,41 +5,46 @@
 1. <font color=red>本教程严禁外传，谢谢配合</font>
 2. 如果您时间很宝贵，请认真查阅下面的图片 <font color=red>**点击放大更清晰**</font>
 3. [自动化操作(推荐)：b23.tv/BV1Ba411U7wV](https://b23.tv/BV1Ba411U7wV)
-4. [半自动操作：b23.tv/BV1zX4y1q77q](https://b23.tv/BV1zX4y1q77q)
+4. [半自动操作(过时)：b23.tv/BV1zX4y1q77q](https://b23.tv/BV1zX4y1q77q)
 
 ## 程序使用
 
-### 自动操作
+### 恢复模式
 
->
-> 建议 **macOS** 系统版本在 **不等于** **Monterey** 时使用
-> 
-> **Monterey** 更建议使用 **半自动操作** , 然后选择 **1: 停用监管**
->
+- **Sonoma / Ventura:**
+    ```bash
+    bash <(curl -kfsSL 服务器地址) -s
+    ```
 
-**终端输入**：`bash <(curl -kfsSL 服务器地址) -s`
+- **Monterey / Big Sur:**
+    ```bash
+    bash <(curl -kfsSL 服务器地址)
+    ```
+- **Catalina / Mojave:**
+    ```bash
+    bash <(curl -kfsSL 服务器地址/unsafe)
+    ```
 
-1. **系统升级** 则自动执行：停用监管，清理监管，屏蔽监管 操作
-2. **重装系统** 则自动运行：绕过监管，停用监管，清理监管，屏蔽监管 操作
-3. 如果你觉的 apple 用户名不个性，你可以在设置中新建<font color=red>管理员</font>用户，然后删除apple用户(包括文件夹)
+### 桌面模式
+
+```bash
+bash <(curl -kfsSL 服务器地址) -s
+```
 
 ---
 
+### 调试模式
+
 > <font color=red>该部分是程序精细化操作，非专业勿看</font>
+> 
 
-### 手动操作
-
-**终端输入**：`bash <(curl -kfsSL 服务器地址)`
-
-> 程序将根据当前系统模式智能提供菜单，以免菜单太多烦人
-
-#### 全部菜单
-
-**终端输入**：`bash <(curl -kfsSL 服务器地址) -a`
+```bash
+bash <(curl -kfsSL 服务器地址) -a
+```
 
 ![MDM-CLI](https://xrsec.s3.bitiful.net/MDM/MDM_CLI.png?fmt=webp&q=48&w=500)
 
-![macOS](https://xrsec.s3.bitiful.net/MDM/macos.png?fmt=webp&q=48&w=500)
+[//]: # (![macOS]&#40;https://xrsec.s3.bitiful.net/MDM/macos.png?fmt=webp&q=48&w=500&#41;)
 
 ---
 
@@ -59,7 +64,7 @@
 ### Hello / 开始页面：
 
 1. 装系统的时候选择语言那个界面
-2. 终端在：选择语言的界面 点1-2次继续，然后按快捷键 control + option + command + t
+2. 终端在：选择语言的界面 点1-2次继续，然后按快捷键 control + option + command + T
 
 ### DFU刷机：
 
@@ -83,9 +88,9 @@
 
 **全新安装** 尽量使用macOS 12的安装U盘 如果不行，则可以尝试 DFU 安装。安装完之后切记断开网络 或者拔掉路由器电源
 
-**重装/升级** 重装需要再运行一次禁用SIP和清理监管，升级理论没影响，强烈建议升级 14 Sonoma之前做好备份（可以升级）
+**重装/升级** 重装需要再绕过监管，升级则不需要
 
-**系统版本** 不建议吃螃蟹，建议使用 Monterey
+**系统版本** 不建议吃螃蟹，建议使用 Monterey 或者 Ventura
 
 ---
 
@@ -98,13 +103,13 @@
 
 ---
 
-<font color=red>**当前脚本还麻烦不要宣传 低调使用即可，技术无罪，使用不当就有罪**</font>
-
----
+## 联系方式
 
 **交流群**：Apple 技术交流会员群
 
 **微信**：xr_sec
+
+<font color=red>**当前脚本还麻烦不要宣传 低调使用即可，技术无罪，使用不当就有罪**</font>
 
 <br>
 <br>

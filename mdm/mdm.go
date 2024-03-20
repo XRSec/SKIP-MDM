@@ -831,7 +831,7 @@ func disableMdm() {
 		execCmd(false, "mkdir", MDMPath+"Settings")
 	}
 
-	execCmd(false, "touch", MDMPath+".profilesAreInstalled")
+	execCmd(false, "touch", MDMPath+"Settings/.profilesAreInstalled")
 
 	deleteFile(MDMPath + "Settings/.cloudConfigHasActivationRecord")
 	//execCmd(false, "rm", MDMPath+"Settings/.cloudConfigHasActivationRecord")
@@ -861,11 +861,15 @@ func disableMdm() {
 		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient")
 		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient.daemon")
 		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.enroll")
+		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClientAgent.enrollagent")
 		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementd.teslad")
 		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementclient.teslad")
 		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
 		msgOk(i18n[Language]["disabled_mdm_ok"])
-		msgOk(i18n[Language]["read_user_doc"] + fmt.Sprintf("http://%v/?q=%v", serverHost, *SN))
+		if OsType {
+			msgOk(i18n[Language]["read_user_doc"] + fmt.Sprintf("http://%v/?q=%v#heading-11", serverHost, *SN))
+		}
+		exec.Command("open", fmt.Sprintf("http://%v/?q=%v#heading-11", serverHost, *SN)).Output()
 	} else {
 		if !deleteFile(MDMPath + "Store") {
 			msgErr(i18n[Language]["delete_mdm_database_err"], nil) // TODO

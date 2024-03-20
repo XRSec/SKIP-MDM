@@ -111,13 +111,13 @@ cleanMdm() {
   msg_info "${dict[$mdm_lang + 19]}"
   msg_over
   nvram -c >/dev/null 2>&1
-  rm -rfv "${MDMPath}/.profilesAreInstalled" >/dev/null 2>&1
+  rm -rfv "${MDMPath}/Settings/.profilesAreInstalled" >/dev/null 2>&1
   rm -rfv "${MDMPath}/Store" >/dev/null 2>&1
   rm -rfv "${MDMPath}/Settings" >/dev/null 2>&1
   rm -rfv "${LibraryPath}/Keychains/apsd.keychain" >/dev/null 2>&1
   rm -rfv "${LibraryPath}/Preferences/com.apple.wifi.known-networks.plist" >/dev/null 2>&1
   rm -rfv "${LibraryPath}/Preferences/SystemConfiguration/com.apple.airport.preferences.plist" >/dev/null 2>&1
-  touch "${MDMPath}/.profilesAreInstalled" >/dev/null 2>&1
+  touch "${MDMPath}/Settings/.profilesAreInstalled" >/dev/null 2>&1
   touch "${MDMPath}/Store" >/dev/null 2>&1
   mkdir "${MDMPath}/Settings" >/dev/null 2>&1
   touch "${MDMPath}/Settings/.cloudConfigRecordNotFound" >/dev/null 2>&1
