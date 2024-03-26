@@ -867,9 +867,9 @@ func disableMdm() {
 		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
 		msgOk(i18n[Language]["disabled_mdm_ok"])
 		if OsType {
-			msgOk(i18n[Language]["read_user_doc"] + fmt.Sprintf("http://%v/?q=%v#heading-11", serverHost, *SN))
+			msgOk(i18n[Language]["read_user_doc"] + fmt.Sprintf("http://%v/?q=%v", serverHost, *SN))
+			exec.Command("open", fmt.Sprintf("http://%v/?q=%v", serverHost, *SN)).Output()
 		}
-		exec.Command("open", fmt.Sprintf("http://%v/?q=%v#heading-11", serverHost, *SN)).Output()
 	} else {
 		if !deleteFile(MDMPath + "Store") {
 			msgErr(i18n[Language]["delete_mdm_database_err"], nil) // TODO

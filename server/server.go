@@ -784,7 +784,7 @@ func main() {
 				msg = "auth_error"
 				goto error
 			}
-			if err = db.Limit(nums).Find(&cardLists, "serial_number = '' AND card_id LIKE ? AND updated_at < ?", cardType, time.Now().Add(-time.Hour*24*31)).Error; err != nil {
+			if err = db.Limit(nums).Find(&cardLists, "serial_number = '' AND card_id LIKE ? AND updated_at < ?", cardType, time.Now().Add(-time.Hour*24*31*3)).Error; err != nil {
 				// 不存在则创建
 				msg = "card_error"
 				goto error

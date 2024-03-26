@@ -209,11 +209,12 @@
             bottom: 0;
             width: 100%;
             text-align: center;
-            background-color: #f8f8f8;
+            background-color: rgba(248, 248, 248, 0.5);
             padding: 10px;
             border-top: 1px solid #ccc;
             font-size: 14px;
             color: #cb6b60;
+            z-index: 3;
         }
 
         @media screen and (orientation: portrait) and (max-device-width: 900px) and (max-device-height: 1200px), screen and (orientation: landscape) and (max-device-width: 1200px) and (max-device-height: 900px) {
@@ -445,13 +446,16 @@
                 heading.id = anchorId;
                 navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
             });
-
         }
 
         function showDocs(doc) {
             document.getElementById('content').innerHTML = marked.parse(doc);
             addImageClickListeners();
             toggleNavbar()
+            // 自动滚动到温馨提示
+            setTimeout(() => {
+                document.querySelector('#heading-11')?.scrollIntoView({behavior: "smooth", block: "start",});
+            }, 1000);
         }
 
         document.addEventListener('DOMContentLoaded', function () {
