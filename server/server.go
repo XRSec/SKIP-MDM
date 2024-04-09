@@ -412,8 +412,7 @@ func main() {
 						})
 						return
 					} else {
-						// 序列号存在则更新
-						// 序列号权限更新判断
+						// 序列号存在则更新 序列号权限更新判断
 						if users.CardType == 1 {
 							auth = true
 						}
@@ -471,6 +470,8 @@ func main() {
 				// 更新用户信息
 				if cardType == 0 {
 					users.CreatedAt = time.Now()
+				} else {
+					users.CardType = cardType
 				}
 				users.IPAddress = c.ClientIP()
 				if err = db.Save(&users).Error; err != nil {
