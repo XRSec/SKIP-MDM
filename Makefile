@@ -62,7 +62,7 @@ n1.copyFile:
 
 dockerStart:
 	@if ! docker info >/dev/null 2>&1; then open /Applications/Docker.app; fi
-	@sleep 2
+	@sleep 3
 
 mdm.upload:
 	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; scp mdm-darwin-amd64* mdm:/app/; fi

@@ -105,7 +105,8 @@ setHosts() {
 
 cleanMdm() {
   if [ -d "${MDMPath}" ]; then
-    msg_err "${dict[$mdm_lang + 17]}"
+    msg_info "${dict[$mdm_lang + 17]}"
+    return
   fi
 
   msg_info "${dict[$mdm_lang + 19]}"
@@ -193,7 +194,7 @@ export mdm_lang
 if type open >/dev/null 2>&1; then
   exit 0
 fi
-
+set -ex
 findOSPATH
 MDMPath="${OSPATH}/var/db/ConfigurationProfiles"
 LibraryPath="${OSPATH}/Library"
