@@ -137,7 +137,7 @@ checkUser() {
     username="apple_${account_id}"
     passwd="123456"
     msg_ok "Name: ${username}"
-    msg_ok "Name: ${passwd}"
+    msg_ok "Pass: ${passwd}"
     dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UserShell" "/bin/zsh"
