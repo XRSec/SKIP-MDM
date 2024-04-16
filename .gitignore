@@ -2,3 +2,4 @@
 /mdm-darwin-arm64
 /mdm/mdm
 /**/node_modules
+/test.sh

@@ -178,6 +178,9 @@ var i18n = map[int]map[string]string{
 		"reboot_by_bypass":          "On the start page, press the control command option t, open the terminal, click the apple logo in the upper left corner, open the settings (Setting), find users and groups, create users, the administrator user name is root, and the password is the password just set!",
 		"reboot_by_bypass_1":        "The new user type is administrator. After the operation is completed, enter the recovery mode and select (macOS13 bypass step 2)",
 
+		// menuNewUser
+		"temp_user_name": "Temp User Please Delete",
+
 		// menuSupplier
 		"supplier_mode_now": "Currently, it is the special supplier mode.",
 		"creating_user":     "Creating user",
@@ -358,6 +361,9 @@ var i18n = map[int]map[string]string{
 		"reste_root_password_ok":    "重置完成, 请记住这个密码，创建用户时需要!",
 		"reboot_by_bypass":          "在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！",
 		"reboot_by_bypass_1":        "新建用户类型为管理员，操作完成后进入恢复模式，选择 (macOS13绕过步骤2)",
+
+		// menuNewUser
+		"temp_user_name": "临时用户 请及时删除",
 
 		// menuSupplier
 		"supplier_mode_now": "当前是供应商特供模式",
@@ -1248,15 +1254,15 @@ func menuBypassMacos13Step1() {
 		msgFatal(i18n[Language]["not_work_normal"], nil)
 	} else {
 		msgInfo(i18n[Language]["changing_root_password"])
-		//fmt.Printf(i18n[Language]["input_root_password"])
-		//var rootPass string
-		//if _, err := fmt.Scanln(&rootPass); err != nil {
-		//	msgFatal(i18n[Language]["in_put_err"], nil)
-		//}
-		//msgLast(1)
-		msgOk(i18n[Language]["root_password"] + "123456")
+		fmt.Printf(i18n[Language]["input_root_password"])
+		var rootPass string
+		if _, err := fmt.Scanln(&rootPass); err != nil {
+			msgFatal(i18n[Language]["in_put_err"], nil)
+		}
+		msgLast(1)
+		msgOk(i18n[Language]["root_password"] + rootPass)
 
-		execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root", "123456")
+		execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root", rootPass)
 		//msgLast(1) TODO
 		msgOk(i18n[Language]["reste_root_password_ok"])
 		msgOk(i18n[Language]["reboot_by_bypass"])
@@ -1282,28 +1288,29 @@ func menuNewUser() {
 	uid := strconv.Itoa(rand.Intn(20) + 520)
 	// maxid=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
 	//newid=$((maxid+1))
-
-	msgOk(i18n[Language]["user_name"] + "mac")
-	msgOk(i18n[Language]["password"] + "123456")
+	userName := "mac_" + uid
+	userPass := "123456"
+	msgOk(i18n[Language]["user_name"] + userName)
+	msgOk(i18n[Language]["password"] + userPass)
 	// 生成介于 1000 和 2000 之间的随机数
 
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "UserShell", "/bin/zsh")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "RealName", "Mac")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Users/mac", "AuthenticationHint", "123456")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "UniqueID", uid)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "PrimaryGroupID", "20")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "Picture", "/Library/User Pictures/Flowers/Lotus.tif")
-	execCmd(false, "cp", "-R", OsPath+"System/Library/User Template/zh_CN.lproj", OsPath+"Users/mac")
-	///usr/bin/ditto "/Library/User Template/Non_localized" "/private/var/$username"
-	execCmd(false, "chown", "-R", uid+":staff", OsPath+"Users/mac")
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UserShell", "/bin/zsh")
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", i18n[Language]["temp_user_name"])
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", userPass)
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", uid)
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "Picture", "/Library/User Pictures/Flowers/Lotus.tif")
+	execCmd(true, "cp", "-R", OsPath+"System/Library/User Template/zh_CN.lproj", OsPath+"Users/"+userName)
+	///usr/bin/ditto "/System/Library/User Template/zh_CN.lproj" "/private/var/$username"
+	execCmd(true, "chown", "-R", uid+":staff", OsPath+"Users/"+userName)
 	//if [[ "$(sw_vers -productVersion)" != 10.[0-5].* ]]; then; chmod +a "user:mac allow list,add_file,search,delete,add_subdirectory,delete_child,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,chown,file_inherit,directory_inherit" /Users/mac/Public/Drop\ Box; fi
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "NFSHomeDirectory", "/Users/mac")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/mac", "123456")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", "mac")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_defaultLanguage", "zh_CN")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_writers__defaultLanguage", "mac")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "AuthenticationAuthority", ";DisabledTags;SecureToken")
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/mac")
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName, userPass)
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_defaultLanguage", "zh_CN")
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_writers__defaultLanguage", "mac")
+	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "AuthenticationAuthority", ";DisabledTags;SecureToken")
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_AvatarRepresentation", userName)
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_hint", userName)
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_realname", userName)
@@ -1318,7 +1325,7 @@ func menuNewUser() {
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:unlockOptions", "0")
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "JPEGPhoto")
 	//execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "Picture")
-	execCmd(false, "security", "unlock-keychain", "-p", "123456")
+	execCmd(false, "security", "unlock-keychain", "-p", userPass)
 	execCmd(false, "security", "unlock-keychain", "-p", OsPath+"Library/Keychains/System.keychain")
 	menuTouchAppleDone()
 }

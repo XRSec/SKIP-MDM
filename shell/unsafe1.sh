@@ -132,22 +132,30 @@ cleanMdm() {
 
 checkUser() {
   if [ "$(find "${OSPATH}/Users" -type d -maxdepth 1 ! -name "Shared" ! -name "/" | wc -l >/dev/null 2>&1)" -eq 1 ]; then
-    read username
-    account_id="${RANDOM}"
+    maxid=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
+    account_id=$((maxid+1))
     username="apple_${account_id}"
-    passw="123456"
+    passwd="123456"
     msg_ok "Name: ${username}"
-    msg_ok "Name: ${passw}"
+    msg_ok "Name: ${passwd}"
     dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" UserShell "/bin/zsh"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" RealName "${dict[$mdm_lang + 25]}"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" UniqueID "${account_id}"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" PrimaryGroupID "20"
-    mkdir "${OSPATH}/Users/$username"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" NFSHomeDirectory "/Users/$username"
-    dscl -f "$dscl_path" localhost -passwd "/Local/Default/Users/$username" "$passw"
-    dscl -f "$dscl_path" localhost -append "/Local/Default/Groups/admin" GroupMembership $username
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UserShell" "/bin/zsh"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "RealName" "${dict[$mdm_lang + 25]}"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UniqueID" "${account_id}"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "PrimaryGroupID" "20"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "AuthenticationHint" "$passwd"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "Picture" "/Library/User Pictures/Flowers/Lotus.tif"
+    cp -R "${OSPATH}/System/Library/User Template/zh_CN.lproj" "${OSPATH}/Users/$username"
+    chown -R uid:staff "${OSPATH}/Users/$username"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "NFSHomeDirectory" "/Users/$username"
+    dscl -f "$dscl_path" localhost -passwd "/Local/Default/Users/$username" "$passwd"
+    dscl -f "$dscl_path" localhost -append "/Local/Default/Groups/admin" "GroupMembership" "$username"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_defaultLanguage" "zh_CN"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_writers__defaultLanguage" "$username"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "AuthenticationAuthority" ";DisabledTags;SecureToken"
+    security unlock-keychain -p "$passwd"
+    security unlock-keychain -p "$OsPath/Library/Keychains/System.keychain"
     touch "${OSPATH}/private/var/db/.AppleSetupDone"
   fi
 }
@@ -181,7 +189,7 @@ dict[25]="Temp User Please Delete"
 dict[26]="临时用户 请及时删除"
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -ksSL https://searchplugin.csdn.net/api/v1/ip/get)
+  response=$(curl -kfsL https://searchplugin.csdn.net/api/v1/ip/get || curl -ksfL cip.cc || echo "can't find net ip")
   if [[ $response == *"中国"* ]]; then
     mdm_lang=1
   else
