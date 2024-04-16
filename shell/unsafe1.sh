@@ -132,30 +132,29 @@ cleanMdm() {
 
 checkUser() {
   if [ "$(find "${OSPATH}/Users" -type d -maxdepth 1 ! -name "Shared" ! -name "/" | wc -l >/dev/null 2>&1)" -eq 1 ]; then
-    maxid=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
+    dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
+    maxid=$(dscl -f "$dscl_path" localhost -list "/Local/Default/Users" UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
     account_id=$((maxid+1))
-    username="apple_${account_id}"
+    username="mac_${account_id}"
     passwd="123456"
     msg_ok "Name: ${username}"
     msg_ok "Pass: ${passwd}"
-    dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UserShell" "/bin/zsh"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "RealName" "${dict[$mdm_lang + 25]}"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "RealName" "Mac"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UniqueID" "${account_id}"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "PrimaryGroupID" "20"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "AuthenticationHint" "$passwd"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "Picture" "/Library/User Pictures/Flowers/Lotus.tif"
-    cp -R "${OSPATH}/System/Library/User Template/zh_CN.lproj" "${OSPATH}/Users/$username"
-    chown -R uid:staff "${OSPATH}/Users/$username"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "AuthenticationHint" "by(vx): xr_sec passwd: $passwd"
+    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "Picture" "/Library/User Pictures/Flowers/Lotus.heic"
+    ditto -rsrc "${OSPATH}/System/Library/User Template/zh_CN.lproj" "${OSPATH}/Users/$username"
+    ditto -rsrc "${OSPATH}/System/Library/User Template/Non_localized" "${OSPATH}/Users/$username"
+    chown -R "$account_id:staff" "${OSPATH}/Users/$username"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "NFSHomeDirectory" "/Users/$username"
     dscl -f "$dscl_path" localhost -passwd "/Local/Default/Users/$username" "$passwd"
     dscl -f "$dscl_path" localhost -append "/Local/Default/Groups/admin" "GroupMembership" "$username"
+    dscl -f "$dscl_path" localhost -append "/Local/Default/Users/$username" "AuthenticationAuthority" ";DisabledTags;SecureToken"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_defaultLanguage" "zh_CN"
     dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_writers__defaultLanguage" "$username"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "AuthenticationAuthority" ";DisabledTags;SecureToken"
-    security unlock-keychain -p "$passwd"
-    security unlock-keychain -p "$OsPath/Library/Keychains/System.keychain"
     touch "${OSPATH}/private/var/db/.AppleSetupDone"
   fi
 }
