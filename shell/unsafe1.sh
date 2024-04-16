@@ -194,7 +194,6 @@ export mdm_lang
 if type open >/dev/null 2>&1; then
   exit 0
 fi
-set -ex
 findOSPATH
 MDMPath="${OSPATH}/var/db/ConfigurationProfiles"
 LibraryPath="${OSPATH}/Library"
