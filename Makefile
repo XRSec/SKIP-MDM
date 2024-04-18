@@ -95,29 +95,28 @@ buildClient:
 	@#upx -9 mdm-darwin-amd64
 	@$(MAKE) getMD5
 
-ikuai.obfuscate:
-	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
-	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
-	@cp -v shell/unsafe0.sh html/unsafe0.sh
-	@cp -v shell/cli.sh html/cli.sh
-	@if [[ "$(md5sum /Volumes/MDM*/cli.sh | cut -d' ' -f1)" != "$(md5sum html/cli.sh | cut -d' ' -f1)" ]]; then find "/Volumes/MDM*/html" -name 'cli-*.sh' -exec rm -fv '{}' \;; fi
-	@if [[ "$(md5sum /Volumes/MDM*/unsafe0.sh | cut -d' ' -f1)" != "$(md5sum html/unsafe0.sh | cut -d' ' -f1)" ]]; then find /Volumes/MDM*/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;; fi
 
-mdm.obfuscate:
+obfuscate:
 	@bash-obfuscate shell/cli.sh -o html/cli.sh
 	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
 	@bash-obfuscate shell/unsafe0.sh -o html/unsafe0.sh
 	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
 	@cp -v shell/unsafe0.sh html/unsafe0.sh
 	@cp -v shell/cli.sh html/cli.sh
+
+ikuai.obfuscate:
+	@$(MAKE) obfuscate
+	@if [[ "$(md5sum /Volumes/MDM*/cli.sh | cut -d' ' -f1)" != "$(md5sum html/cli.sh | cut -d' ' -f1)" ]]; then find "/Volumes/MDM*/html" -name 'cli-*.sh' -exec rm -fv '{}' \;; fi
+	@if [[ "$(md5sum /Volumes/MDM*/unsafe0.sh | cut -d' ' -f1)" != "$(md5sum html/unsafe0.sh | cut -d' ' -f1)" ]]; then find /Volumes/MDM*/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;; fi
+
+
+mdm.obfuscate:
+	@$(MAKE) obfuscate
 	@if [[ $(ssh mdm "md5sum /app/html/cli.sh | cut -d' ' -f1") != $(md5sum html/cli.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'cli-*.sh' -exec rm -fv '{}' \;"; fi
 	@if [[ $(ssh mdm "md5sum /app/html/unsafe0.sh | cut -d' ' -f1") != $(md5sum html/unsafe0.sh | cut -d' ' -f1) ]]; then ssh mdm "find /app/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;"; fi
 
 n1.obfuscate:
-	@bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
-	@bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
-	@cp -v shell/unsafe0.sh html/unsafe0.sh
-	@cp -v shell/cli.sh html/cli.sh
+	@$(MAKE) obfuscate
 	@if [[ $(ssh n1 "md5sum /app/html/cli.sh | cut -d' ' -f1") != $(md5sum html/cli.sh | cut -d' ' -f1) ]]; then ssh n1 "find /app/html -name 'cli-*.sh' -exec rm -fv '{}' \;"; fi
 	@if [[ $(ssh n1 "md5sum /app/html/unsafe0.sh | cut -d' ' -f1") != $(md5sum html/unsafe0.sh | cut -d' ' -f1) ]]; then ssh n1 "find /app/html -name 'unsafe0-*.sh' -exec rm -fv '{}' \;"; fi
 
@@ -129,7 +128,6 @@ pkgObfuscate:
 	@cd node-bash-obfuscate && npm i
 	@pkg node-bash-obfuscate -t node18-linux-x64 -o server/bash-obfuscate
 	@rm -rf node-bash-obfuscate
-
 
 mdms:
 	@$(MAKE) dockerStart
@@ -166,3 +164,16 @@ n1:
 	@$(MAKE) n1.copyFile
 	@rm -rfv mdm-*-*
 	@echo "all done"
+
+scf:
+	@rm -f scf.zip
+	@xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static -X main.debug=false" ./custom/scf/
+	@$(MAKE) buildClient
+	@if [[ ! -f "server/bash-obfuscate" ]]; then make pkgObfuscate; fi
+	@mv mdm-linux-amd64 main
+	@$(MAKE) obfuscate
+	@chmod +x custom/scf/scf_bootstrap main
+	@zip -j scf.zip main server/doc.md server/zoneinfo.zip custom/scf/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
+	@zip -r scf.zip html
+	@rm -rfv mdm-*-* main
+	@echo "scf done"

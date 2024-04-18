@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
-	//"gorm.io/driver/sqlite"
+
 	"gorm.io/gorm"
 	"io"
 	"net"
@@ -46,7 +46,7 @@ var (
 	debug      = "true"
 	PrivateIP  = "107.148.31.165"
 	PublicIP   = "mdms.fun"
-	serverPort = "6"
+	serverPort = "9000"
 )
 
 func init() {
@@ -265,11 +265,11 @@ func main() {
 	log.Infoln("Run models...")
 	// 配置日志输出到文件
 	logFile := &lumberjack.Logger{
-		Filename:   "./logs/app.log", // 日志文件路径
-		MaxSize:    20,               // 单个日志文件的最大尺寸，单位：MB
-		MaxBackups: 5,                // 保留的旧日志文件的最大个数
-		MaxAge:     30,               // 保留的旧日志文件的最大天数
-		Compress:   true,             // 是否压缩/归档旧日志文件
+		Filename:   "/tmp/app.log", // 日志文件路径
+		MaxSize:    20,             // 单个日志文件的最大尺寸，单位：MB
+		MaxBackups: 5,              // 保留的旧日志文件的最大个数
+		MaxAge:     30,             // 保留的旧日志文件的最大天数
+		Compress:   true,           // 是否压缩/归档旧日志文件
 	}
 	log.SetFormatter(new(MyFormatter))
 	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
@@ -316,7 +316,7 @@ func main() {
 		if isWeb(c) {
 			c.File("html/index.html")
 		} else if isCurl(c) {
-			fileTmp := fmt.Sprintf("html/cli-%v.sh", PublicIP)
+			fileTmp := fmt.Sprintf("/tmp/cli-%v.sh", PublicIP)
 			replaceServer("html/cli.sh", fileTmp, PublicIP)
 			c.File(fileTmp)
 		} else {
@@ -620,7 +620,7 @@ func main() {
 			serialNumber := strings.ToLower(c.Query("serial_number"))
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 			if serialNumber == "" || err != nil || !compile {
-				fileTmp := fmt.Sprintf("html/unsafe0-%v.sh", PublicIP)
+				fileTmp := fmt.Sprintf("/tmp/unsafe0-%v.sh", PublicIP)
 				c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
 				replaceServer("html/unsafe0.sh", fileTmp, PublicIP)
 				c.File(fileTmp)
@@ -654,7 +654,7 @@ func main() {
 			query := strings.ToLower(c.Query("q"))
 			msg := ""
 			var logs string
-			filePath := "logs/app.log" // 替换为你要读取的文件路径
+			filePath := "/tmp/app.log" // 替换为你要读取的文件路径
 			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
 				log.Errorf("ps: %v", ps)

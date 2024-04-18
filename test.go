@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -69,4 +71,8 @@ func init() {
 
 func main() {
 	fmt.Println(time.Now().Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().Minute()+15)/15)*15) * time.Minute).Format("200601021504"))
+	hosts := strings.Split("service-ruy1zu1s-1316823487.nj.tencentapigw.com", ":")
+	hosts1 := strings.Split("1.1.1.1:80", ":")
+	println(hosts[0], net.ParseIP(hosts[0]).String())
+	println(hosts1[0], net.ParseIP(hosts1[0]).String())
 }

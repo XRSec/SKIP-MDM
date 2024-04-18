@@ -3,4 +3,6 @@
 /mdm/mdm
 /**/node_modules
 /test.sh
-/html
+/html/*.sh
+/scf.zip
+/server/bash-obfuscate
