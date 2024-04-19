@@ -1,0 +1,27 @@
+name: backup-mysql
+on:
+  schedule:
+    # Run at 7:00 UTC every day
+    - cron: "0 7 * * *"
+jobs:
+  run_mysqldump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Dump database
+        env:
+          MYSQL_PWD: ${{ secrets.MYSQL_PWD }}
+        run: |
+          mysqldump \
+            -u "${{ secrets.MYSQL_USER }}" \
+            -h "${{ secrets.MYSQL_HOST }}" \
+            -P "${{ secrets.MYSQL_PORT }}" \
+            --verbose \
+            "{{ secrets.MYSQL_DATABASE }}" \
+            | bzip2 -c > .github/"$(date +'%Y-%m-%d %H:%M:%S').sql.bz2"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "Backup database by Awvs_Update_Action" -a
+          git push

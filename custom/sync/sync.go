@@ -69,11 +69,11 @@ func main() {
 	sqliteDB.Find(&sqliteUserRecords)
 	sqliteDB.Find(&sqliteCardRecords)
 
-	if err = mysqlDB.Save(&sqliteUserRecords).Error; err != nil {
+	if err = mysqlDB.Create(&sqliteUserRecords).Error; err != nil {
 		log.Errorf("mysqlDB Users 数据库迁移失败: %v", err)
 		return
 	}
-	if err = mysqlDB.Save(&sqliteCardRecords).Error; err != nil {
+	if err = mysqlDB.Create(&sqliteCardRecords).Error; err != nil {
 		log.Errorf("mysqlDB Cards 数据库迁移失败: %v", err)
 		return
 	}

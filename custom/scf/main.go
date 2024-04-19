@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
@@ -39,6 +40,17 @@ type Cards struct {
 	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 }
 
+type Logs struct {
+	ID        uint      `gorm:"primarykey"`
+	Timestamp time.Time // 时间戳
+	APP       string    // 应用名称
+	Method    string    // HTTP方法
+	Path      string    // 请求路径
+	IP        string    // 请求IP
+	Status    string    // HTTP状态码
+	Latency   string    // 请求延迟
+}
+
 var (
 	err        error
 	db         *gorm.DB
@@ -66,11 +78,15 @@ func init() {
 		return
 	}
 	if err = db.AutoMigrate(&Users{}); err != nil {
-		log.Errorf("数据库迁移失败%v", err)
+		log.Errorf("Users 数据库初始化失败: %v", err)
 		return
 	}
 	if err = db.AutoMigrate(&Cards{}); err != nil {
-		log.Errorf("数据库迁移失败%v", err)
+		log.Errorf("Cards 数据库初始化失败: %v", err)
+		return
+	}
+	if err = db.AutoMigrate(&Logs{}); err != nil {
+		log.Errorf("Logs 数据库初始化失败: %v", err)
 		return
 	}
 	if docs, err := getDocs(); err == nil {
@@ -228,10 +244,50 @@ func getDocs() (doc string, err2 error) {
 	return string(content), nil
 }
 
-type MyFormatter struct{}
+type logWriter struct{}
 
-func (f *MyFormatter) Format(entry *log.Entry) ([]byte, error) {
-	return []byte(fmt.Sprintf("[LOG] %v | %-5v | %-12v | %v\n", entry.Time.Format("2006/01/02 - 15:04:05"), entry.Level.String(), fmt.Sprintf("%v:%v", strings.Replace(entry.Caller.Func.Name(), "main.", "", -1), entry.Caller.Line), entry.Message)), nil
+func (f *logWriter) Format(entry *log.Entry) ([]byte, error) {
+	method := fmt.Sprintf("%v:%v", strings.Replace(entry.Caller.Func.Name(), "main.", "", -1), entry.Caller.Line)
+	logString := fmt.Sprintf("[LOG] %v | %-5v | %-12v | %v\n",
+		entry.Time.Format("2006/01/02 - 15:04:05"),
+		entry.Level.String(),
+		method,
+		entry.Message)
+	logs := Logs{
+		Timestamp: entry.Time,
+		APP:       "[LOG]",
+		Method:    method,
+		Path:      entry.Message,
+		Status:    entry.Level.String(),
+	}
+	if err := db.Create(&logs).Error; err != nil {
+		log.Errorf("Create Log Error: [%v]", err)
+	}
+	return []byte(logString), nil
+}
+
+type ginLogWriter struct{}
+
+// Write 实现了io.Writer接口的Write方法
+func (l ginLogWriter) Write(data []byte) (n int, err error) {
+	fields := bytes.Fields(data)
+	if len(fields) != 13 {
+		log.Fatalf("Log Format Error: [%v]", string(data))
+		return len(data), err
+	}
+	logs := Logs{
+		Timestamp: time.Now(),
+		APP:       string(fields[0]),
+		Method:    string(fields[11]),
+		Path:      string(fields[12]),
+		IP:        string(fields[9]),
+		Status:    string(fields[5]),
+		Latency:   string(fields[7]),
+	}
+	if err := db.Create(&logs).Error; err != nil {
+		log.Errorf("Create Log Error: [%v]", err)
+	}
+	return len(data), nil
 }
 
 // Deprecated: 已经被废弃
@@ -271,12 +327,12 @@ func main() {
 		MaxAge:     30,             // 保留的旧日志文件的最大天数
 		Compress:   true,           // 是否压缩/归档旧日志文件
 	}
-	log.SetFormatter(new(MyFormatter))
+	log.SetFormatter(new(logWriter))
 	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(gin.Recovery())
-	r.Use(gin.LoggerWithWriter(logFile))
+	r.Use(gin.LoggerWithWriter(io.MultiWriter(ginLogWriter{}, logFile)))
 	r.Use(func(c *gin.Context) {
 		if c.Request.Method != http.MethodGet {
 			c.AbortWithStatus(http.StatusServiceUnavailable)

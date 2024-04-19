@@ -1190,7 +1190,7 @@ func privacyDns() (client *http.Client) {
 	// 设置制定DNS 保护隐私
 	dialer := &net.Dialer{
 		Resolver: &net.Resolver{
-			PreferGo: true,
+			PreferGo: false, // 禁用系统的hosts文件解析
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 				d := net.Dialer{
 					Timeout: time.Duration(5000) * time.Millisecond,
@@ -1203,7 +1203,7 @@ func privacyDns() (client *http.Client) {
 		return dialer.DialContext(ctx, network, addr)
 	}
 	client = &http.Client{
-		Timeout: 50 * time.Second,
+		Timeout: time.Duration(50) * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			Proxy:           nil,
