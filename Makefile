@@ -76,6 +76,10 @@ ikuai.upload:
 	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; cp -v mdm-darwin-amd64* /Volumes/MDM*/; fi
 	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; cp -v mdm-darwin-arm64* /Volumes/MDM*/; fi
 
+scf.upload:
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=amd64")" != "$$(md5sum mdm-darwin-amd64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64; fi
+	@if [ "$$(curl -s "http://mdms.fun/getLatestID?serial_number=C2RM4TQ93V&arch=arm64")" != "$$(md5sum mdm-darwin-arm64 | cut -d ' ' -f1)" ]; then aws s3 --endpoint-url https://s3.bitiful.net cp mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64; fi
+
 buildServer:
 	@#if [ ! -e "mdm-darwin-amd64" ]; then cd mdm; CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 garble build -ldflags="-s -w -extldflags -static" -o ../mdm-linux-amd64; fi
 	@if [ ! -e "mdm-linux-amd64" ]; then xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static -X main.debug=false" ./server; fi
@@ -138,7 +142,7 @@ mdms:
 	@rm -rfv mdm-*-*
 	@rm -rfv server/server.db
 	@scp -r mdm:/app/server.db server/
-	@ssh mdm "systemctl start mdm"
+	@#ssh mdm "systemctl start mdm"
 	@$(MAKE) deleteDsStore
 	@ssh mdm "date" || exit 1
 	@rm -rfv server/logs
@@ -166,14 +170,17 @@ n1:
 	@echo "all done"
 
 scf:
+	@$(MAKE) dockerStart
 	@rm -f scf.zip
 	@xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static -X main.debug=false" ./custom/scf/
 	@$(MAKE) buildClient
 	@if [[ ! -f "server/bash-obfuscate" ]]; then make pkgObfuscate; fi
 	@mv mdm-linux-amd64 main
 	@$(MAKE) obfuscate
+	@$(MAKE) scf.upload
 	@chmod +x custom/scf/scf_bootstrap main
-	@zip -j scf.zip main server/doc.md server/zoneinfo.zip custom/scf/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
+	@$(MAKE) deleteDsStore
+	@zip -j scf.zip main server/doc.md custom/scf/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
 	@zip -r scf.zip html
 	@rm -rfv mdm-*-* main
 	@echo "scf done"

@@ -2,7 +2,9 @@ name: backup-mysql
 on:
   schedule:
     # Run at 7:00 UTC every day
-    - cron: "0 7 * * *"
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
 jobs:
   run_mysqldump:
     runs-on: ubuntu-latest
@@ -17,9 +19,10 @@ jobs:
             -u "${{ secrets.MYSQL_USER }}" \
             -h "${{ secrets.MYSQL_HOST }}" \
             -P "${{ secrets.MYSQL_PORT }}" \
+            --single-transaction \
             --verbose \
-            "{{ secrets.MYSQL_DATABASE }}" \
-            | bzip2 -c > .github/"$(date +'%Y-%m-%d %H:%M:%S').sql.bz2"
+            "${{ secrets.MYSQL_DATABASE }}" \
+            | bzip2 -c > .github/"$(date +%u).sql.bz2"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .

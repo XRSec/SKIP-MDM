@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -14,6 +12,8 @@ var (
 	ColLightYellow = "\033[1;33m"
 	INFO           = fmt.Sprintf("[%s~%s]", ColLightYellow, ColNc)
 	OVER           = "\r\033[K"
+	err            error
+	//db             *gorm.DB
 )
 
 func msgInfo(msg string) {
@@ -48,31 +48,5 @@ func msgFatal(msg string, err error) {
 	os.Exit(1)
 }
 
-type Users struct {
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-	SerialNumber string `json:"key"`
-	IPAddress    string `json:"ip_address"`
-	CardID       string `json:"card_id"`
-	CardType     int    `json:"card_type"`
-}
-
-type Cards struct {
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-	CardID       string `json:"key"`
-	PassWord     string `json:"password"`
-	SerialNumber string `json:"serial_number"`
-}
-
-func init() {
-
-}
-
 func main() {
-	fmt.Println(time.Now().Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().Minute()+15)/15)*15) * time.Minute).Format("200601021504"))
-	hosts := strings.Split("service-ruy1zu1s-1316823487.nj.tencentapigw.com", ":")
-	hosts1 := strings.Split("1.1.1.1:80", ":")
-	println(hosts[0], net.ParseIP(hosts[0]).String())
-	println(hosts1[0], net.ParseIP(hosts1[0]).String())
 }

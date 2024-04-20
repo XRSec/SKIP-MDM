@@ -135,6 +135,7 @@ checkUser() {
     dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
     maxid=$(dscl -f "$dscl_path" localhost -list "/Local/Default/Users" UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
     account_id=$((maxid+1))
+    # account_id="${RANDOM}"
     username="mac_${account_id}"
     passwd="123456"
     msg_ok "Name: ${username}"
