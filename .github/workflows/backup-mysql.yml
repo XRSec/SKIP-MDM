@@ -20,11 +20,12 @@ jobs:
             -h "${{ secrets.MYSQL_HOST }}" \
             -P "${{ secrets.MYSQL_PORT }}" \
             --single-transaction \
+            --skip-add-locks \
             --verbose \
             "${{ secrets.MYSQL_DATABASE }}" \
-            | bzip2 -c > .github/"$(date +%u).sql.bz2"
+            | bzip2 -c > ".github/$(date +%u).sql.bz2"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .
-          git commit -m "Backup database by Awvs_Update_Action" -a
+          git commit -m "Backup database by Action" -a
           git push
