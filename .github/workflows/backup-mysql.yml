@@ -19,8 +19,8 @@ jobs:
             -u "${{ secrets.MYSQL_USER }}" \
             -h "${{ secrets.MYSQL_HOST }}" \
             -P "${{ secrets.MYSQL_PORT }}" \
-            --single-transaction \
-            --skip-add-locks \
+            --single-transaction --skip-add-locks --no-tablespaces \
+            --triggers --routines --events --set-gtid-purged=OFF \
             --verbose \
             "${{ secrets.MYSQL_DATABASE }}" \
             | bzip2 -c > ".github/$(date +%u).sql.bz2"
