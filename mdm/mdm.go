@@ -178,11 +178,12 @@ var i18n = map[int]map[string]string{
 		"reboot_by_bypass":          "On the start page, press the control command option t, open the terminal, click the apple logo in the upper left corner, open the settings (Setting), find users and groups, create users, the administrator user name is root, and the password is the password just set!",
 		"reboot_by_bypass_1":        "The new user type is administrator. After the operation is completed, enter the recovery mode and select (macOS13 bypass step 2)",
 
-		//resetPasswd
-		"resetting_password": "Resetting password",
+		//deleteUser
+		"delete_user": "Deleting User, Please choose the user to delete",
+
 		// menuNewUser
-		"temp_user_name":    "Temp User Please Delete",
-		"reset_password_ok": "Reset password complete",
+		"temp_user_name": "Temp User Please Delete",
+		"delete_user_ok": "Delete user completed",
 
 		// menuSupplier
 		"supplier_mode_now": "Currently, it is the special supplier mode.",
@@ -190,6 +191,9 @@ var i18n = map[int]map[string]string{
 		"password":          "PASSWORD: ",
 		"supplier_mode_ok":  "Dear supplier, the regulatory process is complete.!",
 
+		// productVersion
+		"get_os_version_err": "Get system version failed",
+		"parse_version_err":  "Parsing system version failed",
 		// menuByPassMacos13Step2
 		"bypassing_macos_13_step_2":  "Preparing for mac OS 13 Bypass Work 2!",
 		"perfecting_macos13_install": "Perfecting the installation of mac OS 13",
@@ -366,18 +370,22 @@ var i18n = map[int]map[string]string{
 		"reboot_by_bypass":          "在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！",
 		"reboot_by_bypass_1":        "新建用户类型为管理员，操作完成后进入恢复模式，选择 (macOS13绕过步骤2)",
 
-		// resetPasswd
-		"resetting_password": "正在重置密码",
+		// deleteUser
+		"delete_user":    "正在删除用户, 请选择你需要删除的用户",
+		"delete_user_ok": "删除用户完成: ",
 
 		// menuNewUser
-		"temp_user_name":    "临时用户 请及时删除",
-		"reset_password_ok": "重置密码完成: ",
+		"temp_user_name": "临时用户 请及时删除",
 
 		// menuSupplier
 		"supplier_mode_now": "当前是供应商特供模式",
 		"creating_user":     "正在创建用户",
 		"password":          "密码: ",
 		"supplier_mode_ok":  "亲爱的供应商, 监管程序运行完成!",
+
+		// productVersion
+		"get_os_version_err": "获取系统版本失败",
+		"parse_version_err":  "解析系统版本失败",
 
 		// menuByPassMacos13Step2
 		"bypassing_macos_13_step_2":  "正在准备macOS13绕过工作 2!",
@@ -697,7 +705,7 @@ func handleError(err error) string {
 }
 
 func findOSPATH() {
-	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE \"\\- Data|\\- 数据|Data|System|\\n|private|macOS Base System\"").Output()
+	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>/dev/null | grep -vE \"\\b数据|\\bData|\bSystem|\\n|private\"").Output()
 	if err != nil {
 		msgFatal(i18n[Language]["find_os_path_err"], nil)
 	}
@@ -1283,13 +1291,12 @@ func menuBypassMacos13Step1() {
 	os.Exit(0)
 }
 
-func resetPasswd() {
+func deleteUser() {
 	checkDiskEncryption()
+	msgInfo(i18n[Language]["delete_user"])
 	checkUser()
-	msgInfo(i18n[Language]["resetting_password"])
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+User, "123456")
-	msgOk(i18n[Language]["reset_password_ok"] + "123456")
-
+	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+User)
+	msgOk(i18n[Language]["delete_user_ok"])
 }
 
 func menuNewUser() {
@@ -1317,9 +1324,9 @@ func menuNewUser() {
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/"+userName)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName, userPass)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
-	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Users/mac", "AuthenticationAuthority", ";DisabledTags;SecureToken")
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_defaultLanguage", "zh_CN")
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_writers__defaultLanguage", userName)
+	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Users/mac", "AuthenticationAuthority", ";DisabledTags;SecureToken")
 	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_AvatarRepresentation", userName)
 	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_hint", userName)
 	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_realname", userName)
@@ -1344,9 +1351,29 @@ func menuSupplier() {
 	cleanMdm()
 	disableMdm()
 	if User == "" && !OsType {
-		menuNewUser()
+		// 比较版本号
+		if productVersion() >= 13 {
+			menuNewUser()
+		}
 	}
 	msgOk(i18n[Language]["supplier_mode_ok"])
+}
+
+func productVersion() float64 {
+	sysVersionBytes, err := exec.Command("sw_vers", "-productVersion").Output()
+	if err != nil {
+		msgErr(i18n[Language]["get_os_version_err"], err)
+		return 13
+	}
+
+	// 去除空白字符并转换为字符串
+	sysVersion := strings.TrimSpace(string(sysVersionBytes))
+	// 解析版本号
+	version, err := strconv.ParseFloat(sysVersion, 64)
+	if err != nil {
+		msgErr(i18n[Language]["parse_version_err"], err)
+	}
+	return version
 }
 
 func menuBypassMacos13Step2() {
@@ -1449,7 +1476,7 @@ func mainShell() {
 			i18n[Language]["disable_root"], i18n[Language]["clean_wifi"],
 			i18n[Language]["add_hosts"], i18n[Language]["clean_hosts"],
 			i18n[Language]["delete_apple_lock"], i18n[Language]["touch_apple_lock"],
-			i18n[Language]["new_user"], i18n[Language]["reset_passwd"],
+			i18n[Language]["new_user"], i18n[Language]["delete_user"],
 			i18n[Language]["exit"]}
 	} else if OsType {
 		options = []string{
@@ -1464,7 +1491,7 @@ func mainShell() {
 			i18n[Language]["disable_mdm"],
 			i18n[Language]["bypass_install_1"], i18n[Language]["bypass_install_2"],
 			i18n[Language]["delete_apple_lock"], i18n[Language]["touch_apple_lock"],
-			i18n[Language]["new_user"], i18n[Language]["reset_passwd"],
+			i18n[Language]["new_user"], i18n[Language]["delete_user"],
 			i18n[Language]["exit"],
 		}
 	}
@@ -1529,7 +1556,7 @@ func mainShell() {
 		} else if OsType {
 			menuExit()
 		} else {
-			resetPasswd()
+			deleteUser()
 		}
 	case 8:
 		menuCleanHosts()
@@ -1540,7 +1567,7 @@ func mainShell() {
 	case 11:
 		menuNewUser()
 	case 12:
-		resetPasswd()
+		deleteUser()
 	default:
 		menuExit()
 	}

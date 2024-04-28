@@ -22,6 +22,7 @@ msg_err() {
   printf "${OVER}  [\033[1;31m✗${COL_NC}]  %s\n" "${1}" 1>&2
   exit 1
 }
+
 msg_over() {
   printf "${OVER}%s" "  " 1>&2
 }
@@ -38,8 +39,7 @@ IFSRestore() {
 
 findOSPATH() {
   IFSSet
-  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "System|\n|private|macOS Base System")
-
+  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\b数据|\bData|\bSystem|\n|private")
   if [ -z "${OSPATH}" ]; then
     msg_err "${dict[$mdm_lang + 1]}"
   fi
@@ -131,33 +131,37 @@ cleanMdm() {
 }
 
 checkUser() {
-  if [ "$(find "${OSPATH}/Users" -type d -maxdepth 1 ! -name "Shared" ! -name "/" | wc -l >/dev/null 2>&1)" -eq 1 ]; then
-    dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
-    maxid=$(dscl -f "$dscl_path" localhost -list "/Local/Default/Users" UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
-    account_id=$((maxid+1))
-    # account_id="${RANDOM}"
-    username="mac_${account_id}"
-    passwd="123456"
-    msg_ok "Name: ${username}"
-    msg_ok "Pass: ${passwd}"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UserShell" "/bin/zsh"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "RealName" "Mac"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UniqueID" "${account_id}"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "PrimaryGroupID" "20"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "AuthenticationHint" "by(vx): xr_sec passwd: $passwd"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "Picture" "/Library/User Pictures/Flowers/Lotus.heic"
-    ditto -rsrc "${OSPATH}/System/Library/User Template/zh_CN.lproj" "${OSPATH}/Users/$username"
-    ditto -rsrc "${OSPATH}/System/Library/User Template/Non_localized" "${OSPATH}/Users/$username"
-    chown -R "$account_id:staff" "${OSPATH}/Users/$username"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "NFSHomeDirectory" "/Users/$username"
-    dscl -f "$dscl_path" localhost -passwd "/Local/Default/Users/$username" "$passwd"
-    dscl -f "$dscl_path" localhost -append "/Local/Default/Groups/admin" "GroupMembership" "$username"
-    dscl -f "$dscl_path" localhost -append "/Local/Default/Users/$username" "AuthenticationAuthority" ";DisabledTags;SecureToken"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_defaultLanguage" "zh_CN"
-    dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_writers__defaultLanguage" "$username"
-    touch "${OSPATH}/private/var/db/.AppleSetupDone"
+  if [ "$(find "${OSPATH}/Users" -type d -maxdepth 1 ! -name "Shared" ! -name "/" 2>/dev/null | wc -l)" -gt 1 ]; then
+    return
   fi
+  if [ "$(sw_vers -productVersion | awk -F. '{print $1}')" -le 12 ] ; then
+    return
+  fi
+  dscl_path="${OSPATH}/private/var/db/dslocal/nodes/Default"
+  maxid=$(dscl -f "$dscl_path" localhost -list "/Local/Default/Users" UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
+  account_id=$((maxid + 1))
+  # account_id="${RANDOM}"
+  username="mac_${account_id}"
+  passwd="123456"
+  msg_ok "Name: ${username}"
+  msg_ok "Pass: ${passwd}"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UserShell" "/bin/zsh"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "RealName" "Mac"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "UniqueID" "${account_id}"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "PrimaryGroupID" "20"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "AuthenticationHint" "by(vx): xr_sec passwd: $passwd"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "Picture" "/Library/User Pictures/Flowers/Lotus.heic"
+  ditto -rsrc "${OSPATH}/System/Library/User Template/zh_CN.lproj" "${OSPATH}/Users/$username"
+  ditto -rsrc "${OSPATH}/System/Library/User Template/Non_localized" "${OSPATH}/Users/$username"
+  chown -R "$account_id:staff" "${OSPATH}/Users/$username"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "NFSHomeDirectory" "/Users/$username"
+  dscl -f "$dscl_path" localhost -passwd "/Local/Default/Users/$username" "$passwd"
+  dscl -f "$dscl_path" localhost -append "/Local/Default/Groups/admin" "GroupMembership" "$username"
+  # dscl -f "$dscl_path" localhost -append "/Local/Default/Users/$username" "AuthenticationAuthority" ";DisabledTags;SecureToken" # 傻逼谷歌卧槽尼玛
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_defaultLanguage" "zh_CN"
+  dscl -f "$dscl_path" localhost -create "/Local/Default/Users/$username" "dsAttrTypeNative:_writers__defaultLanguage" "$username"
+  touch "${OSPATH}/private/var/db/.AppleSetupDone"
 }
 
 declare -a dict
@@ -198,16 +202,15 @@ if [[ -z "$mdm_lang" ]]; then
 fi
 
 export mdm_lang
-
 if type open >/dev/null 2>&1; then
   exit 0
 fi
 findOSPATH
 MDMPath="${OSPATH}/var/db/ConfigurationProfiles"
 LibraryPath="${OSPATH}/Library"
+checkUser
 setHosts
 cleanMdm
-checkUser
 
 msg_info "${dict[$mdm_lang + 23]}"
 msg_over

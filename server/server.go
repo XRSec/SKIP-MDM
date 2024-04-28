@@ -40,7 +40,7 @@ type Cards struct {
 	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 }
 
-type Logs struct {
+type ServerLogs struct {
 	ID        uint      `gorm:"primarykey"`
 	Timestamp time.Time // 时间戳
 	APP       string    // 应用名称
@@ -87,7 +87,7 @@ func init() {
 		log.Errorf("Cards 数据库初始化失败: %v", err)
 		return
 	}
-	if err = db.AutoMigrate(&Logs{}); err != nil {
+	if err = db.AutoMigrate(&ServerLogs{}); err != nil {
 		log.Errorf("Logs 数据库初始化失败: %v", err)
 		return
 	}
@@ -259,7 +259,7 @@ func (f *logWriter) Format(entry *log.Entry) ([]byte, error) {
 		entry.Level.String(),
 		method,
 		entry.Message)
-	logs := Logs{
+	logs := ServerLogs{
 		Timestamp: entry.Time,
 		APP:       "[LOG]",
 		IP:        ipFunc,
@@ -282,7 +282,7 @@ func (l ginLogWriter) Write(data []byte) (n int, err error) {
 		log.Fatalf("Log Format Error: [%v]", string(data))
 		return len(data), err
 	}
-	logs := Logs{
+	logs := ServerLogs{
 		Timestamp: time.Now(),
 		APP:       string(fields[0]),
 		Method:    string(fields[11]),
@@ -792,7 +792,7 @@ func main() {
 			ps := c.Query("ps")
 			query := strings.ToLower(c.Query("q"))
 			msg := ""
-			var logs []Logs
+			var logs []ServerLogs
 			var tmpLogs = ""
 			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
