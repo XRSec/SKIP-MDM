@@ -8,12 +8,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
 
-	"gorm.io/gorm"
 	"io"
 	"net"
 	"net/http"
@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Users struct {
@@ -40,7 +42,7 @@ type Cards struct {
 	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 }
 
-type Logs struct {
+type ServerLogs struct {
 	ID        uint      `gorm:"primarykey"`
 	Timestamp time.Time // 时间戳
 	APP       string    // 应用名称
@@ -49,6 +51,13 @@ type Logs struct {
 	IP        string    // 请求IP
 	Status    string    // HTTP状态码
 	Latency   string    // 请求延迟
+}
+
+type ClientLogs struct {
+	ID        uint `gorm:"primarykey"`
+	Timestamp time.Time
+	logs      string
+	IP        string
 }
 
 var (
@@ -63,7 +72,7 @@ var (
 
 func init() {
 	if _, err := os.Stat("zoneinfo.zip"); os.IsExist(err) {
-		os.Setenv("ZONEINFO", "zoneinfo.zip")
+		fmt.Println(os.Setenv("ZONEINFO", "zoneinfo.zip"))
 	}
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -87,7 +96,7 @@ func init() {
 		log.Errorf("Cards 数据库初始化失败: %v", err)
 		return
 	}
-	if err = db.AutoMigrate(&Logs{}); err != nil {
+	if err = db.AutoMigrate(&ServerLogs{}); err != nil {
 		log.Errorf("Logs 数据库初始化失败: %v", err)
 		return
 	}
@@ -259,7 +268,7 @@ func (f *logWriter) Format(entry *log.Entry) ([]byte, error) {
 		entry.Level.String(),
 		method,
 		entry.Message)
-	logs := Logs{
+	serverLogs := ServerLogs{
 		Timestamp: entry.Time,
 		APP:       "[LOG]",
 		IP:        ipFunc,
@@ -267,7 +276,7 @@ func (f *logWriter) Format(entry *log.Entry) ([]byte, error) {
 		Path:      entry.Message,
 		Status:    entry.Level.String(),
 	}
-	if err := db.Create(&logs).Error; err != nil {
+	if err := db.Create(&serverLogs).Error; err != nil {
 		log.Errorf("Create Log Error: [%v]", err)
 	}
 	return []byte(logString), nil
@@ -282,7 +291,7 @@ func (l ginLogWriter) Write(data []byte) (n int, err error) {
 		log.Fatalf("Log Format Error: [%v]", string(data))
 		return len(data), err
 	}
-	logs := Logs{
+	serverLogs := ServerLogs{
 		Timestamp: time.Now(),
 		APP:       string(fields[0]),
 		Method:    string(fields[11]),
@@ -291,7 +300,7 @@ func (l ginLogWriter) Write(data []byte) (n int, err error) {
 		Status:    string(fields[5]),
 		Latency:   string(fields[7]),
 	}
-	if err := db.Create(&logs).Error; err != nil {
+	if err := db.Create(&serverLogs).Error; err != nil {
 		log.Errorf("Create Log Error: [%v]", err)
 	}
 	return len(data), nil
@@ -404,7 +413,7 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(io.MultiWriter(ginLogWriter{}, logFile)))
 	r.Use(func(c *gin.Context) {
-		if c.Request.Method != http.MethodGet {
+		if c.Request.Method != http.MethodGet || (c.Request.Method == http.MethodPost && c.Request.RequestURI != "/LogCollection") {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
@@ -780,6 +789,9 @@ func main() {
 				return
 			}
 		})
+		isCurlR.POST("/LogCollection", func(c *gin.Context) {
+
+		})
 	}
 	{
 		isNotCurlR := r.Group("/").Use(func(c *gin.Context) {
@@ -792,7 +804,7 @@ func main() {
 			ps := c.Query("ps")
 			query := strings.ToLower(c.Query("q"))
 			msg := ""
-			var logs []Logs
+			var serverLogs []ServerLogs
 			var tmpLogs = ""
 			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
@@ -801,28 +813,28 @@ func main() {
 				goto error
 			}
 			if query != "" {
-				if err := db.Where("LOWER(path) LIKE ?", "%"+query+"%").Order("timestamp DESC").Limit(50).Find(&logs).Error; err != nil {
+				if err := db.Where("LOWER(path) LIKE ?", "%"+query+"%").Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
 					msg = fmt.Sprintf("Find Logs Error: [%v]", err)
 					log.Errorln(msg)
 					goto error
 				}
 			} else {
-				if err := db.Order("timestamp DESC").Limit(50).Find(&logs).Error; err != nil {
+				if err := db.Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
 					msg = fmt.Sprintf("Find Logs Error: [%v]", err)
 					log.Errorln(msg)
 					goto error
 				}
 			}
 
-			for i := len(logs) - 1; i >= 0; i-- {
+			for i := len(serverLogs) - 1; i >= 0; i-- {
 				tmpLogs += fmt.Sprintf("%v %v | %5v | %13v | %15s | %-7s %s\n",
-					logs[i].APP,
-					logs[i].Timestamp.Format("2006/01/02 15:04:05"),
-					logs[i].Status,
-					logs[i].Latency,
-					logs[i].IP,
-					logs[i].Method,
-					logs[i].Path,
+					serverLogs[i].APP,
+					serverLogs[i].Timestamp.Format("2006/01/02 15:04:05"),
+					serverLogs[i].Status,
+					serverLogs[i].Latency,
+					serverLogs[i].IP,
+					serverLogs[i].Method,
+					serverLogs[i].Path,
 				)
 			}
 

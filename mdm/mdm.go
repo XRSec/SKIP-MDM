@@ -179,11 +179,11 @@ var i18n = map[int]map[string]string{
 		"reboot_by_bypass_1":        "The new user type is administrator. After the operation is completed, enter the recovery mode and select (macOS13 bypass step 2)",
 
 		//deleteUser
-		"delete_user": "Deleting User, Please choose the user to delete",
+		"delete_user_start": "Deleting User, Please choose the user to delete",
+		"delete_user_ok":    "Delete user completed",
 
 		// menuNewUser
 		"temp_user_name": "Temp User Please Delete",
-		"delete_user_ok": "Delete user completed",
 
 		// menuSupplier
 		"supplier_mode_now": "Currently, it is the special supplier mode.",
@@ -246,7 +246,7 @@ var i18n = map[int]map[string]string{
 		"exit":              "Exit Operation",
 		"choose_menu":       "   Select one: ",
 		"new_menu":          "Congratulations on discovering a new continent!",
-		"reset_passwd":      "Reset Password",
+		"delete_user":       "Delete User",
 	},
 	1: {
 		// init
@@ -371,8 +371,8 @@ var i18n = map[int]map[string]string{
 		"reboot_by_bypass_1":        "新建用户类型为管理员，操作完成后进入恢复模式，选择 (macOS13绕过步骤2)",
 
 		// deleteUser
-		"delete_user":    "正在删除用户, 请选择你需要删除的用户",
-		"delete_user_ok": "删除用户完成: ",
+		"delete_user_start": "正在删除用户, 请选择你需要删除的用户",
+		"delete_user_ok":    "删除用户完成: ",
 
 		// menuNewUser
 		"temp_user_name": "临时用户 请及时删除",
@@ -439,7 +439,7 @@ var i18n = map[int]map[string]string{
 		"exit":              "退出操作",
 		"choose_menu":       "   请选择你需要的操作: ",
 		"new_menu":          "恭喜你发现了新大陆!",
-		"reset_passwd":      "重置密码",
+		"delete_user":       "删除用户",
 	},
 }
 
@@ -1293,7 +1293,7 @@ func menuBypassMacos13Step1() {
 
 func deleteUser() {
 	checkDiskEncryption()
-	msgInfo(i18n[Language]["delete_user"])
+	msgInfo(i18n[Language]["delete_user_start"])
 	checkUser()
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+User)
 	msgOk(i18n[Language]["delete_user_ok"])
@@ -1497,7 +1497,7 @@ func mainShell() {
 	}
 
 	for i, option := range options {
-		fmt.Printf("    %d. %s\n", i+1, option)
+		fmt.Printf("    %2d. %s\n", i+1, option)
 	}
 	fmt.Printf(i18n[Language]["choose_menu"])
 	_, _ = fmt.Scanln(&idNum)

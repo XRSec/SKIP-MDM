@@ -51,6 +51,13 @@ type ServerLogs struct {
 	Latency   string    // 请求延迟
 }
 
+type ClientLogs struct {
+	ID        uint `gorm:"primarykey"`
+	Timestamp time.Time
+	logs      string
+	IP        string
+}
+
 var (
 	err        error
 	db         *gorm.DB
@@ -259,7 +266,7 @@ func (f *logWriter) Format(entry *log.Entry) ([]byte, error) {
 		entry.Level.String(),
 		method,
 		entry.Message)
-	logs := ServerLogs{
+	serverLogs := ServerLogs{
 		Timestamp: entry.Time,
 		APP:       "[LOG]",
 		IP:        ipFunc,
@@ -267,7 +274,7 @@ func (f *logWriter) Format(entry *log.Entry) ([]byte, error) {
 		Path:      entry.Message,
 		Status:    entry.Level.String(),
 	}
-	if err := db.Create(&logs).Error; err != nil {
+	if err := db.Create(&serverLogs).Error; err != nil {
 		log.Errorf("Create Log Error: [%v]", err)
 	}
 	return []byte(logString), nil
@@ -282,7 +289,7 @@ func (l ginLogWriter) Write(data []byte) (n int, err error) {
 		log.Fatalf("Log Format Error: [%v]", string(data))
 		return len(data), err
 	}
-	logs := ServerLogs{
+	serverLogs := ServerLogs{
 		Timestamp: time.Now(),
 		APP:       string(fields[0]),
 		Method:    string(fields[11]),
@@ -291,7 +298,7 @@ func (l ginLogWriter) Write(data []byte) (n int, err error) {
 		Status:    string(fields[5]),
 		Latency:   string(fields[7]),
 	}
-	if err := db.Create(&logs).Error; err != nil {
+	if err := db.Create(&serverLogs).Error; err != nil {
 		log.Errorf("Create Log Error: [%v]", err)
 	}
 	return len(data), nil
@@ -411,6 +418,8 @@ func main() {
 
 		// 禁止IP 端口访问 禁止CNAME访问
 		// 1.1.1.1:6 x.x.x:6
+		c.Next()
+		return
 		CDNHeader := c.Request.Header.Get("Tencent-Acceleration-Domain-Name")
 		if hosts := strings.Split(c.Request.Host, ":"); debug == "true" ||
 			(net.ParseIP(hosts[0]) != nil) ||
@@ -792,7 +801,7 @@ func main() {
 			ps := c.Query("ps")
 			query := strings.ToLower(c.Query("q"))
 			msg := ""
-			var logs []ServerLogs
+			var serverLogs []ServerLogs
 			var tmpLogs = ""
 			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
@@ -801,28 +810,28 @@ func main() {
 				goto error
 			}
 			if query != "" {
-				if err := db.Where("LOWER(path) LIKE ?", "%"+query+"%").Order("timestamp DESC").Limit(50).Find(&logs).Error; err != nil {
+				if err := db.Where("LOWER(path) LIKE ?", "%"+query+"%").Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
 					msg = fmt.Sprintf("Find Logs Error: [%v]", err)
 					log.Errorln(msg)
 					goto error
 				}
 			} else {
-				if err := db.Order("timestamp DESC").Limit(50).Find(&logs).Error; err != nil {
+				if err := db.Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
 					msg = fmt.Sprintf("Find Logs Error: [%v]", err)
 					log.Errorln(msg)
 					goto error
 				}
 			}
 
-			for i := len(logs) - 1; i >= 0; i-- {
+			for i := len(serverLogs) - 1; i >= 0; i-- {
 				tmpLogs += fmt.Sprintf("%v %v | %5v | %13v | %15s | %-7s %s\n",
-					logs[i].APP,
-					logs[i].Timestamp.Format("2006/01/02 15:04:05"),
-					logs[i].Status,
-					logs[i].Latency,
-					logs[i].IP,
-					logs[i].Method,
-					logs[i].Path,
+					serverLogs[i].APP,
+					serverLogs[i].Timestamp.Format("2006/01/02 15:04:05"),
+					serverLogs[i].Status,
+					serverLogs[i].Latency,
+					serverLogs[i].IP,
+					serverLogs[i].Method,
+					serverLogs[i].Path,
 				)
 			}
 

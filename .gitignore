@@ -6,3 +6,4 @@
 /html/*.sh
 /scf.zip
 /server/bash-obfuscate
+/custom/rust_client/target

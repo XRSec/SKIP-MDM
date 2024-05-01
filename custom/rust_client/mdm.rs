@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
+
 use regex::Regex;
 use walkdir::WalkDir;
 
-
-fn findOSPATH(){
+fn findOSPATH() {
     let walker = WalkDir::new("/Volumes").max_depth(2).follow_links(true);
     for entry in walker.into_iter().filter_map(|e| e.ok()) {
         if !entry.path().is_dir() {
