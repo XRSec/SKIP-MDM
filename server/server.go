@@ -8,12 +8,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
 
-	"gorm.io/gorm"
 	"io"
 	"net"
 	"net/http"
@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Users struct {
@@ -65,7 +67,9 @@ var (
 	debug      = "true"
 	PrivateIP  = "107.148.31.165"
 	PublicIP   = "mdms.fun"
-	serverPort = "6"
+	serverPort = "9000"         // 9000 | 6
+	htmlPath   = "/tmp"         // /tmp | html
+	logPath    = "/tmp/app.log" // logs/app.log | /tmp/app.log
 )
 
 func init() {
@@ -317,7 +321,7 @@ func replaceServer(defaultPath, filePath, Host string) {
 		newContent := strings.Replace(string(content), "服务器地址", Host, -1)
 
 		// 写入新内容
-		err = os.WriteFile(filePath+"_tmp", []byte(newContent), 0)
+		err = os.WriteFile(filePath+"_tmp", []byte(newContent), 0666)
 		if err != nil {
 			log.Errorf("Write File Error: [%v]", err)
 		}
@@ -337,7 +341,7 @@ func getLogs(c *gin.Context) {
 	query := strings.ToLower(c.Query("q"))
 	msg := ""
 	var logs string
-	filePath := "logs/app.log" // 替换为你要读取的文件路径
+	filePath := logPath // 日志文件路径
 	compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 	if ps == "" || !compile || err != nil || !decodeHash("", ps) {
 		msg = fmt.Sprintf("Auth Error: [%v]", nil)
@@ -398,11 +402,11 @@ func main() {
 	log.Infoln("Run models...")
 	// 配置日志输出到文件
 	logFile := &lumberjack.Logger{
-		Filename:   "logs/app.log", // 日志文件路径
-		MaxSize:    20,             // 单个日志文件的最大尺寸，单位：MB
-		MaxBackups: 5,              // 保留的旧日志文件的最大个数
-		MaxAge:     30,             // 保留的旧日志文件的最大天数
-		Compress:   true,           // 是否压缩/归档旧日志文件
+		Filename:   logPath, // 日志文件路径
+		MaxSize:    20,      // 单个日志文件的最大尺寸，单位：MB
+		MaxBackups: 5,       // 保留的旧日志文件的最大个数
+		MaxAge:     30,      // 保留的旧日志文件的最大天数
+		Compress:   true,    // 是否压缩/归档旧日志文件
 	}
 	log.SetFormatter(new(logWriter))
 	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
@@ -411,20 +415,17 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(io.MultiWriter(ginLogWriter{}, logFile)))
 	r.Use(func(c *gin.Context) {
-		if c.Request.Method != http.MethodGet {
+		if c.Request.Method != http.MethodGet && !(c.Request.Method == http.MethodPost && c.Request.RequestURI == "/LogCollection") {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
 
 		// 禁止IP 端口访问 禁止CNAME访问
 		// 1.1.1.1:6 x.x.x:6
-		c.Next()
-		return
-		CDNHeader := c.Request.Header.Get("Tencent-Acceleration-Domain-Name")
-		if hosts := strings.Split(c.Request.Host, ":"); debug == "true" ||
-			(net.ParseIP(hosts[0]) != nil) ||
-			(len(hosts) == 2 && hosts[1] != serverPort) ||
-			(!strings.Contains(c.Request.Host, PublicIP) && (CDNHeader == "" || c.Request.Host != PrivateIP || !strings.Contains(CDNHeader, PublicIP))) {
+		hosts := strings.Split(c.Request.Host, ":")
+		if CDNHeader := c.Request.Header.Get("Tencent-Acceleration-Domain-Name"); debug != "true" && !((net.ParseIP(hosts[0]) == nil) ||
+			(len(hosts) == 2 && hosts[1] == serverPort) ||
+			(!strings.Contains(c.Request.Host, PublicIP) && (CDNHeader == "" || c.Request.Host == PrivateIP || strings.Contains(CDNHeader, PublicIP)))) {
 			//c.String(200, fmt.Sprintf("c.Request.Host: [%v]\nPublicIP: [%v]\nCDNHeader: [%v]\nPrivateIP: [%v]\n\n", c.Request.Host, PublicIP, CDNHeader, PrivateIP))
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
@@ -451,7 +452,7 @@ func main() {
 		if isWeb(c) {
 			c.File("html/index.html")
 		} else if isCurl(c) {
-			fileTmp := fmt.Sprintf("html/cli-%v.sh", PublicIP)
+			fileTmp := fmt.Sprintf("%v/cli-%v.sh", htmlPath, PublicIP)
 			replaceServer("html/cli.sh", fileTmp, PublicIP)
 			c.File(fileTmp)
 		} else {
@@ -768,8 +769,8 @@ func main() {
 			serialNumber := strings.ToLower(c.Query("serial_number"))
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 			if serialNumber == "" || err != nil || !compile {
-				fileTmp := fmt.Sprintf("html/unsafe0-%v.sh", PublicIP)
 				c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+				fileTmp := fmt.Sprintf("%v/unsafe0-%v.sh", htmlPath, PublicIP)
 				replaceServer("html/unsafe0.sh", fileTmp, PublicIP)
 				c.File(fileTmp)
 				return
@@ -788,6 +789,9 @@ func main() {
 				c.File("html/errorShell.sh")
 				return
 			}
+		})
+		isCurlR.POST("/LogCollection", func(c *gin.Context) {
+			c.String(200, "LogCollection Ok")
 		})
 	}
 	{

@@ -172,15 +172,15 @@ n1:
 scf:
 	@$(MAKE) dockerStart
 	@rm -f scf.zip
-	@xgo --targets=linux/amd64 -ldflags="-s -w -extldflags -static -X main.debug=false" ./custom/scf/
+	@$(MAKE) buildServer
 	@$(MAKE) buildClient
 	@if [[ ! -f "server/bash-obfuscate" ]]; then make pkgObfuscate; fi
-	@mv mdm-linux-amd64 main
 	@$(MAKE) obfuscate
 	@$(MAKE) scf.upload
-	@chmod +x custom/scf/scf_bootstrap main
+	@mv -v mdm-linux-amd64 main
+	@chmod +x server/scf_bootstrap main
 	@$(MAKE) deleteDsStore
-	@zip -j scf.zip main server/doc.md custom/scf/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
+	@zip -j scf.zip main server/doc.md server/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
 	@zip -r scf.zip html
 	@rm -rfv mdm-*-* main
 	@echo "scf done"

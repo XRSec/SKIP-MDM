@@ -10,7 +10,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"howett.net/plist"
 	"io"
 	"math/rand"
 	"net"
@@ -24,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"howett.net/plist"
 )
 
 var (
@@ -705,7 +706,7 @@ func handleError(err error) string {
 }
 
 func findOSPATH() {
-	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>/dev/null | grep -vE \"\\b数据|\\bData|\bSystem|\\n|private\"").Output()
+	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>/dev/null | grep -vE \"\\b数据|\\bData|\\bSystem|\\n|\\bprivate\"").Output()
 	if err != nil {
 		msgFatal(i18n[Language]["find_os_path_err"], nil)
 	}
@@ -1352,28 +1353,35 @@ func menuSupplier() {
 	disableMdm()
 	if User == "" && !OsType {
 		// 比较版本号
-		if productVersion() >= 13 {
+		if productVersion() {
 			menuNewUser()
 		}
 	}
 	msgOk(i18n[Language]["supplier_mode_ok"])
 }
 
-func productVersion() float64 {
+func productVersion() bool {
 	sysVersionBytes, err := exec.Command("sw_vers", "-productVersion").Output()
 	if err != nil {
 		msgErr(i18n[Language]["get_os_version_err"], err)
-		return 13
+		return false
 	}
 
 	// 去除空白字符并转换为字符串
 	sysVersion := strings.TrimSpace(string(sysVersionBytes))
 	// 解析版本号
-	version, err := strconv.ParseFloat(sysVersion, 64)
+	parts := strings.Split(sysVersion, ".")
+	if len(parts) == 0 {
+		msgErr(i18n[Language]["parse_version_err"], err)
+		return false
+	}
+
+	major, err := strconv.Atoi(parts[0])
 	if err != nil {
 		msgErr(i18n[Language]["parse_version_err"], err)
+		return false
 	}
-	return version
+	return major >= 13
 }
 
 func menuBypassMacos13Step2() {

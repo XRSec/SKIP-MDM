@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -49,4 +50,5 @@ func msgFatal(msg string, err error) {
 }
 
 func main() {
+	fmt.Printf("[%v]", strings.TrimSpace(string("  12.6.6  ")))
 }
