@@ -4,8 +4,9 @@
 
 1. <font color=red>本教程严禁外传，谢谢配合</font>
 2. 如果您时间很宝贵，请认真查阅下面的图片 <font color=red>**点击放大更清晰**</font>
-3. [自动化操作(推荐)：b23.tv/BV1Ba411U7wV](https://b23.tv/BV1Ba411U7wV)
-4. [半自动操作(过时)：b23.tv/BV1zX4y1q77q](https://b23.tv/BV1zX4y1q77q)
+3. [视频教程：Mac监管机绕过监管屏蔽通知](https://b23.tv/BV1Ba411U7wV)
+
+<iframe src="//player.bilibili.com/player.html?aid=258845990&bvid=BV1Ba411U7wV&cid=1547792657&page=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="allowfullscreen"></iframe>
 
 ## 程序使用
 

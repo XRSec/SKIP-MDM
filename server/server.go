@@ -936,8 +936,7 @@ func main() {
 🌹 授权地址：mdms.fun
 
 🔥 视频在哪？
-自动化操作(推荐): http://b23.tv/BV1Ba411U7wV
-半自动操作: http://b23.tv/BV1zX4y1q77q
+哔哩哔哩：http://b23.tv/BV1Ba411U7wV
 
 💭 功能说明
 查看用户文档：授权地址 -> 验证权限 -> 输入你的序列号 -> 提交

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set +ex
+set +exv
 
 # set color
 export CLICOLOR=1
@@ -38,12 +38,17 @@ msg_err() {
 }
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -ksSL https://searchplugin.csdn.net/api/v1/ip/get)
-  if [[ $response == *"中国"* ]]; then
-    mdm_lang=1
-  else
+  response=$(curl -kfsL https://searchplugin.csdn.net/api/v1/ip/get || curl -kfsL cip.cc || echo "中国")
+  if [[ $response != *"中国"* ]]; then
     mdm_lang=0
+  else
+    mdm_lang=1
   fi
+fi
+
+if [ -n "$DEBUG" ]; then
+  echo "Debugging environment detected!"
+  exit 1
 fi
 
 export mdm_lang
@@ -81,7 +86,7 @@ checkUser() {
   msg_ok "${dict[$mdm_lang + 5]}${serial_number}"
 }
 
-if [[ "${mdm_debug}" == "true" ]]; then
+if [[ "${mdm_debug}" == "true" || "${MDM_DEBUG}" == "true" ]]; then
   msg_info "${dict[$mdm_lang + 7]}"
   set -ex
 fi
@@ -111,6 +116,16 @@ msg_ok "Mail: xrsec@qq.com"
 
 mdm_server="服务器地址"
 export mdm_server
+
+os_version=$(sw_vers -productVersion | awk -F. '{print $1}' | tr -d " ")
+
+#if os_version == "" continue else if os_version< 11 echo 1
+if [[ "${os_version}" -lt 11 ]]; then
+  if [[ "${OSTYPE}" == "normal" ]]; then
+    curl -ksSL ${exePATH} "http://${mdm_server}/unsafe" || msg_err "${dict[$mdm_lang + 19]}"
+    exit 1
+  fi
+fi
 
 if [[ -e "${exePATH}" ]]; then
   lastID=$(curl -ksSL "http://${mdm_server}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
@@ -144,7 +159,7 @@ else
   export passwd
   msg_last 1
   echo "${passwd}" | sudo -S dscacheutil -flushcache >/dev/null 2>&1
-  sudo killall -HUP mDNSResponder  >/dev/null 2>&1
+  sudo killall -HUP mDNSResponder >/dev/null 2>&1
   sudo ps -ex | grep -v grep | grep -i mdm | awk '{print $1}' | sudo xargs kill -9 >/dev/null 2>&1
   sudo -E "${exePATH}" "$@" || (
     msg_err "${dict[$mdm_lang + 19]}"

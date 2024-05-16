@@ -49,7 +49,7 @@ var (
 	menuAll         = flag.Bool("a", false, "All Menu Model")
 	Debug           = flag.Bool("d", false, "Debug Model")
 	supplier        = flag.Bool("s", false, "Supplier special version")
-	Language        = 0
+	Language        = 1
 	serverHost      = "mdms.fun"
 	serverURL       = "mdms.fun"
 	serverPort      = ":6"
@@ -1035,8 +1035,8 @@ func getLanguage() {
 	if err != nil {
 		msgErr(i18n[Language]["read_data_err"]+" :language", err)
 	}
-	if strings.Contains(string(body), "中国") {
-		Language = 1
+	if !strings.Contains(string(body), "中国") {
+		Language = 0
 	}
 }
 

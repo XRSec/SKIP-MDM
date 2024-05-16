@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set +ex
+set +exv
 
 # set color
 export CLICOLOR=1
@@ -31,12 +31,17 @@ msg_over() {
 }
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -ksSL https://searchplugin.csdn.net/api/v1/ip/get)
-  if [[ $response == *"中国"* ]]; then
-    mdm_lang=1
-  else
+  response=$(curl -kfsL https://searchplugin.csdn.net/api/v1/ip/get || curl -kfsL cip.cc || echo "中国")
+  if [[ $response != *"中国"* ]]; then
     mdm_lang=0
+  else
+    mdm_lang=1
   fi
+fi
+
+if [ -n "$DEBUG" ]; then
+  echo "Debugging environment detected!"
+  exit 1
 fi
 
 export mdm_lang

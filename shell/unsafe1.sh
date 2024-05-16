@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set +ex
+set +exv
 
 export CLICOLOR=1
 export LSCOLORS=GxFxCxDxBxegedabagaced
@@ -36,6 +36,11 @@ IFSSet() {
 IFSRestore() {
   IFS=$ifsBak
 }
+
+if [ -n "$DEBUG" ]; then
+  echo "Debugging environment detected!"
+  exit 1
+fi
 
 findOSPATH() {
   IFSSet
