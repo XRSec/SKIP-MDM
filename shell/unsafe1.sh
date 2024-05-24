@@ -109,7 +109,7 @@ setHosts() {
 }
 
 cleanMdm() {
-  if [ -d "${MDMPath}" ]; then
+  if [ ! -d "${MDMPath}" ]; then
     msg_info "${dict[$mdm_lang + 17]}"
     return
   fi

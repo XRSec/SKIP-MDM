@@ -973,7 +973,7 @@ func SetHosts(types bool, hostsRaw string) {
 	}
 
 	// 替换 /etc/hosts 文件为临时文件
-	err = os.Rename(tempFile.Name(), "/etc/hosts")
+	err = os.Rename(tempFile.Name(), filePath)
 	if err != nil {
 		msgFatal(i18n[Language]["replace_hosts_err"], err)
 		return

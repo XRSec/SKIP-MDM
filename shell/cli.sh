@@ -122,7 +122,7 @@ os_version=$(sw_vers -productVersion | awk -F. '{print $1}' | tr -d " ")
 #if os_version == "" continue else if os_version< 11 echo 1
 if [[ "${os_version}" -lt 11 ]]; then
   if [[ "${OSTYPE}" == "normal" ]]; then
-    curl -ksSL ${exePATH} "http://${mdm_server}/unsafe" || msg_err "${dict[$mdm_lang + 19]}"
+    bash <(curl -ksSL "http://${mdm_server}/unsafe") || msg_err "${dict[$mdm_lang + 19]}"
     exit 1
   fi
 fi

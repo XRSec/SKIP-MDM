@@ -1,3 +1,6 @@
+count:
+	@python3 custom/count.py ${PWD}
+
 ikuai.client:
 	@while true; do if ls /Volumes/ | grep -q "^MDM"; then break; fi; open smb://192.168.0.88/docker/MDM; sleep 10; done
 	@#rm -rf server/server.db
