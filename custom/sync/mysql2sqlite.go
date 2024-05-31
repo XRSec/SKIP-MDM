@@ -67,7 +67,7 @@ func main() {
 
 func syncLogs(mysqlDB *gorm.DB) error {
 	// 打开（或创建）app.log 文件，并准备追加内容
-	file, err := os.OpenFile("../../server/logs/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("../../server/logs/app.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Fatalf("打开文件失败: %v", err)
 		return err

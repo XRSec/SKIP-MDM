@@ -99,7 +99,7 @@ func main() {
 		log.Fatalf("刷新缓冲失败: %v", err)
 	}
 
-	os.Exit(0) // TODO 不敢
+	os.Exit(0) // TODO 不敢删除数据
 
 	// 删除 00:00 之前的数据
 	if err := db.Where("timestamp < ?", midnight).Delete(ServerLogs{}).Error; err != nil {

@@ -67,14 +67,16 @@ var (
 	doc         = ""
 	debug       = "true"
 	PrivateIP   = "107.148.31.165"
-	mysqlDSN    = "mdsms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"
-	postgresDSN = "host=139.196.89.94 user=mdm1s_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms_db port=5433 sslmode=disable TimeZone=Asia/Shanghai"
+	mysqlDSN    = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"
+	postgresDSN = "host=139.196.89.94 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms_db port=5433 sslmode=disable TimeZone=Asia/Shanghai"
 	sqliteDSN   = "/tmp/server.db?_loc=Asia%2FShanghai"
 	PublicIP    = "mdms.fun"
-	serverPort  = "9000"         // 9000 | 6
-	htmlPath    = "/tmp"         // /tmp | html
-	logPath     = "/tmp/app.log" // logs/app.log | /tmp/app.log
-	useSqlite   = false
+	serverPort  = "9000" // 9000 | 6
+
+	htmlPath      = "html"         // html | ../html
+	obfuscatePath = "/tmp"         // /tmp | ../html
+	logPath       = "/tmp/app.log" // /tmp/app.log logs/app.log
+	useSqlite     = false
 )
 
 func init() {
@@ -515,16 +517,16 @@ func main() {
 	r.Use(func(c *gin.Context) {
 		c.Next()
 		if c.Writer.Status() == http.StatusServiceUnavailable {
-			c.File("html/error.html")
+			c.File(htmlPath + "/error.html")
 		}
 	})
 	r.GET("/", func(c *gin.Context) {
 		c.Header("Cache-Control", "no-cache")
 		if isWeb(c) {
-			c.File("html/index.html")
+			c.File(htmlPath + "/index.html")
 		} else if isCurl(c) {
-			fileTmp := fmt.Sprintf("%v/cli-%v.sh", htmlPath, PublicIP)
-			replaceServer("html/cli.sh", fileTmp, PublicIP)
+			fileTmp := fmt.Sprintf("%v/cli-%v.sh", obfuscatePath, PublicIP)
+			replaceServer(htmlPath+"/cli.sh", fileTmp, PublicIP)
 			c.File(fileTmp)
 		} else {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
@@ -540,7 +542,7 @@ func main() {
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
-			c.File("html/marked.min.js")
+			c.File(htmlPath + "/marked.min.js")
 			return
 		})
 		staticR.GET("/robots.txt", func(c *gin.Context) {
@@ -833,7 +835,7 @@ func main() {
 				log.Errorln(msg)
 			}
 		error:
-			c.File("html/errorShell.sh")
+			c.File(htmlPath + "/errorShell.sh")
 			return
 		})
 		isCurlR.GET("/unsafe", func(c *gin.Context) {
@@ -841,14 +843,14 @@ func main() {
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 			if serialNumber == "" || err != nil || !compile {
 				c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
-				fileTmp := fmt.Sprintf("%v/unsafe0-%v.sh", htmlPath, PublicIP)
-				replaceServer("html/unsafe0.sh", fileTmp, PublicIP)
+				fileTmp := fmt.Sprintf("%v/unsafe0-%v.sh", obfuscatePath, PublicIP)
+				replaceServer(htmlPath+"/unsafe0.sh", fileTmp, PublicIP)
 				c.File(fileTmp)
 				return
 			}
 
 			if msg, users, status := checkAuch(c); status {
-				c.File("html/unsafe1.sh")
+				c.File(htmlPath + "/unsafe1.sh")
 				// 更新用户信息
 				users.IPAddress = c.ClientIP()
 				if err := db.Save(&users).Error; err != nil {
@@ -857,7 +859,7 @@ func main() {
 				return
 			} else {
 				log.Errorln(msg)
-				c.File("html/errorShell.sh")
+				c.File(htmlPath + "/errorShell.sh")
 				return
 			}
 		})
