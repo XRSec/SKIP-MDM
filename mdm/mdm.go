@@ -135,7 +135,7 @@ var i18n = map[int]map[string]string{
 		"cant_create_temp":  "Unable to create temporary file:",
 		"write_temp_err":    "Failed to write temporary file:",
 		"close_temp_err":    "Failed to close temporary file:",
-		"replace_hosts_err": "Failed to replace/etc/hosts file:",
+		"replace_hosts_err": "Failed to replace hosts file:",
 
 		// getLanguage
 		"create_request_err":  "Failed to create request",
@@ -327,7 +327,7 @@ var i18n = map[int]map[string]string{
 		"cant_create_temp":  "无法创建临时文件:",
 		"write_temp_err":    "写入临时文件失败:",
 		"close_temp_err":    "关闭临时文件失败:",
-		"replace_hosts_err": "替换 /etc/hosts 文件失败:",
+		"replace_hosts_err": "替换 hosts 文件失败:",
 
 		// getLanguage
 		"create_request_err":  "创建请求失败",
@@ -966,18 +966,20 @@ func SetHosts(types bool, hostsRaw string) {
 	}
 
 	// 关闭临时文件
-	err = tempFile.Close()
-	if err != nil {
-		msgFatal(i18n[Language]["close_temp_err"], err)
-		return
-	}
+	defer func(tempFile *os.File) {
+		err = tempFile.Close()
+		if err != nil {
+			msgFatal(i18n[Language]["close_temp_err"], err)
+			return
+		}
+	}(tempFile)
 
 	// 替换 /etc/hosts 文件为临时文件
-	err = os.Rename(tempFile.Name(), filePath)
-	if err != nil {
+	if _, err := io.Copy(tempFile, file); err != nil {
 		msgFatal(i18n[Language]["replace_hosts_err"], err)
 		return
 	}
+
 	msgOk("Hosts Changed!")
 }
 

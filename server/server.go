@@ -8,12 +8,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
-
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm/logger"
 	"io"
 	"net"
 	"net/http"
@@ -61,15 +62,19 @@ type ClientLogs struct {
 }
 
 var (
-	err        error
-	db         *gorm.DB
-	doc        = ""
-	debug      = "true"
-	PrivateIP  = "107.148.31.165"
-	PublicIP   = "mdms.fun"
-	serverPort = "9000"         // 9000 | 6
-	htmlPath   = "/tmp"         // /tmp | html
-	logPath    = "/tmp/app.log" // logs/app.log | /tmp/app.log
+	err         error
+	db          *gorm.DB
+	doc         = ""
+	debug       = "true"
+	PrivateIP   = "107.148.31.165"
+	mysqlDSN    = "mdsms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"
+	postgresDSN = "host=139.196.89.94 user=mdm1s_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms_db port=5433 sslmode=disable TimeZone=Asia/Shanghai"
+	sqliteDSN   = "/tmp/server.db?_loc=Asia%2FShanghai"
+	PublicIP    = "mdms.fun"
+	serverPort  = "9000"         // 9000 | 6
+	htmlPath    = "/tmp"         // /tmp | html
+	logPath     = "/tmp/app.log" // logs/app.log | /tmp/app.log
+	useSqlite   = false
 )
 
 func init() {
@@ -81,15 +86,7 @@ func init() {
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-
-	//db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
-	db, err = gorm.Open(mysql.Open("mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
-		//	Logger: logger.Default.LogMode(logger.Info),
-	})
-	if err != nil {
-		log.Errorf("连接数据库失败%v", err)
-		return
-	}
+	dbTest()
 	if err = db.AutoMigrate(&Users{}); err != nil {
 		log.Errorf("Users 数据库初始化失败: %v", err)
 		return
@@ -335,67 +332,141 @@ func replaceServer(defaultPath, filePath, Host string) {
 	}
 }
 
-// Deprecated: 已经被废弃
-func getLogs(c *gin.Context) {
-	ps := c.Query("ps")
-	query := strings.ToLower(c.Query("q"))
-	msg := ""
-	var logs string
+func getLogsByFile(query string) (msg string, tmpLogs string, err error) {
 	filePath := logPath // 日志文件路径
-	compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
-	if ps == "" || !compile || err != nil || !decodeHash("", ps) {
-		msg = fmt.Sprintf("Auth Error: [%v]", nil)
-		log.Errorf("Auth Error: [ps: %v compile: %v err: %v decodeHash:?]", ps, compile, err)
-		goto error
-	} else {
-		file, err := os.Open(filePath)
-		defer func(file *os.File) {
-			err := file.Close()
-			if err != nil {
-				log.Errorf("Close File Error: [%v]", err)
-			}
-		}(file)
+
+	file, err := os.Open(filePath)
+	defer func(file *os.File) {
+		err := file.Close()
 		if err != nil {
-			msg = fmt.Sprintf("Open File Error: [%v]", err)
-			log.Errorln(msg)
-			goto error
+			log.Errorf("Close File Error: [%v]", err)
 		}
-		var lines []string
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			if query != "" {
-				if strings.Contains(strings.ToLower(scanner.Text()), query) {
-					lines = append(lines, scanner.Text())
-				}
-			} else {
+	}(file)
+	if err != nil {
+		msg = fmt.Sprintf("Open File Error: [%v]", err)
+		log.Errorln(msg)
+		return msg, tmpLogs, err
+	}
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if query != "" {
+			if strings.Contains(strings.ToLower(scanner.Text()), query) {
 				lines = append(lines, scanner.Text())
 			}
+		} else {
+			lines = append(lines, scanner.Text())
 		}
-		if err := scanner.Err(); err != nil {
-			msg = fmt.Sprintf("Scan File Error: [%v]", err)
+	}
+	if err := scanner.Err(); err != nil {
+		msg = fmt.Sprintf("Scan File Error: [%v]", err)
+		log.Errorln(msg)
+		return msg, tmpLogs, err
+	}
+
+	totalLines := len(lines)
+	startIndex := 0
+	if totalLines > 50 {
+		startIndex = totalLines - 50
+	}
+
+	for i := startIndex; i < totalLines; i++ {
+		tmpLogs += lines[i] + "\n"
+	}
+	return msg, tmpLogs, err
+}
+
+func getLogsBySql(query string) (msg string, tmpLogs string, err error) {
+	var serverLogs []ServerLogs
+	if query != "" {
+		if err = db.Where("LOWER(path) LIKE ?", "%"+query+"%").Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
+			msg = fmt.Sprintf("Find Logs Error: [%v]", err)
 			log.Errorln(msg)
-			goto error
+			return msg, tmpLogs, err
 		}
-
-		totalLines := len(lines)
-		startIndex := 0
-		if totalLines > 50 {
-			startIndex = totalLines - 50
-		}
-
-		for i := startIndex; i < totalLines; i++ {
-			logs += lines[i] + "\n"
+	} else {
+		if err = db.Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
+			msg = fmt.Sprintf("Find Logs Error: [%v]", err)
+			log.Errorln(msg)
+			return msg, tmpLogs, err
 		}
 	}
 
-	c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
-	c.String(http.StatusOK, logs)
-	return
-error:
-	c.JSON(http.StatusBadRequest, gin.H{
-		"code": http.StatusBadRequest,
-		"msg":  msg,
-	})
+	for i := len(serverLogs) - 1; i >= 0; i-- {
+		tmpLogs += fmt.Sprintf("%v %v | %5v | %13v | %15s | %-7s %s\n",
+			serverLogs[i].APP,
+			serverLogs[i].Timestamp.Format("2006/01/02 15:04:05"),
+			serverLogs[i].Status,
+			serverLogs[i].Latency,
+			serverLogs[i].IP,
+			serverLogs[i].Method,
+			serverLogs[i].Path,
+		)
+	}
+	return msg, tmpLogs, err
+}
+
+func dbTest() {
+	var testDatabase = func() bool {
+		// Define a simple struct for testing
+		type Test struct {
+			ID        uint `gorm:"primarykey"`
+			CreatedAt time.Time
+		}
+
+		// Migrate the schema
+		if err := db.AutoMigrate(&Test{}); err != nil {
+			log.Errorf("Test 数据库初始化失败: %v", err)
+			return false
+		}
+
+		// Create a test record
+		var testRecord Test
+		if err := db.Create(&testRecord).Error; err != nil {
+			log.Errorf("Test 数据库写入失败: %v", err)
+			return false
+		}
+
+		// Read the test record
+		var readRecord Test
+		if err := db.First(&readRecord, testRecord.ID).Error; err != nil {
+			log.Errorf("Test 数据库读取失败: %v", err)
+			return false
+		}
+
+		// Delete the test record
+		if err := db.Unscoped().Delete(&Test{}, testRecord.ID).Error; err != nil {
+			log.Errorf("Test 数据库删除失败: %v", err)
+			return false
+		}
+
+		return true
+	}
+
+	var testSql = func(Dialector gorm.Dialector, opts ...gorm.Option) bool {
+		db, err = gorm.Open(Dialector, opts...)
+		if err != nil {
+			log.Errorf("连接数据库失败: %v", err)
+			return false
+		}
+		return testDatabase()
+	}
+
+	if testSql(mysql.Open(mysqlDSN), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Error),
+	}) {
+		log.Infoln("使用 MySQL")
+	} else if testSql(postgres.Open(postgresDSN), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Error),
+	}) {
+		log.Infoln("使用 PostgreSQL")
+	} else {
+		db, err = gorm.Open(sqlite.Open(sqliteDSN), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Error),
+		})
+		useSqlite = true
+		log.Infoln("使用 SQLite")
+	}
 }
 
 func main() {
@@ -804,39 +875,24 @@ func main() {
 		isNotCurlR.GET("/getLogs", func(c *gin.Context) {
 			ps := c.Query("ps")
 			query := strings.ToLower(c.Query("q"))
-			msg := ""
-			var serverLogs []ServerLogs
-			var tmpLogs = ""
+			var msg, tmpLogs string
+
 			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
 				msg = fmt.Sprintf("Auth Error: [%v]", nil)
 				log.Errorf("Auth Error: [ps:%v compile:%v err:%v decodeHash:?]", ps, compile, err)
 				goto error
 			}
-			if query != "" {
-				if err := db.Where("LOWER(path) LIKE ?", "%"+query+"%").Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
-					msg = fmt.Sprintf("Find Logs Error: [%v]", err)
-					log.Errorln(msg)
+			if useSqlite {
+				msg, tmpLogs, err = getLogsByFile(query)
+				if err != nil {
 					goto error
 				}
 			} else {
-				if err := db.Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
-					msg = fmt.Sprintf("Find Logs Error: [%v]", err)
-					log.Errorln(msg)
+				msg, tmpLogs, err = getLogsBySql(query)
+				if err != nil {
 					goto error
 				}
-			}
-
-			for i := len(serverLogs) - 1; i >= 0; i-- {
-				tmpLogs += fmt.Sprintf("%v %v | %5v | %13v | %15s | %-7s %s\n",
-					serverLogs[i].APP,
-					serverLogs[i].Timestamp.Format("2006/01/02 15:04:05"),
-					serverLogs[i].Status,
-					serverLogs[i].Latency,
-					serverLogs[i].IP,
-					serverLogs[i].Method,
-					serverLogs[i].Path,
-				)
 			}
 
 			c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集

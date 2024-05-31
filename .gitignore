@@ -8,3 +8,4 @@
 /server/bash-obfuscate
 /custom/rust_client/target
 /custom/dev/dist
+!/server/logs/app.log

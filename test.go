@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
+	"os/exec"
 	"time"
 )
 
@@ -50,5 +50,9 @@ func msgFatal(msg string, err error) {
 }
 
 func main() {
-	fmt.Printf("[%v]", strings.TrimSpace(string("  12.6.6  ")))
+	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>/dev/null | grep -vE \"\\b数据|\\bData|\\bSystem|\\n|\\bprivate\"").Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(output))
 }

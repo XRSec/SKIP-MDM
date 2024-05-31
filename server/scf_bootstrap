@@ -1,4 +1,5 @@
 #!/bin/bash
 set -ex
 export PATH="$PATH:$PWD"
+cp server.db /tmp/
 ./main

@@ -183,7 +183,8 @@ scf:
 	@mv -v mdm-linux-amd64 main
 	@chmod +x server/scf_bootstrap main
 	@$(MAKE) deleteDsStore
-	@zip -j scf.zip main server/doc.md server/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
+	@cd custom/sync && go run mysql2sqlite.go && cd -
+	@zip -j scf.zip main server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
 	@zip -r scf.zip html
 	@rm -rfv mdm-*-* main
 	@echo "scf done"
