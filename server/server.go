@@ -888,7 +888,7 @@ func main() {
 				err = err2
 				goto error
 			}
-			tmpLogs = tmpLogs1 + "\n\n-----------------------------\n\n" + tmpLogs2
+			tmpLogs = tmpLogs1 + "\n\n-----------------------------\n\n\n" + tmpLogs2
 
 			c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
 			c.String(http.StatusOK, tmpLogs)
