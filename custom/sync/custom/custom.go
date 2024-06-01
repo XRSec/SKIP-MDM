@@ -70,7 +70,7 @@ func SyncData(mysqlDB, postgresDB *gorm.DB, model interface{}) error {
 		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
 			return result.Error
 		}
-		log.Infof("从 %T 中选择 %d 条记录", model, result.RowsAffected)
+		log.Infof("从 %T 中同步 %d 条记录", model, totalRecords)
 		// 如果没有记录了，退出循环
 		if result.RowsAffected == 0 {
 			break

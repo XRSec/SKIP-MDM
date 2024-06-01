@@ -16,48 +16,56 @@ import (
 func main() {
 	sqliteDB, err := gorm.Open(sqlite.Open(SqliteDSN), &gorm.Config{})
 	if err != nil {
-		log.Errorf("连接数据库失败: %v", err)
+		log.Errorf("连接sqliteDB失败: %v", err)
 		return
 	}
+	log.Infof("连接sqliteDB成功")
 
 	mysqlDB, err := gorm.Open(mysql.Open(MysqlDSN), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
-		log.Errorf("连接数据库失败: %v", err)
+		log.Errorf("连接mysqlDB失败: %v", err)
 		return
 	}
+	log.Infof("连接mysqlDB成功")
 
 	// 自动迁移数据库结构
 	models := []interface{}{&Users{}, &Cards{}}
 	for _, model := range models {
 		if err = sqliteDB.Migrator().DropTable(model); err != nil {
-			log.Fatalf("MySQL %v 数据库删除失败: %v", model, err)
+			log.Fatalf("MySQL %T 数据库删除失败: %v", model, err)
 		}
+		log.Infof("MySQL %T 数据库删除成功", model)
 		if err = mysqlDB.AutoMigrate(model); err != nil {
-			log.Fatalf("MySQL %v 数据库初始化失败: %v", model, err)
+			log.Fatalf("MySQL %T 数据库初始化失败: %v", model, err)
 		}
+		log.Infof("MySQL %T 数据库初始化成功", model)
 		if err = sqliteDB.AutoMigrate(model); err != nil {
-			log.Fatalf("sqliteDB %v 数据库初始化失败: %v", model, err)
+			log.Fatalf("sqliteDB %T 数据库初始化失败: %v", model, err)
 		}
+		log.Infof("sqliteDB %T 数据库初始化成功", model)
 	}
 	if err = mysqlDB.AutoMigrate(&ServerLogs{}); err != nil {
 		log.Fatalf("MySQL %v 数据库初始化失败: %v", "ServerLogs", err)
 	}
+	log.Infof("MySQL %v 数据库初始化成功", "ServerLogs")
 
 	log.Println("初始化完成")
 	// 数据同步
 	if err = SyncData(mysqlDB, sqliteDB, &[]Users{}); err != nil {
-		log.Fatalf("数据同步失败: %v", err)
+		log.Fatalf("Users 数据同步失败: %v", err)
 	}
+	log.Infoln("Users 数据同步完成")
 	if err = SyncData(mysqlDB, sqliteDB, &[]Cards{}); err != nil {
-		log.Fatalf("数据同步失败: %v", err)
+		log.Fatalf("Cards 数据同步失败: %v", err)
 	}
+	log.Infoln("Cards 数据同步完成")
 	if err = syncLogs(mysqlDB); err != nil {
-		log.Fatalf("数据同步失败: %v", err)
+		log.Fatalf("serverLogs 数据同步失败: %v", err)
 	}
 
-	log.Println("数据同步完成")
+	log.Println("serverLogs 数据同步完成")
 }
 
 func syncLogs(mysqlDB *gorm.DB) error {
@@ -81,7 +89,7 @@ func syncLogs(mysqlDB *gorm.DB) error {
 		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
 			return result.Error
 		}
-		log.Infof("从 %T 中选择 %d 条记录", serverLogs, result.RowsAffected)
+		log.Infof("从 %T 中同步%d条记录", serverLogs, totalRecords)
 		// 如果没有记录了，退出循环
 		if result.RowsAffected == 0 {
 			break

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
@@ -15,34 +16,54 @@ func main() {
 		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
-		log.Errorf("连接数据库失败: %v", err)
+		log.Fatalf("连接数据库失败: %v", err)
 		return
 	}
+	log.Infoln("连接mysqlDB成功")
 
 	postgresDB, err := gorm.Open(postgres.Open(PostgresDSN), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
-		log.Errorf("连接数据库失败: %v", err)
+		log.Fatalf("连接数据库失败: %v", err)
 		return
 	}
+	log.Infoln("连接postgresDB成功")
 
 	// 删除旧表
 	for _, v := range []string{"users", "cards", "server_logs"} {
-		if err = postgresDB.Exec("TRUNCATE TABLE " + v).Error; err != nil {
-			log.Errorf("postgresDB 数据库删除失败: %v", err)
+		if err = postgresDB.Exec(fmt.Sprintf("TRUNCATE TABLE %v", v)).Error; err != nil {
+			log.Fatalf("postgresDB %v表清空失败: %v", v, err)
 		}
+		log.Infof("postgresDB %v表清空成功", v)
+		if err = postgresDB.Exec(fmt.Sprintf("DROP TRIGGER IF EXISTS audit_trigger ON %v", v)).Error; err != nil {
+			log.Fatalf("postgresDB %v表删除触发器失败: %v", v, err)
+		}
+		log.Infof("postgresDB %v表删除触发器成功", v)
+
+		if err = postgresDB.Exec(fmt.Sprintf("SELECT setval(pg_get_serial_sequence('%v', 'id'), coalesce(max(id)+1, 1), false) FROM %v", v, v)).Error; err != nil {
+			log.Fatalf("postgresDB %v表重新计数失败: %v", v, err)
+		}
+		log.Infof("postgresDB %v表重新计数成功", v)
+
 	}
+
+	if err = postgresDB.Exec("SELECT setval(pg_get_serial_sequence('audit_logs', 'id'), coalesce(max(id)+1, 1), false) FROM audit_logs;").Error; err != nil {
+		log.Fatalf("PostgreSQL audit_logs表重新计数失败: %v", err)
+	}
+	log.Infof("PostgreSQL audit_logs表重新计数成功")
 
 	// 自动迁移数据库结构
 	models := []interface{}{&Users{}, &Cards{}, &ServerLogs{}}
 	for _, model := range models {
 		if err = mysqlDB.AutoMigrate(model); err != nil {
-			log.Fatalf("MySQL %v 数据库初始化失败: %v", model, err)
+			log.Fatalf("MySQL %T 数据库初始化失败: %v", model, err)
 		}
+		log.Infof("MySQL %T 数据库初始化成功", model)
 		if err = postgresDB.AutoMigrate(model); err != nil {
-			log.Fatalf("PostgreSQL %v 数据库初始化失败: %v", model, err)
+			log.Fatalf("PostgreSQL %T 数据库初始化失败: %v", model, err)
 		}
+		log.Infof("PostgreSQL %T 数据库初始化成功", model)
 	}
 
 	log.Println("初始化完成")
@@ -50,26 +71,22 @@ func main() {
 	if err = SyncData(mysqlDB, postgresDB, &[]Users{}); err != nil {
 		log.Fatalf("数据同步失败: %v", err)
 	}
+	log.Infof("Users表数据同步成功")
 	if err = SyncData(mysqlDB, postgresDB, &[]Cards{}); err != nil {
 		log.Fatalf("数据同步失败: %v", err)
 	}
+	log.Infof("Cards表数据同步成功")
 	if err = SyncData(mysqlDB, postgresDB, &[]ServerLogs{}); err != nil {
 		log.Fatalf("数据同步失败: %v", err)
 	}
-	//SELECT setval(pg_get_serial_sequence('cards', 'id'), coalesce(max(id)+1, 1), false) FROM cards;
-	//SELECT setval(pg_get_serial_sequence('users', 'id'), coalesce(max(id)+1, 1), false) FROM users;
-	//SELECT setval(pg_get_serial_sequence('server_logs', 'id'), coalesce(max(id)+1, 1), false) FROM server_logs;
-	if err = postgresDB.Exec("SELECT setval(pg_get_serial_sequence('cards', 'id'), coalesce(max(id)+1, 1), false) FROM cards;").Error; err != nil {
-		log.Fatalf("PostgreSQL cards 表 ID 更新失败: %v", err)
-	}
-	if err = postgresDB.Exec("SELECT setval(pg_get_serial_sequence('users', 'id'), coalesce(max(id)+1, 1), false) FROM users;").Error; err != nil {
-		log.Fatalf("PostgreSQL users 表 ID 更新失败: %v", err)
-	}
-	if err = postgresDB.Exec("SELECT setval(pg_get_serial_sequence('server_logs', 'id'), coalesce(max(id)+1, 1), false) FROM server_logs;").Error; err != nil {
-		log.Fatalf("PostgreSQL server_logs 表 ID 更新失败: %v", err)
-	}
-	if err = postgresDB.Exec("SELECT setval(pg_get_serial_sequence('audit_logs', 'id'), coalesce(max(id)+1, 1), false) FROM audit_logs;").Error; err != nil {
-		log.Fatalf("PostgreSQL audit_logs 表 ID 更新失败: %v", err)
+	log.Infof("ServerLogs表数据同步成功")
+
+	// 删除旧表
+	for _, v := range []string{"users", "cards", "server_logs"} {
+		if err = postgresDB.Exec(fmt.Sprintf("CREATE TRIGGER audit_trigger AFTER INSERT OR UPDATE OR DELETE ON %v FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn()", v)).Error; err != nil {
+			log.Errorf("postgresDB %v表添加触发器失败: %v", v, err)
+		}
+		log.Infof("postgresDB %v表添加触发器成功", v)
 	}
 	log.Println("数据同步完成")
 }
