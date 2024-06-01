@@ -28,8 +28,10 @@ func main() {
 	}
 
 	// 删除旧表
-	if err = postgresDB.Exec("DROP TABLE IF EXISTS users, cards, server_logs").Error; err != nil {
-		log.Errorf("postgresDB 数据库删除失败: %v", err)
+	for _, v := range []string{"users", "cards", "server_logs"} {
+		if err = postgresDB.Exec("TRUNCATE TABLE " + v).Error; err != nil {
+			log.Errorf("postgresDB 数据库删除失败: %v", err)
+		}
 	}
 
 	// 自动迁移数据库结构
