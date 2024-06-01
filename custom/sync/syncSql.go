@@ -14,7 +14,7 @@ import (
 
 func main() {
 	if _, err := os.Stat("../../server/zoneinfo.zip"); err == nil {
-		fmt.Println("初始化 ZONEINFO", os.Setenv("../../server/ZONEINFO", "zoneinfo.zip"))
+		fmt.Println("初始化 ZONEINFO", os.Setenv("ZONEINFO", "../../server/zoneinfo.zip"))
 	}
 	mysqlDB, err := gorm.Open(mysql.Open(MysqlDSN), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
@@ -57,13 +57,22 @@ func main() {
 		if field.Operation == "DELETE" {
 			data = []byte(field.OldData)
 		}
+
 		if err := json.Unmarshal(data, &operation); err != nil {
 			log.Fatalf("解析新数据时失败: %v", err)
 		}
 
 		switch op := operation.(type) {
-		case *ServerLogs:
+		case *ServerLogs: // 系统日志直接追加即可，不要替换，不然容易出问题，因为 SCF 的日志有点垃，所以将日志写入数据库
 			op.ID = 0
+		case *Cards:
+			if field.Operation == "INSERT" {
+				op.ID = 0
+			}
+		case *Users:
+			if field.Operation == "INSERT" {
+				op.ID = 0
+			}
 		}
 
 		if field.Operation == "INSERT" {
