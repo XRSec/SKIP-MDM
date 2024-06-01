@@ -18,6 +18,7 @@ jobs:
           cd custom/sync/
           go mod tidy
           go run syncSql.go
+          go run mysql2postgre.go
           cd -
           mysqldump \
             -u "${{ secrets.MYSQL_USER }}" \

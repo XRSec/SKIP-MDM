@@ -76,7 +76,6 @@ var (
 	htmlPath      = "html"         // html | ../html
 	obfuscatePath = "/tmp"         // /tmp | ../html
 	logPath       = "/tmp/app.log" // /tmp/app.log logs/app.log
-	useSqlite     = false
 )
 
 func init() {
@@ -457,7 +456,6 @@ func dbTest() {
 		log.Infoln("使用 PostgreSQL")
 	} else {
 		db, err = gorm.Open(sqlite.Open(sqliteDSN))
-		useSqlite = true
 		log.Infoln("使用 SQLite")
 	}
 }
@@ -868,7 +866,8 @@ func main() {
 		isNotCurlR.GET("/getLogs", func(c *gin.Context) {
 			ps := c.Query("ps")
 			query := strings.ToLower(c.Query("q"))
-			var msg, tmpLogs string
+			var msg, msg1, msg2, tmpLogs, tmpLogs1, tmpLogs2 string
+			var err1, err2 error
 
 			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
 			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
@@ -876,17 +875,20 @@ func main() {
 				log.Errorf("Auth Error: [ps:%v compile:%v err:%v decodeHash:?]", ps, compile, err)
 				goto error
 			}
-			if useSqlite {
-				msg, tmpLogs, err = getLogsByFile(query)
-				if err != nil {
-					goto error
-				}
-			} else {
-				msg, tmpLogs, err = getLogsBySql(query)
-				if err != nil {
-					goto error
-				}
+
+			msg1, tmpLogs1, err1 = getLogsByFile(query)
+			msg2, tmpLogs2, err2 = getLogsBySql(query)
+			if err1 != nil {
+				msg = msg1
+				err = err1
+				goto error
 			}
+			if err2 != nil {
+				msg = msg2
+				err = err2
+				goto error
+			}
+			tmpLogs = tmpLogs1 + "\n\n-----------------------------\n\n" + tmpLogs2
 
 			c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
 			c.String(http.StatusOK, tmpLogs)

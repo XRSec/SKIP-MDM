@@ -66,6 +66,9 @@ func main() {
 	if err = postgresDB.Exec("SELECT setval(pg_get_serial_sequence('server_logs', 'id'), coalesce(max(id)+1, 1), false) FROM server_logs;").Error; err != nil {
 		log.Fatalf("PostgreSQL server_logs 表 ID 更新失败: %v", err)
 	}
+	if err = postgresDB.Exec("SELECT setval(pg_get_serial_sequence('audit_logs', 'id'), coalesce(max(id)+1, 1), false) FROM audit_logs;").Error; err != nil {
+		log.Fatalf("PostgreSQL audit_logs 表 ID 更新失败: %v", err)
+	}
 	log.Println("数据同步完成")
 }
 
