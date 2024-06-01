@@ -67,7 +67,7 @@ var (
 	doc         = ""
 	debug       = "true"
 	PrivateIP   = "107.148.31.165"
-	mysqlDSN    = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"
+	mysqlDSN    = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
 	postgresDSN = "host=139.196.89.94 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms_db port=5433 sslmode=disable TimeZone=Asia/Shanghai"
 	sqliteDSN   = "/tmp/server.db?_loc=Asia%2FShanghai"
 	PublicIP    = "mdms.fun"
@@ -80,8 +80,8 @@ var (
 )
 
 func init() {
-	if _, err := os.Stat("zoneinfo.zip"); os.IsExist(err) {
-		fmt.Println(os.Setenv("ZONEINFO", "zoneinfo.zip"))
+	if _, err := os.Stat("../../server/zoneinfo.zip"); err == nil {
+		fmt.Println("ZONEINFO", os.Setenv("ZONEINFO", "zoneinfo.zip"))
 	}
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -114,14 +114,9 @@ func init() {
 	}
 }
 
-func getTimeGap(CreatedAt string) bool {
-	targetTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", CreatedAt)
-	if err != nil {
-		log.Errorf("时间转换失败%v", err)
-		return false
-	}
+func getTimeGap(CreatedAt time.Time) bool {
 	// 计算时间差
-	duration := time.Now().Sub(targetTime)
+	duration := time.Now().Sub(CreatedAt)
 	// 判断时间差是否大于1天
 	if duration.Hours() > 24 {
 		return false
@@ -143,7 +138,7 @@ func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
 		log.Errorf("%v: [%v]", msg, err)
 		return msg, users, false
 	}
-	if users.CardType == 0 && !getTimeGap(users.CreatedAt.String()) {
+	if users.CardType == 0 && !getTimeGap(users.CreatedAt) {
 		msg = "time_error"
 		log.Errorf("%v: [%v]", msg, err)
 		return msg, users, false
@@ -445,8 +440,10 @@ func dbTest() {
 		return true
 	}
 
-	var testSql = func(Dialector gorm.Dialector, opts ...gorm.Option) bool {
-		db, err = gorm.Open(Dialector, opts...)
+	var testSql = func(Dialector gorm.Dialector) bool {
+		db, err = gorm.Open(Dialector, &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Error),
+		})
 		if err != nil {
 			log.Errorf("连接数据库失败: %v", err)
 			return false
@@ -454,18 +451,12 @@ func dbTest() {
 		return testDatabase()
 	}
 
-	if testSql(mysql.Open(mysqlDSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Error),
-	}) {
+	if testSql(mysql.Open(mysqlDSN)) {
 		log.Infoln("使用 MySQL")
-	} else if testSql(postgres.Open(postgresDSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Error),
-	}) {
+	} else if testSql(postgres.Open(postgresDSN)) {
 		log.Infoln("使用 PostgreSQL")
 	} else {
-		db, err = gorm.Open(sqlite.Open(sqliteDSN), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Error),
-		})
+		db, err = gorm.Open(sqlite.Open(sqliteDSN))
 		useSqlite = true
 		log.Infoln("使用 SQLite")
 	}

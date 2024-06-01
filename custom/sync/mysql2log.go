@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	. "mdm_sync/custom"
@@ -34,10 +34,8 @@ func init() {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	//db, err = gorm.Open(sqlite.Open("server.db?_loc=Asia%2FShanghai"), &gorm.Config{
-	//db, err = gorm.Open(mysql.Open("mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
-	db, err = gorm.Open(postgres.Open("host=139.196.89.94 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms_db port=5433 sslmode=disable TimeZone=Asia/Shanghai"), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+	db, err = gorm.Open(mysql.Open(MysqlDSN), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		log.Errorf("连接数据库失败%v", err)

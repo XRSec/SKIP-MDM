@@ -12,12 +12,12 @@ import (
 )
 
 func main() {
-	sqliteDB, err := gorm.Open(sqlite.Open("../../server/server.db?_loc=Asia%2FShanghai"), &gorm.Config{})
+	sqliteDB, err := gorm.Open(sqlite.Open(SqliteDSN), &gorm.Config{})
 	if err != nil {
 		log.Errorf("连接数据库失败: %v", err)
 		return
 	}
-	mysqlDB, err := gorm.Open(mysql.Open("mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
+	mysqlDB, err := gorm.Open(mysql.Open(MysqlDSN), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {

@@ -13,20 +13,15 @@ import (
 	"os"
 )
 
-var (
-	mysqlDSN  = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Local"
-	sqliteDSN = "../../server/server.db?_loc=Asia%2FShanghai"
-)
-
 func main() {
-	sqliteDB, err := gorm.Open(sqlite.Open(sqliteDSN), &gorm.Config{})
+	sqliteDB, err := gorm.Open(sqlite.Open(SqliteDSN), &gorm.Config{})
 	if err != nil {
 		log.Errorf("连接数据库失败: %v", err)
 		return
 	}
 
-	mysqlDB, err := gorm.Open(mysql.Open(mysqlDSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+	mysqlDB, err := gorm.Open(mysql.Open(MysqlDSN), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		log.Errorf("连接数据库失败: %v", err)
