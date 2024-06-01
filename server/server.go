@@ -68,7 +68,7 @@ var (
 	debug       = "true"
 	PrivateIP   = "107.148.31.165"
 	mysqlDSN    = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
-	postgresDSN = "host=139.196.89.94 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms_db port=5433 sslmode=disable TimeZone=Asia/Shanghai"
+	postgresDSN = "host=47.102.127.65 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms port=5433 sslmode=disable TimeZone=Asia/Shanghai"
 	sqliteDSN   = "/tmp/server.db?_loc=Asia%2FShanghai"
 	PublicIP    = "mdms.fun"
 	serverPort  = "9000" // 9000 | 6

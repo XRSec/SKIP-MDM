@@ -17,7 +17,7 @@ func main() {
 		fmt.Println("初始化 ZONEINFO", os.Setenv("../../server/ZONEINFO", "zoneinfo.zip"))
 	}
 	mysqlDB, err := gorm.Open(mysql.Open(MysqlDSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		log.Errorf("连接数据库失败: %v", err)
@@ -25,7 +25,7 @@ func main() {
 	}
 
 	postgresDB, err := gorm.Open(postgres.Open(PostgresDSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		log.Errorf("连接数据库失败: %v", err)

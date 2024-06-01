@@ -124,5 +124,5 @@ FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
 
 -- 查询过去 24 小时的操作记录：
 SELECT * FROM audit_logs
-WHERE operation_time >= NOW() - INTERVAL '24 hours';
+WHERE created_at >= NOW() - INTERVAL '24 hours';
 */
