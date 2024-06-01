@@ -79,7 +79,7 @@ var (
 )
 
 func init() {
-	if _, err := os.Stat("../../server/zoneinfo.zip"); err == nil {
+	if _, err := os.Stat("zoneinfo.zip"); err == nil {
 		fmt.Println("ZONEINFO", os.Setenv("ZONEINFO", "zoneinfo.zip"))
 	}
 	log.SetReportCaller(true)
@@ -97,7 +97,7 @@ func init() {
 		return
 	}
 	if err = db.AutoMigrate(&ServerLogs{}); err != nil {
-		log.Errorf("Logs 数据库初始化失败: %v", err)
+		log.Errorf("ServerLogs 数据库初始化失败: %v", err)
 		return
 	}
 	if docs, err := getDocs(); err == nil {
