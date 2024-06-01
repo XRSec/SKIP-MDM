@@ -18,7 +18,7 @@ jobs:
           cd custom/sync/
           go mod tidy
           go run syncSql.go
-          go run mysql2postgre.go
+          go run mysql2postgre.go || echo "mysql2postgre.go failed"
           cd -
           mysqldump \
             -u "${{ secrets.MYSQL_USER }}" \
