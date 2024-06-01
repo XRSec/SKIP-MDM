@@ -31379,3 +31379,22 @@
 [GIN] 2024/06/01 23:02:10 |   200 |      43.061µs | 120.229.153.156 | GET     "/favicon.ico"
 [GIN] 2024/06/01 23:02:24 |   200 |  123.768633ms | 120.229.153.156 | GET     "/getLatestID?serial_number=C2RM4TQ93V&arch=amd64"
 [GIN] 2024/06/01 23:02:24 |   200 |  124.117608ms | 120.229.153.156 | GET     "/getLatestID?serial_number=C2RM4TQ93V&arch=arm64"
+[GIN] 2024/06/01 23:04:12 |   200 |   70.233299ms | 120.229.153.156 | GET     "/getLogs?ps=qXN4C6ACpwcz94R2"
+[GIN] 2024/06/01 23:04:14 |   200 |   91.916594ms | 120.229.153.156 | GET     "/getLogs?ps=qXN4C6ACpwcz94R2"
+[GIN] 2024/06/01 23:23:07 |   200 |    8.441866ms |    125.71.53.94 | GET     "/"
+[GIN] 2024/06/01 23:23:27 |   200 |     183.615µs |  51.195.241.195 | GET     "/"
+[GIN] 2024/06/01 23:23:32 |   200 |     189.387µs |  51.195.241.195 | GET     "/marked.min.js"
+[GIN] 2024/06/01 23:24:04 |   200 |      28.895µs |  51.195.241.195 | GET     "/favicon.ico"
+[LOG] 2024/06/01 23:24:52 | error |               |  main.checkAuch | 137     auth_error: [<nil>]
+[LOG] 2024/06/01 23:24:52 | error |               | main.main.func10 | 696     auth_error
+[GIN] 2024/06/01 23:24:52 |   400 |  178.205413ms |  51.195.241.195 | GET     "/auth?serial_number=FVFZC2E4LYWM"
+[LOG] 2024/06/01 23:25:08 | error |               |  main.checkAuch | 137     auth_error: [<nil>]
+[LOG] 2024/06/01 23:25:08 | error |               | main.main.func10 | 696     auth_error
+[GIN] 2024/06/01 23:25:08 |   400 |  180.214505ms |  51.195.241.195 | GET     "/auth?serial_number=FVFZC2E4LYWM"
+[GIN] 2024/06/01 23:34:47 |   200 |     153.097µs |    125.71.53.94 | GET     "/"
+[GIN] 2024/06/01 23:34:47 |   304 |      60.143µs |    125.71.53.94 | GET     "/marked.min.js"
+[GIN] 2024/06/01 23:34:49 |   200 |       26.32µs |    125.71.53.94 | GET     "/favicon.ico"
+[GIN] 2024/06/01 23:36:10 |   503 |     128.982µs |  180.163.28.143 | GET     "/release"
+[GIN] 2024/06/02 00:15:49 |   200 |  113.507615ms | 120.229.153.156 | GET     "/getLatestID?serial_number=C2RM4TQ93V&arch=amd64"
+[GIN] 2024/06/02 00:15:50 |   200 |  113.505333ms | 120.229.153.156 | GET     "/getLatestID?serial_number=C2RM4TQ93V&arch=arm64"
+[GIN] 2024/06/02 00:15:54 |   503 |     6.59811ms |   59.83.208.104 | GET     "/getLatestID"
