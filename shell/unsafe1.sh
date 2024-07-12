@@ -44,7 +44,9 @@ fi
 
 findOSPATH() {
   IFSSet
-  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\b数据|\bData|\bSystem|\n|private")
+  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "^/Volumes/[^/]*(数据|Data|System|private)")
+#  OSPATH=$(find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE "\b数据|\bData|\bSystem|\n|private")
+
   if [ -z "${OSPATH}" ]; then
     msg_err "${dict[$mdm_lang + 1]}"
   fi

@@ -51,7 +51,7 @@ func main() {
 	// 获取当天 00:00 的时间
 	now := time.Now()
 	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	log.Infoln("查询时间范围: %v - %v", midnight, midnight.AddDate(0, 0, 1))
+	log.Infof("查询时间范围: %v - %v", midnight, midnight.AddDate(0, 0, 1))
 
 	// 查询 00:00 之前的数据
 	var serverLogs []ServerLogs

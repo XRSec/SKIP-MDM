@@ -706,7 +706,9 @@ func handleError(err error) string {
 }
 
 func findOSPATH() {
-	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>/dev/null | grep -vE \"\\b数据|\\bData|\\bSystem|\\n|\\bprivate\"").Output()
+	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE \"^/Volumes/[^/]*(数据|Data|System|private)\"\n").Output()
+	//output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>/dev/null | grep -vE \"\\b数据|\\bData|\\bSystem|\\n|\\bprivate\"").Output()
+
 	if err != nil {
 		msgFatal(i18n[Language]["find_os_path_err"], nil)
 	}
@@ -965,6 +967,18 @@ func SetHosts(types bool, hostsRaw string) {
 		}
 	}
 
+	// 关闭临时文件以确保所有数据写入磁盘
+	if err = tempFile.Close(); err != nil {
+		msgFatal(i18n[Language]["close_temp_err"], err)
+		return
+	}
+
+	// 重新打开临时文件以读取其内容
+	tempFile, err = os.Open(tempFile.Name())
+	if err != nil {
+		fmt.Println("Error reopening temp file:", err)
+		return
+	}
 	// 关闭临时文件
 	defer func(tempFile *os.File) {
 		err = tempFile.Close()
@@ -975,7 +989,7 @@ func SetHosts(types bool, hostsRaw string) {
 	}(tempFile)
 
 	// 替换 /etc/hosts 文件为临时文件
-	if _, err := io.Copy(tempFile, file); err != nil {
+	if _, err := io.Copy(file, tempFile); err != nil {
 		msgFatal(i18n[Language]["replace_hosts_err"], err)
 		return
 	}
