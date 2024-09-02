@@ -59,98 +59,98 @@ var (
 var i18n = map[int]map[string]string{
 	0: {
 		// init
-		"cant_get_user_info":   "Unable to get current user information",
-		"please_use_root":      "Please use root user to run",
-		"debug_mode_opened":    "Debug mode is on",
-		"menu_all_mode_opened": "Menu All mode is on",
-		"supplier_mode_opened": "Supplier mode is on",
-		"do_not_attack":        "Do not attack!",
+		"cant_get_user_info":   "Unable 2 get current usr info.",
+		"please_use_root":      "Plz use root usr 2 rerun.",
+		"debug_mode_opened":    "Dbg mode is on.",
+		"menu_all_mode_opened": "Menu All mode on.",
+		"supplier_mode_opened": "Supplier mode on.",
+		"do_not_attack":        "No attack!",
 
 		// disableSip
-		"disabled_sip":         "Disabling SIP (System Integrity Protection) state...",
-		"disabled_sip_1":       "If prompted [y/n] enter y and enter",
-		"disabled_sip_2":       "The user fills in your user name,[password] please enter the password and enter",
-		"disabled_sip_run_err": "Disable SIP run failed",
-		"disabled_sip_err":     "Failed to disable SIP",
-		"re_goto_recovery":     "Please enter the system normally first, then click shutdown, and then enter the recovery mode.",
-		"disabled_sip_ok":      "Disable SIP run successfully",
+		"disabled_sip":         "Disabling SIP...",
+		"disabled_sip_1":       "If [y/n], enter y & enter",
+		"disabled_sip_2":       "[usr] enter u name,[pwd] enter u pwd & enter",
+		"disabled_sip_run_err": "SIP disable failed",
+		"disabled_sip_err":     "Failed 2 disable SIP",
+		"re_goto_recovery":     "Start normally to desktop, then shut down, & enter recovery mode.",
+		"disabled_sip_ok":      "SIP disabled",
 		// enableSip
-		"enabled_sip":         "Enabling SIP (System Integrity Protection) status...",
-		"enabled_sip_run_err": "Enable SIP run failed",
-		"enabled_sip_err":     "Failed to enable SIP",
-		"enabled_sip_run_ok":  "Enable SIP run successfully",
+		"enabled_sip":         "Enabling SIP...",
+		"enabled_sip_run_err": "SIP enable failed",
+		"enabled_sip_err":     "Failed 2 enable SIP",
+		"enabled_sip_run_ok":  "SIP enabled",
 
 		// getSip
-		"get_sip":          "Querying SIP (System Integrity Protection) status",
-		"get_sip_1":        "Dual system may not judge correctly!",
-		"get_sip_run_err":  "Query SIP running failed",
-		"get_sip_disabled": "SIP (System Integrity Protection) is disabled.",
-		"get_sip_enabled":  "SIP (System Integrity Protection) enabled",
+		"get_sip":          "Querying SIP status",
+		"get_sip_1":        "Dual system might be inaccurate!",
+		"get_sip_run_err":  "Query SIP failed",
+		"get_sip_disabled": "SIP disabled",
+		"get_sip_enabled":  "SIP enabled",
 
 		// execCmd
 		"exec_cmd_run_err": "Run Failed",
 
 		// findAndDelete
-		"read_dir_err": "Failed to read directory",
+		"read_dir_err": "Dir read failed",
 
 		// deleteFile
-		"delete_file_err": "Failed to delete file",
+		"delete_file_err": "File delete failed",
 
 		// handleError
 		"permission_denied": "Permission denied",
 		"file_not_found":    "File not found,Don't worry.",
 
 		// findOSPATH
-		"find_os_path_err": "Failed to find system path",
-		"find_os_path_1":   "System disk not found.",
-		"find_os_path_2":   "Find multiple system disks, the common system startup disk is: Macintosh HD, please select your system disk:",
+		"find_os_path_err": "Failed to find sys path",
+		"find_os_path_1":   "Sys disk not found.",
+		"find_os_path_2":   "Multiple sys disks found. Common startup disk: Macintosh HD. Select your disk:",
 		"in_put_err":       "Input error!",
-		"os_path":          "System Path: ",
+		"os_path":          "Sys Path: ",
 
 		// checkUser
 		"check_user": "   Multiple users found, please select your user: ",
 		"user_name":  "User Name: ",
 
 		// cleanMdm
-		"cleaning_mdm":    "Clearing regulatory subroutines",
-		"cleaned_mdm":     "Clear regulatory subroutine completed, if there is a new regulatory subroutine, please contact the management update program.",
-		"reboot_by_clean": "Please restart the computer.",
+		"cleaning_mdm":    "Clearing regulatory subs",
+		"cleaned_mdm":     "Regulatory sub cleared. Contact admin for updates if needed.",
+		"reboot_by_clean": "Restart computer.",
 
 		// checkDiskEncryption
-		"cant_find_mdm":   "Admin folder not found, please contact Admin Updater",
-		"disk_encryption": "Please exit the terminal, go to disk utility, expand all disks (arrow) to find% v-DATA, select mount, then exit disk utility and return to the terminal to rerun the program",
+		"cant_find_mdm":   "Admin folder not found. Contact Admin Updater.",
+		"disk_encryption": "Exit terminal, use Disk Utility to expand all disks, find % v-DATA, select mount, then return to terminal & rerun program.",
 
 		// disableMdm
-		"disabling_mdm":           "Deactivating the regulatory process",
-		"delete_mdm_file_err":     "Failed to delete supervision file, please restart and enter recovery mode to disable supervision",
-		"delete_mdm_database_err": "Failed to delete supervision database, please restart and enter recovery mode to disable supervision",
-		"get_user_info_err":       "Unable to get user information",
-		"disabled_mdm_ok":         "Deactivation of regulatory procedures completed",
-		"reboot_by_disable":       "Please restart the computer. Run the program again in desktop mode and choose to disable supervision (more people choose)",
-		"read_user_doc":           "Click the link to open the user document: ",
+		"disabling_mdm":           "Deactivating regulatory process",
+		"delete_mdm_file_err":     "Failed to delete supervision file. Restart & enter recovery mode to disable supervision.",
+		"delete_mdm_database_err": "Failed to delete supervision database. Restart & enter recovery mode to disable supervision.",
+		"get_user_info_err":       "Unable 2 get user info",
+		"disabled_mdm_ok":         "Regulatory deactivation complete",
+		"reboot_by_disable":       "Restart computer. Run program in desktop mode & choose 2 disable supervision.",
+		"read_user_doc":           "Click link 2 open user doc: ",
 
 		// SetHosts
-		"cant_open_hosts":   "Unable to open hosts file:",
-		"close_hosts_err":   "Failed to close hosts file:",
-		"cant_create_temp":  "Unable to create temporary file:",
-		"write_temp_err":    "Failed to write temporary file:",
-		"close_temp_err":    "Failed to close temporary file:",
-		"replace_hosts_err": "Failed to replace hosts file:",
+		"cant_open_hosts":   "Unable 2 open hosts file:",
+		"close_hosts_err":   "Failed 2 close hosts file:",
+		"cant_create_temp":  "Unable 2 create temp file:",
+		"write_temp_err":    "Failed 2 write temp file:",
+		"close_temp_err":    "Failed 2 close temp file:",
+		"replace_hosts_err": "Failed 2 replace hosts file:",
 
 		// getLanguage
-		"create_request_err":  "Failed to create request",
+		"create_request_err":  "Failed 2 create request",
 		"network_request_err": "Network request failed",
-		"closes_body_err":     "Failed to close Body",
-		"read_data_err":       "Failed to read packet",
+		"closes_body_err":     "Failed 2 close Body",
+		"read_data_err":       "Failed 2 read packet",
 
 		// getServerIP
-		"get_server_ip_err": "Failed to obtain server IP",
+		"get_server_ip_err": "Failed 2 get server IP",
 
 		// getSN
-		"input_sn":      "Please enter the serial number",
+		"input_sn":      "Enter serial number",
 		"sn_not_pair":   "Serial numbers do not match",
-		"get_auth_err":  "Failed to obtain authorization!",
-		"sn_not_pair_1": "Serial number does not match, no damage, please contact the administrator",
+		"get_auth_err":  "Failed 2 get authorization!",
+		"sn_not_pair_1": "Serial number mismatch, no damage. Contact admin",
 
 		// AuthSN
 		"decode_date_err": "Parsing packet failed",
@@ -158,95 +158,95 @@ var i18n = map[int]map[string]string{
 
 		// menuDisableSip
 		"disabling_sip":   "Disabling System Integrity Protection!",
-		"not_work_normal": "Please run in recovery mode!",
+		"not_work_normal": "Run in recovery mode!",
 
 		// menuEnableSip
 		"enabling_sip": "Enabling System Integrity Protection!",
 
 		// menuCleanMdm
-		"cleaning_mdm_agent": "Clearing regulatory subroutines",
+		"cleaning_mdm_agent": "Clearing regulatory subs",
 
 		// menuCleanWiFi
-		"cleaning_wifi": "Cleaning up Wi Fi",
-		"cleaned_wifi":  "Clean up Wi Fi complete",
+		"cleaning_wifi": "Cleaning Wi-Fi",
+		"cleaned_wifi":  "Wi-Fi clean complete",
 
 		// menuBypassMacos13Step1
-		"bypassing_macos_13_step_1": "Preparing for mac OS 13 Bypass Work 1!",
-		"changing_root_password":    "Changing root password (do not use spaces)",
-		"input_root_password":       "   Please set root password: ",
+		"bypassing_macos_13_step_1": "Preparing macOS 13 Bypass Work 1!",
+		"changing_root_password":    "Changing root password (no spaces)",
+		"input_root_password":       "Set root password: ",
 		"root_password":             "ROOT PASSWORD: ",
-		"reste_root_password_ok":    "The reset is complete. Please remember this password. You need to create a user.!",
-		"reboot_by_bypass":          "On the start page, press the control command option t, open the terminal, click the apple logo in the upper left corner, open the settings (Setting), find users and groups, create users, the administrator user name is root, and the password is the password just set!",
-		"reboot_by_bypass_1":        "The new user type is administrator. After the operation is completed, enter the recovery mode and select (macOS13 bypass step 2)",
+		"reset_root_password_ok":    "Reset complete. Remember this password. Create a user.",
+		"reboot_by_bypass":          "Start page, press Ctrl+Cmd+T, open terminal, click Apple logo, open settings, find users & groups, create admin user 'root' with this password!",
+		"reboot_by_bypass_1":        "New user is admin. After, enter recovery mode & select (macOS 13 Bypass step 2)",
 
 		//deleteUser
-		"delete_user_start": "Deleting User, Please choose the user to delete",
-		"delete_user_ok":    "Delete user completed",
+		"delete_user_start": "Deleting user. Choose user to delete",
+		"delete_user_ok":    "User deleted",
 
 		// menuNewUser
-		"temp_user_name": "Temp User Please Delete",
+		"temp_user_name": "Create an acct & then delete the usr.",
 
 		// menuSupplier
-		"supplier_mode_now": "Currently, it is the special supplier mode.",
+		"supplier_mode_now": "Currently in special supplier mode.",
 		"creating_user":     "Creating user",
 		"password":          "PASSWORD: ",
-		"supplier_mode_ok":  "Dear supplier, the regulatory process is complete.!",
+		"supplier_mode_ok":  "Supplier, regulatory process complete!",
 
 		// productVersion
-		"get_os_version_err": "Get system version failed",
-		"parse_version_err":  "Parsing system version failed",
+		"get_os_version_err": "Get sys version failed",
+		"parse_version_err":  "Parsing sys version failed",
 		// menuByPassMacos13Step2
-		"bypassing_macos_13_step_2":  "Preparing for mac OS 13 Bypass Work 2!",
-		"perfecting_macos13_install": "Perfecting the installation of mac OS 13",
-		"reboot_by_step2":            "Please restart and execute after entering the system (disable root user login)",
+		"bypassing_macos_13_step_2":  "Preparing macOS 13 Bypass Work 2!",
+		"perfecting_macos13_install": "Perfecting macOS 13 install",
+		"reboot_by_step2":            "Restart & execute after system entry (disable root login)",
 
 		// menuDisableRoot
 		"disabling_root":        "Disabling root login",
-		"run_normal":            "Please run in desktop mode",
-		"input_your_password":   "Please enter your password: ",
-		"disable_root_err":      "Failed to disable root login!",
-		"disable_root_err_pass": "Failed to disable root login! Please check if the password is correct: ",
-		"disable_root_ok":       "Disabled root user login successful! Please perform (complete clean-up supervision (more people choose))",
+		"run_normal":            "Run in desktop mode",
+		"input_your_password":   "Enter your password: ",
+		"disable_root_err":      "Failed 2 disable root login!",
+		"disable_root_err_pass": "Failed 2 disable root login! Check password: ",
+		"disable_root_ok":       "Root login disabled! Complete clean-up supervision (more people choose)",
 
 		// menuAddHosts
 		"adding_hosts": "Blocking Apple services",
-		"added_hosts":  "Blocking Apple Service Complete",
+		"added_hosts":  "Apple Service blocked",
 
 		// menuCleanHosts
-		"cleaning_hosts": "Cleaning up blocking Apple services",
-		"cleaned_hosts":  "Cleanup Shield Apple Service Complete",
+		"cleaning_hosts": "Cleaning Apple service blocks",
+		"cleaned_hosts":  "Shield Apple Service cleaned",
 
 		// menuDeleteAppleDone
-		"deleting_apple_done": "Removing Apple Setup Done",
-		"deleted_apple_done":  "Delete Apple installation lock file complete. Restart to enter Hello installation page",
+		"deleting_apple_done": "Removing Apple Setup done",
+		"deleted_apple_done":  "Apple install lock file deleted. Restart 2 enter Hello installation page",
 
 		// menuTouchAppleDone
-		"touching_apple_done": "Creating Apple Setup Done",
-		"touched_apple_done":  "The creation of the Apple installation lock file is complete. Restart to enter the Hello installation page.",
+		"touching_apple_done": "Creating Apple Setup done",
+		"touched_apple_done":  "Apple install lock file created. Restart 2 enter Hello installation page",
 
 		// menuNewMachine
-		"new_machine": "The current is the new machine mode! The Apple server will be blocked. If there is an exception, please select: Clear HOSTS shield (Apple service related).",
+		"new_machine": "New machine mode! Apple server blocked. If issues, select: Clear HOSTS shield (Apple service related)",
 
 		// menuExit
 		"exiting": "EXITING...",
 
 		// mainShell
-		"menu_welcome":      "Welcome to the MDM Assistant!",
+		"menu_welcome":      "Welcome 2 MDM Assistant!",
 		"choose_options":    "   AVAILABLE FOR SELECTION:",
 		"disable_mdm":       "Disable MDM/DEP (More People Choose)",
 		"clean_mdm":         "Clean MDM_Agent (Installed Profile)",
-		"bypass_install_1":  "Bypass Installation Step 1 (macOS version > 12)",
-		"bypass_install_2":  "Bypass Installation Step 2 (macOS version > 12)",
+		"bypass_install_1":  "Bypass Installation Step 1 (macOS > 12)",
+		"bypass_install_2":  "Bypass Installation Step 2 (macOS > 12)",
 		"disable_root":      "Disable Root Account (macOS version > 12)",
-		"clean_wifi":        "Clean up Wi-Fi data (stuck in install supervision page)",
-		"add_hosts":         "Blocking Apple MDM/DEP HOSTS",
+		"clean_wifi":        "Clean Wi-Fi data (stuck in install supervision page)",
+		"add_hosts":         "Block Apple MDM/DEP HOSTS",
 		"clean_hosts":       "Clear HOSTS Shielding (Apple service related)",
 		"delete_apple_lock": "Delete Apple Install Lock (Go to Hello Page)",
 		"touch_apple_lock":  "Create Apple Install Lock (Go to Login Page)",
 		"new_user":          "Create New User",
 		"exit":              "Exit Operation",
 		"choose_menu":       "   Select one: ",
-		"new_menu":          "Congratulations on discovering a new continent!",
+		"new_menu":          "Congrats on discovering a new continent!",
 		"delete_user":       "Delete User",
 	},
 	1: {
@@ -376,7 +376,7 @@ var i18n = map[int]map[string]string{
 		"delete_user_ok":    "删除用户完成: ",
 
 		// menuNewUser
-		"temp_user_name": "临时用户 请及时删除",
+		"temp_user_name": "请新建用户并删除该账户",
 
 		// menuSupplier
 		"supplier_mode_now": "当前是供应商特供模式",
@@ -1323,23 +1323,23 @@ func menuNewUser() {
 	// maxid=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
 	//newid=$((maxid+1))
 	userName := "mac_" + uid
-	userPass := "123456"
+	//userPass := "123456"
 	msgOk(i18n[Language]["user_name"] + userName)
-	msgOk(i18n[Language]["password"] + userPass)
+	//msgOk(i18n[Language]["password"] + userPass)
 	// 生成介于 1000 和 2000 之间的随机数
 
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UserShell", "/bin/zsh")
-	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", "Mac") // i18n[Language]["temp_user_name"]
+	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", i18n[Language]["temp_user_name"]) // i18n[Language]["temp_user_name"]
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", uid)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
-	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", "by(vx): xr_sec passwd: "+userPass)
+	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", "by(vx): xr_sec passwd: "+userPass)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "Picture", "/Library/User Pictures/Flowers/Lotus.heic")
 	execCmd(true, "ditto", "-rsrc", OsPath+"System/Library/User Template/zh_CN.lproj", OsPath+"Users/"+userName)
 	execCmd(true, "ditto", "-rsrc", OsPath+"System/Library/User Template/Non_localized", OsPath+"Users/"+userName)
 	execCmd(true, "chown", "-R", uid+":staff", OsPath+"Users/"+userName)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/"+userName)
-	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName, userPass)
+	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName, userPass)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_defaultLanguage", "zh_CN")
 	execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_writers__defaultLanguage", userName)
