@@ -21,7 +21,7 @@ import path from "path";
 
 process.env.port ??= '3000'
 process.env.debug ??= 'true'
-process.env.serverURL ??= 'mdms.fun'
+process.env.serverURL ??= 'mdm.xrsec.fun'
 dayjs.extend(utc);
 dayjs.extend(timezone);
 const app = express();
@@ -103,7 +103,7 @@ app.get('/', (req, res) => {
         res.sendFile(path.join(__dirname + '../html/index.html'))
     } else if (req.app.get('isCurl')) {
         // const fileName = `/html/cli-${req.hostname}.sh`
-        const fileName = path.join(__dirname, `../html/cli-mdms.fun.sh`) // TODO 更新地址
+        const fileName = path.join(__dirname, `../html/cli-mdm.xrsec.fun.sh`) // TODO 更新地址
         if (!existsSync(fileName)) {
             const defaultCLi = readFileSync(__dirname + '../html/cli.sh', 'utf8')
             const obfuscationResult = obfuscate(defaultCLi, 4, true)

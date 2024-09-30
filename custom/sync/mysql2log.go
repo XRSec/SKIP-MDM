@@ -18,7 +18,7 @@ var (
 	doc        = ""
 	debug      = "true"
 	PrivateIP  = "107.148.31.165"
-	PublicIP   = "mdms.fun"
+	PublicIP   = "mdm.xrsec.fun"
 	serverPort = "9000"         // 9000 | 6
 	htmlPath   = "/tmp"         // /tmp | html
 	logPath    = "/tmp/app.log" // logs/app.log | /tmp/app.log

@@ -50,8 +50,8 @@ var (
 	Debug           = flag.Bool("d", false, "Debug Model")
 	supplier        = flag.Bool("s", false, "Supplier special version")
 	Language        = 1
-	serverHost      = "mdms.fun"
-	serverURL       = "mdms.fun"
+	serverHost      = "mdm.xrsec.fun"
+	serverURL       = "mdm.xrsec.fun"
 	serverPort      = ":6"
 	location        *time.Location
 )

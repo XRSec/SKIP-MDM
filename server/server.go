@@ -70,7 +70,7 @@ var (
 	mysqlDSN    = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
 	postgresDSN = "host=47.102.127.65 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms port=5433 sslmode=disable TimeZone=Asia/Shanghai"
 	sqliteDSN   = "/tmp/server.db?_loc=Asia%2FShanghai"
-	PublicIP    = "mdms.fun"
+	PublicIP    = "mdm.xrsec.fun"
 	serverPort  = "9000" // 9000 | 6
 
 	htmlPath      = "html"         // html | ../html
@@ -984,7 +984,7 @@ func main() {
 					goto error
 				}
 				kamis += `
-🌹 授权地址：mdms.fun
+🌹 授权地址：mdm.xrsec.fun
 
 🔥 视频在哪？
 哔哩哔哩：http://b23.tv/BV1Ba411U7wV
