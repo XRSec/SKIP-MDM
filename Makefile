@@ -184,7 +184,7 @@ scf:
 	@chmod +x server/scf_bootstrap main
 	@$(MAKE) deleteDsStore
 	@cd custom/sync && go run mysql2sqlite.go && cd -
-	@zip -9 -j scf.zip main server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate mdm-darwin-*.md5
+	@zip -9 -j scf.zip main server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate mdm-*-*
 	@zip -9 -r scf.zip html
 	@rm -rfv mdm-*-* main
 	@echo "scf done"

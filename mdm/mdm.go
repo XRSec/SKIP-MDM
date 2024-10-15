@@ -1031,7 +1031,7 @@ func getMdmDomain() string {
 
 func getLanguage() {
 	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", "https://searchplugin.csdn.net/api/v1/ip/get", nil)
+	req, err := http.NewRequest("GET", "http://ip-api.com/json?lang=zh-CN&fields=country", nil)
 	if err != nil {
 		msgErr(i18n[Language]["create_request_err"]+" :language", err)
 	}
@@ -1056,6 +1056,7 @@ func getLanguage() {
 	}
 }
 
+// Deprecated: 已经被废弃
 func getServerIP() {
 	httpClient := privacyDns()
 	req, err := http.NewRequest("POST", "https://www.ssleye.com/ssltool/dns_check_hander", strings.NewReader(fmt.Sprintf("domain=%v&dns=A", serverHost)))
@@ -1238,6 +1239,7 @@ func privacyDns() (client *http.Client) {
 	return client
 }
 
+// Deprecated: 已经被废弃
 func menuDisableSip() {
 	msgInfo(i18n[Language]["disabling_sip"])
 	if OsType {
@@ -1247,6 +1249,8 @@ func menuDisableSip() {
 	}
 	os.Exit(0)
 }
+
+// Deprecated: 已经被废弃
 func menuEnableSip() {
 	msgInfo(i18n[Language]["enabling_sip"])
 	if OsType {

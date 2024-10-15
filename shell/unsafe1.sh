@@ -200,7 +200,7 @@ dict[25]="Temp User Please Delete"
 dict[26]="临时用户 请及时删除"
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -kfsL https://searchplugin.csdn.net/api/v1/ip/get || curl -ksfL cip.cc || echo "can't find net ip")
+  response=$(curl -kfsL "http://ip-api.com/json?lang=zh-CN&fields=country" || curl -ksfL cip.cc || echo "can't find net ip")
   if [[ $response == *"中国"* ]]; then
     mdm_lang=1
   else

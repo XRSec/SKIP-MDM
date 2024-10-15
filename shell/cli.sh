@@ -38,7 +38,7 @@ msg_err() {
 }
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -kfsL https://searchplugin.csdn.net/api/v1/ip/get || curl -kfsL cip.cc || echo "中国")
+  response="$(curl -kfsL 'http://ip-api.com/json?lang=zh-CN&fields=country' || curl -kfsL cip.cc || echo "中国")"
   if [[ $response != *"中国"* ]]; then
     mdm_lang=0
   else
@@ -73,6 +73,8 @@ dict[17]="Update check is finished!"
 dict[18]="检测更新完成!"
 dict[19]="The software runs abnormally!"
 dict[20]="软件运行异常!"
+dict[21]="The software download failed!"
+dict[22]="软件下载失败!"
 
 checkUser() {
   msg_info "${dict[$mdm_lang + 1]}"
@@ -131,7 +133,7 @@ if [[ -e "${exePATH}" ]]; then
   lastID=$(curl -ksSL "http://${mdm_server}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")
   if [[ "${lastID}" != "" ]]; then
     if [[ "${lastID}" != "$(md5 ${exePATH} | awk '{print $4}')" ]]; then
-      curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
+      curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true" || msg_err "${dict[$mdm_lang + 21]}"
       msg_ok "${dict[$mdm_lang + 11]}"
     else
       msg_ok "${dict[$mdm_lang + 17]}"
@@ -140,7 +142,7 @@ if [[ -e "${exePATH}" ]]; then
     msg_err "${dict[$mdm_lang + 13]}"
   fi
 else
-  curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true"
+  curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" || curl -ksSLo ${exePATH} "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true" || msg_err "${dict[$mdm_lang + 21]}"
 fi
 
 if [[ ! -e "${exePATH}" ]]; then

@@ -31,7 +31,7 @@ msg_over() {
 }
 
 if [[ -z "$mdm_lang" ]]; then
-  response=$(curl -kfsL https://searchplugin.csdn.net/api/v1/ip/get || curl -kfsL cip.cc || echo "中国")
+  response=$(curl -kfsL "http://ip-api.com/json?lang=zh-CN&fields=country" || curl -kfsL cip.cc || echo "中国")
   if [[ $response != *"中国"* ]]; then
     mdm_lang=0
   else
