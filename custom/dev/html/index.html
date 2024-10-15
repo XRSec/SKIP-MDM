@@ -38,7 +38,6 @@
             width: 45%; /* 根据实际情况设置宽度 */
         }
 
-
         input[type="text"],
         input[type="password"] {
             width: 45%;
@@ -258,6 +257,7 @@
             #content {
                 width: 95%;
             }
+
             .code {
                 font-size: 13px;
             }
@@ -472,16 +472,21 @@
                     if (item.className === "language") {
                         return
                     }
+
+                    // 移除所有菜单项的激活状态
                     menuItems.forEach(function (item) {
                         item.classList.remove('active');
                     });
 
+                    // 激活当前菜单项
                     this.classList.add('active');
 
+                    // 隐藏所有表单
                     forms.forEach(function (form) {
                         form.style.display = 'none';
                     });
 
+                    // 显示对应的表单
                     forms[index].style.display = 'block';
                 });
             });
@@ -569,6 +574,52 @@
             script.src = "/marked.min.js";
             script.setAttribute("cache-control", "max-age=604800");
             document.body.appendChild(script);
+
+            // 用于存储上次剪贴板内容
+            let lastClipboardContent = '';
+
+            // 函数用于读取剪贴板内容
+            async function readClipboard() {
+                try {
+                    // 读取剪贴板文本
+                    let text = await navigator.clipboard.readText();
+                    // 仅在剪贴板内容更新时执行逻辑
+                    if (text !== lastClipboardContent) {
+                        lastClipboardContent = text; // 更新存储的剪贴板内容
+                        console.log("剪贴板内容已更新。");
+
+                        // 正则表达式匹配卡号和密码
+                        const cardInfoRegex = /卡号:\s([a-zA-Z0-9]{6})\n密码:\s([a-zA-Z0-9]{15})/;
+                        const match = text.match(cardInfoRegex);
+
+                        if (match) {
+                            console.log("检测到卡密并自动填充");
+                            const cardNumber = match[1];  // 提取的卡号
+                            const password = match[2];    // 提取的密码
+
+                            // 模拟点击菜单项以显示表单 2
+                            menuItems[1].click();
+                            // 更新表单字段（如果有）
+                            document.getElementById('card_id').value = cardNumber;
+                            document.getElementById('password').value = password;
+                            // 聚焦到指定输入框
+                            document.getElementById('serial_number1').focus();
+                        }
+                    }
+                } catch (err) {
+                    console.error('无法读取剪贴板内容:', err);
+                }
+            }
+
+            // 添加点击事件监听
+            document.addEventListener('click', readClipboard);
+
+            // 添加触摸事件监听
+            document.addEventListener('touchstart', (event) => {
+                // 防止多次触发 click 事件
+                event.preventDefault();
+                readClipboard();
+            });
         });
     </script>
 </head>
@@ -611,7 +662,7 @@
 <button id="toggle-button" onclick="toggleNavbar()"></button>
 <div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
     建站不容易,熬夜两行泪<br>
-    <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号-2</a>
+    <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
 </div>
 
 </body>
