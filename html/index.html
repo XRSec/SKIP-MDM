@@ -23,7 +23,6 @@
             height: auto;
             background: #e3e3e3;
             width: 380px;
-            /* 您的 container 样式 */
         }
 
         form {
@@ -37,7 +36,6 @@
             text-align: right; /* 右对齐文本 */
             width: 45%; /* 根据实际情况设置宽度 */
         }
-
 
         input[type="text"],
         input[type="password"] {
@@ -124,6 +122,10 @@
             background-color: rgba(0, 0, 0, 0.5);
             color: #fff;
             z-index: 4;
+        }
+
+        .navbar-link {
+            transition: background-color 0.3s ease;
         }
 
         #content {
@@ -220,6 +222,23 @@
             font-size: 14px;
             color: #cb6b60;
             z-index: 3;
+        }
+
+        .flash-border {
+            animation: flash-border 0.5s infinite alternate; /* 边框闪烁动画 */
+            pointer-events: none; /* 使蒙版不干扰页面交互 */
+            background: linear-gradient(90deg, gold, orange); /* 渐变色 */
+            margin: 0 0 15px 10px;
+            border-radius: 10px;
+        }
+
+        @keyframes flash-border {
+            0% {
+                opacity: 0.8; /* 从半透明开始 */
+            }
+            100% {
+                opacity: 0.3; /* 渐变到透明 */
+            }
         }
 
         @media screen and (orientation: portrait) and (max-device-width: 900px) and (max-device-height: 1200px), screen and (orientation: landscape) and (max-device-width: 1200px) and (max-device-height: 900px) {
@@ -333,107 +352,35 @@
         };
         let navbarStatus = false
 
-        function toggleLanguage() {
-            const language = document.documentElement.lang;
-            const button = document.querySelector(".language");
-            const submitButtons = document.querySelectorAll(".submit");
-
-            const langDict = dictionary[language];
-            const newLang = language === "zh-CN" ? "en" : "zh-CN";
-            document.documentElement.lang = newLang;
-
-            // 更新语言内容
-            for (const key in langDict) {
-                const elements = document.getElementsByClassName(key);
-                for (const element of elements) {
-                    element.innerHTML = dictionary[newLang][key];
-                }
-            }
-
-            button.textContent = newLang === "en" ? "中文" : "English";
-            // 修改提交按钮文本
-            submitButtons.forEach(btn => btn.value = newLang === "en" ? "Submit" : "提交");
-        }
-
-        function copyText() {
-            const text = document.getElementById("copyText").innerText; // 获取要复制的文本
-            const tempInput = document.createElement("input"); // 创建一个临时输入框元素
-            tempInput.type = "text";
-            tempInput.value = text;
-            document.body.appendChild(tempInput); // 将临时输入框元素添加到页面中
-            tempInput.select(); // 选中临时输入框中的文本
-            document.execCommand("copy"); // 执行复制命令
-            document.body.removeChild(tempInput); // 移除临时输入框元素
-            alert(`${dictionary[document.documentElement.lang]["copy_ok"]} ${text}`);
-            // window.open('x-man-page://『 Command + T 打开新窗口 』', '_blank');
-        }
-
-        function showLoadingSpinner() {
-            const container = document.getElementById('loading-container');
-            container.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // 禁用滚动
-            document.querySelectorAll('button, input, select').forEach(el => el.disabled = true); // 禁用其他交互元素
-
-        }
-
-        function hideLoadingSpinner() {
-            const container = document.getElementById('loading-container');
-            container.style.display = 'none';
-            document.body.style.overflow = 'auto'; // 启用滚动
-            document.querySelectorAll('button, input, select').forEach(el => el.disabled = false); // 启用其他交互元素
-
-        }
-
-        function toggleImageSize() {
-            const image = event.target;
-            const currentSrc = image.src;
-            image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
-                ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
-                : currentSrc + '?fmt=webp&q=48&w=500';
-            let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-
-            if (windowWidth < 900) {
-                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
-            }
-        }
-
-        // 为所有图片添加点击事件处理程序
-        function addImageClickListeners() {
-            document.querySelectorAll('img').forEach(image => {
-                image.addEventListener('click', toggleImageSize);
-            });
-        }
-
-        function toggleNavbar() {
-            navbarStatus = !navbarStatus
-            let content = document.getElementById('content');
-            let navbar = document.getElementById('navbar');
-            document.getElementById('toggle-button').innerHTML = navbarStatus ? dictionary[document.documentElement.lang]["hide"] : dictionary[document.documentElement.lang]["show"];
-            if (!navbarStatus) {
-                navbar.innerHTML = '';
-                return
-            }
-            Array.from(content.querySelectorAll('h1, h2, h3')).forEach((heading, index) => {
-                const level = parseInt(heading.tagName[1], 10);
-                const anchorId = `heading-${index}`;
-                heading.id = anchorId;
-                navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
-            });
-        }
-
-        function showDocs(doc) {
-            document.getElementById('content').innerHTML = marked.parse(doc);
-            addImageClickListeners();
-            toggleNavbar()
-            // 自动滚动到温馨提示
-            setTimeout(() => {
-                document.querySelector('#heading-8')?.scrollIntoView({behavior: "smooth", block: "start",});
-            }, 1000);
-        }
-
         document.addEventListener('DOMContentLoaded', function () {
             let menuItems = document.querySelectorAll('#menu li');
             let forms = document.querySelectorAll('form');
+
+            function hideLoadingSpinner() {
+                const container = document.getElementById('loading-container');
+                container.style.display = 'none';
+                document.body.style.overflow = 'auto'; // 启用滚动
+                document.querySelectorAll('button, input, select').forEach(el => el.disabled = false); // 启用其他交互元素
+            }
+
+            // 为所有图片添加点击事件处理程序
+            function addImageClickListeners() {
+                document.querySelectorAll('img').forEach(image => {
+                    image.addEventListener('click', function toggleImageSize() {
+                            const image = event.target;
+                            const currentSrc = image.src;
+                            image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
+                                ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
+                                : currentSrc + '?fmt=webp&q=48&w=500';
+                            let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+                            if (windowWidth < 900) {
+                                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+                            }
+                        }
+                    );
+                });
+            }
 
             toggleLanguage()
             // 默认显示第一个表单
@@ -468,41 +415,85 @@
             });
 
             function handleAuthSubmit(serialNumberSelector, endpoint, extraParams = {}) {
-                showLoadingSpinner();
+                (function showLoadingSpinner() {
+                    const container = document.getElementById('loading-container');
+                    container.style.display = 'flex';
+                    document.body.style.overflow = 'hidden'; // 禁用滚动
+                    document.querySelectorAll('button, input, select').forEach(el => el.disabled = true); // 禁用其他交互元素
+                })()
 
                 const serialNumber = document.querySelector(serialNumberSelector).value;
-                if (!validateSerialNumber(serialNumber)) return hideLoadingSpinner();
 
-                const url = buildUrl(endpoint, {serial_number: serialNumber, ...extraParams});
-                fetchData(url).then(response => {
+                (function validateSerialNumber() {
+                    if (serialNumber.length < 8 || serialNumber.length > 14) {
+                        alert(dictionary[document.documentElement.lang]["sn_no_pair"]);
+                        return false;
+                    } else {
+                        hideLoadingSpinner();
+                    }
+                })()
+
+                const url = (function buildUrl(endpoint, params) {
+                    const queryString = Object.keys(params).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`).join('&');
+                    return `http://${window.location.host}${endpoint}?${queryString}`;
+                })(endpoint, {serial_number: serialNumber, ...extraParams})
+
+                fetch(url).then(response => response.json()).then(response => {
                     if (response?.code === 200) {
                         alert(dictionary[document.documentElement.lang]["auth_ok"]);
-                        showDocs(response.doc.replaceAll("服务器地址", window.location.host) || dictionary[document.documentElement.lang]["get_doc_error"]);
+                        // 在这里加载 marked.js
+                        const marked_script = document.createElement("script");
+                        marked_script.src = "/marked.min.js";
+                        marked_script.setAttribute("cache-control", "max-age=604800");
+                        document.body.appendChild(marked_script);
+
+                        (function showDocs(doc) {
+                            document.getElementById('content').innerHTML = marked.parse(doc);
+                            addImageClickListeners();
+                            toggleNavbar()
+                            // 添加点击事件监听器
+                            document.querySelectorAll('.navbar-link').forEach(link => {
+                                link.addEventListener('click', function () {
+                                    // 平滑滚动到目标元素
+                                    const targetId = this.getAttribute('href');
+                                    const targetElement = document.querySelector(targetId);
+                                    if (targetElement) {
+                                        targetElement.scrollIntoView({behavior: 'smooth'});
+                                    }
+                                });
+                            });
+                            // 自动滚动到温馨提示
+                            setTimeout(() => {
+                                document.querySelector('#heading-8')?.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start"
+                                });
+                            }, 1000);
+                            setTimeout(() => {
+                                document.querySelectorAll('p > img').forEach((img) => {
+                                    if (img.alt?.includes("须知")) {
+                                        img.parentElement.classList.add('flash-border'); // 为每个 img 添加类
+                                        img.style.borderRadius=15
+                                    }
+                                });
+                            }, 2500);
+                            setTimeout(() => {
+                                document.querySelectorAll('p > img').forEach((img) => {
+                                    if (img.alt?.includes("须知")) {
+                                        img.parentElement.classList.remove('flash-border'); // 为每个 img 添加类
+                                        img.style.borderRadius="unset"
+                                    }
+                                });
+                            }, 5500);
+                        })(response.doc.replaceAll("服务器地址", window.location.host) || dictionary[document.documentElement.lang]["get_doc_error"]);
                     } else {
                         alert(dictionary[document.documentElement.lang][response?.msg || "error"]);
                     }
                     hideLoadingSpinner();
-                }).catch(error => {
+                }).catch(() => {
                     alert(dictionary[document.documentElement.lang]["net_error"]);
                     hideLoadingSpinner();
                 });
-            }
-
-            function validateSerialNumber(serialNumber) {
-                if (serialNumber.length < 8 || serialNumber.length > 14) {
-                    alert(dictionary[document.documentElement.lang]["sn_no_pair"]);
-                    return false;
-                }
-                return true;
-            }
-
-            function buildUrl(endpoint, params) {
-                const queryString = Object.keys(params).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`).join('&');
-                return `http://${window.location.host}${endpoint}?${queryString}`;
-            }
-
-            function fetchData(url) {
-                return fetch(url).then(response => response.json());
             }
 
             // 从粘贴板获取卡密
@@ -548,13 +539,13 @@
                 event.preventDefault();
                 readClipboard();
             });
-        });
 
-        // 加载 marked.js
-        let script = document.createElement("script");
-        script.src = "/marked.min.js";
-        script.setAttribute("cache-control", "max-age=604800");
-        document.body.appendChild(script);
+            // 加载 marked.js
+            const marked_script = document.createElement("script");
+            marked_script.src = "/marked.min.js";
+            marked_script.setAttribute("cache-control", "max-age=604800");
+            document.body.appendChild(marked_script);
+        });
 
         // 处理 URL 参数
         window.addEventListener('load', () => {
@@ -566,6 +557,60 @@
                 document.querySelector('#form1').requestSubmit();
             }
         });
+
+        function copyText() {
+            const text = document.getElementById("copyText").innerText; // 获取要复制的文本
+            const tempInput = document.createElement("input"); // 创建一个临时输入框元素
+            tempInput.type = "text";
+            tempInput.value = text;
+            document.body.appendChild(tempInput); // 将临时输入框元素添加到页面中
+            tempInput.select(); // 选中临时输入框中的文本
+            document.execCommand("copy"); // 执行复制命令
+            document.body.removeChild(tempInput); // 移除临时输入框元素
+            alert(`${dictionary[document.documentElement.lang]["copy_ok"]} ${text}`);
+            // window.open('x-man-page://『 Command + T 打开新窗口 』', '_blank');
+        }
+
+        function toggleLanguage() {
+            const language = document.documentElement.lang;
+            const button = document.querySelector(".language");
+            const submitButtons = document.querySelectorAll(".submit");
+
+            const langDict = dictionary[language];
+            const newLang = language === "zh-CN" ? "en" : "zh-CN";
+            document.documentElement.lang = newLang;
+
+            // 更新语言内容
+            for (const key in langDict) {
+                const elements = document.getElementsByClassName(key);
+                for (const element of elements) {
+                    element.innerHTML = dictionary[newLang][key];
+                }
+            }
+
+            button.textContent = newLang === "en" ? "中文" : "English";
+            // 修改提交按钮文本
+            submitButtons.forEach(btn => btn.value = newLang === "en" ? "Submit" : "提交");
+        }
+
+        function toggleNavbar() {
+            navbarStatus = !navbarStatus;
+            let content = document.getElementById('content');
+            let navbar = document.getElementById('navbar');
+            document.getElementById('toggle-button').innerHTML = navbarStatus ? dictionary[document.documentElement.lang]["hide"] : dictionary[document.documentElement.lang]["show"];
+
+            if (!navbarStatus) {
+                navbar.innerHTML = '';
+                return;
+            }
+
+            Array.from(content.querySelectorAll('h1, h2, h3')).forEach((heading, index) => {
+                const level = parseInt(heading.tagName[1], 10);
+                const anchorId = `heading-${index}`;
+                heading.id = anchorId;
+                navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;" class="navbar-link">${heading.textContent}</a>`;
+            });
+        }
     </script>
 </head>
 <body>

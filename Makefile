@@ -188,3 +188,14 @@ scf:
 	@zip -9 -r scf.zip html
 	@rm -rfv mdm-*-* main
 	@echo "scf done"
+
+scf.debug:
+	@$(MAKE) dockerStart
+	@if [[ ! -f "mdm-darwin-amd64" ]]; then make buildServer; fi
+	@if [[ ! -f "mdm-darwin-amd64" ]]; then make buildClient; fi
+	@rm -f scf.zip
+	@$(MAKE) obfuscate
+	@$(MAKE) deleteDsStore
+	@zip -9 -j scf.zip main server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate mdm-*-*
+	@zip -9 -r scf.zip html
+	@echo "scf done"
