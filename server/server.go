@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -477,7 +476,8 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(io.MultiWriter(ginLogWriter{}, logFile)))
 	r.Use(func(c *gin.Context) {
-		if c.Request.Method != http.MethodGet && !(c.Request.Method == http.MethodPost && c.Request.RequestURI == "/LogCollection") {
+		//if c.Request.Method != http.MethodGet && !(c.Request.Method == http.MethodPost && c.Request.RequestURI == "/LogCollection") {
+		if c.Request.Method != http.MethodGet {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
