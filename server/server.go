@@ -10,9 +10,11 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"io"
 	"net"
@@ -23,8 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Users struct {
@@ -570,7 +570,11 @@ func main() {
 			msg := ""
 			var users Users
 			var cards Cards
-			cardType := 0
+			cardType := 1
+			if c.Query("card_type") != "" {
+				cardType = 0
+			}
+
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
 			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
 
@@ -580,27 +584,30 @@ func main() {
 					// 判断序列号是否存在
 					if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
 						// 序列号不存在则创建
-						users.CardType = 1
-						if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: users.CardType}).Error; err != nil {
+						if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: cardType}).Error; err != nil {
 							msg = "create_error"
 							log.Errorf("%v: [%v]", msg, err)
 							goto error
 						}
-						auth = false
 						c.JSON(http.StatusOK, gin.H{
 							"code":          http.StatusOK,
 							"auth":          auth,
 							"serial_number": serialNumber,
-							"card_type":     users.CardType,
+							"card_type":     cardType,
 						})
 						return
 					} else {
 						// 序列号存在则更新 序列号权限更新判断
-						if users.CardType == 1 {
+						if users.CardType != cardType && cardType > users.CardType {
 							auth = true
 						}
-						users.CardType = 1
+
 						// 更新用户信息
+						if cardType == 0 {
+							users.CreatedAt = time.Now()
+						} else {
+							users.CardType = cardType
+						}
 						users.IPAddress = c.ClientIP()
 						if err = db.Save(&users).Error; err != nil {
 							msg = "create_error"
@@ -611,7 +618,7 @@ func main() {
 							"code":          http.StatusOK,
 							"auth":          auth,
 							"serial_number": serialNumber,
-							"card_type":     users.CardType,
+							"card_type":     cardType,
 						})
 						return
 					}
