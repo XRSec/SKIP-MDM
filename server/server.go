@@ -570,9 +570,10 @@ func main() {
 			msg := ""
 			var users Users
 			var cards Cards
-			cardType := 1
-			if c.Query("card_type") != "" {
-				cardType = 0
+			cardType := 0
+			cardTypeQ := c.Query("card_type")
+			if cardTypeQ == "1" {
+				cardType = 1
 			}
 
 			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
@@ -635,6 +636,8 @@ func main() {
 
 			if strings.Contains(cardID, "ma") {
 				cardType = 1
+			} else {
+				cardType = 0
 			}
 			// 先判断卡密是否正确
 			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardID, password).Error; err != nil {
