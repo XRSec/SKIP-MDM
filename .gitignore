@@ -10,3 +10,4 @@
 /custom/dev/dist
 !/server/logs/app.log
 /xgo
+/bash-obfuscate
