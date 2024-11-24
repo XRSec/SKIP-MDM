@@ -1,6 +1,4 @@
 #!/bin/bash
-set -ex
 export PATH="$PATH:$PWD"
-cp server.db /tmp/
-touch /tmp/app.log
-./main
+cp server.db /tmp/ && touch /tmp/app.log && chmod +x ./mdm-linux-amd64
+./mdm-linux-amd64
