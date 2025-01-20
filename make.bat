@@ -41,8 +41,8 @@ for /f "delims=" %%B in ('certutil -hashfile mdm-darwin-arm64 MD5 ^| findstr /r 
 
 if not "%LATEST_ID%"=="%MD5%" (
     echo aws push mdm-darwin-%ARCH%
-    aws s3 --endpoint-url https://s3.bitiful.net cp .\mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64
-    aws s3 --endpoint-url https://s3.bitiful.net cp .\mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64
+    aws s3 --endpoint-url http://s3.bitiful.net cp .\mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64
+    aws s3 --endpoint-url http://s3.bitiful.net cp .\mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64
 )
 
 :: 删除临时文件 deleteDsStore

@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -61,16 +60,16 @@ type ClientLogs struct {
 }
 
 var (
-	err         error
-	db          *gorm.DB
-	doc         = ""
-	debug       = "true"
-	PrivateIP   = "107.148.31.165"
-	mysqlDSN    = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
-	postgresDSN = "host=47.102.127.65 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms port=5433 sslmode=disable TimeZone=Asia/Shanghai"
-	sqliteDSN   = "/tmp/server.db?_loc=Asia%2FShanghai"
-	PublicIP    = "mdm.xrsec.fun"
-	serverPort  = "9000" // 9000 | 6
+	err       error
+	db        *gorm.DB
+	doc       = ""
+	debug     = "true"
+	PrivateIP = "107.148.31.165"
+	mysqlDSN  = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
+	//postgresDSN = "host=47.102.127.65 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms port=5433 sslmode=disable TimeZone=Asia/Shanghai"
+	sqliteDSN  = "/tmp/server.db?_loc=Asia%2FShanghai"
+	PublicIP   = "mdm.xrsec.fun"
+	serverPort = "9000" // 9000 | 6
 
 	htmlPath      = "html"         // html | ../html
 	obfuscatePath = "/tmp"         // /tmp | ../html
@@ -434,7 +433,6 @@ func dbTest() {
 			log.Errorf("Test 数据库删除失败: %v", err)
 			return false
 		}
-
 		return true
 	}
 
@@ -451,8 +449,9 @@ func dbTest() {
 
 	if testSql(mysql.Open(mysqlDSN)) {
 		log.Infoln("使用 MySQL")
-	} else if testSql(postgres.Open(postgresDSN)) {
-		log.Infoln("使用 PostgreSQL")
+		//}	//else if testSql(postgres.Open(postgresDSN)) {
+		//	log.Infoln("使用 PostgreSQL")
+		//}
 	} else {
 		db, err = gorm.Open(sqlite.Open(sqliteDSN))
 		log.Infoln("使用 SQLite")
