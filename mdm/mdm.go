@@ -445,6 +445,10 @@ var i18n = map[int]map[string]string{
 }
 
 func init() {
+	if tmpLanguage := os.Getenv("mdm_lang"); tmpLanguage != "" {
+		fmt.Println(tmpLanguage)
+		os.Exit(1)
+	}
 	fmt.Printf("\033[H\033[2J") // 清理屏幕
 	_, err := exec.LookPath("open")
 	if err == nil {
@@ -1030,6 +1034,14 @@ func getMdmDomain() string {
 }
 
 func getLanguage() {
+	if tmpLanguage := os.Getenv("mdm_lang"); tmpLanguage != "" {
+		if tmpLanguage != "1" {
+			Language = 0
+		} else {
+			Language = 1
+		}
+		return
+	}
 	httpClient := privacyDns()
 	req, err := http.NewRequest("GET", "http://ip-api.com/json?lang=zh-CN&fields=country", nil)
 	if err != nil {
@@ -1234,6 +1246,9 @@ func privacyDns() (client *http.Client) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			Proxy:           nil,
 			DialContext:     dialContext,
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return nil // 或者返回一个错误来禁止重定向
 		},
 	}
 	return client
