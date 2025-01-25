@@ -445,10 +445,6 @@ var i18n = map[int]map[string]string{
 }
 
 func init() {
-	if tmpLanguage := os.Getenv("mdm_lang"); tmpLanguage != "" {
-		fmt.Println(tmpLanguage)
-		os.Exit(1)
-	}
 	fmt.Printf("\033[H\033[2J") // 清理屏幕
 	_, err := exec.LookPath("open")
 	if err == nil {
