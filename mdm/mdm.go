@@ -184,7 +184,7 @@ var i18n = map[int]map[string]string{
 		"delete_user_ok":    "User deleted",
 
 		// menuNewUser
-		"temp_user_name": "Create an acct & then delete the usr.",
+		"temp_user_name": "Create an admin acct & then delete the usr.",
 
 		// menuSupplier
 		"supplier_mode_now": "Currently in special supplier mode.",
@@ -376,7 +376,7 @@ var i18n = map[int]map[string]string{
 		"delete_user_ok":    "删除用户完成: ",
 
 		// menuNewUser
-		"temp_user_name": "请新建用户并删除该账户",
+		"temp_user_name": "请新建管理员用户并删除该账户",
 
 		// menuSupplier
 		"supplier_mode_now": "当前是供应商特供模式",
@@ -1337,7 +1337,7 @@ func menuNewUser() {
 	uid := strconv.Itoa(rand.Intn(20) + 520)
 	// maxid=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
 	//newid=$((maxid+1))
-	userName := "mac_" + uid
+	userName := "mac" + uid
 	userPass := ""
 	msgOk(i18n[Language]["user_name"] + userName)
 	msgOk(i18n[Language]["password"] + userPass)

