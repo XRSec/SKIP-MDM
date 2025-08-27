@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "Eliran Levi",
+  "scripts": {
+    "start": "nodemon",
+    "build": "tsc",
+    "build:sm": "tsc --sourcemap",
+    "db:migrate": "knex migrate:latest",
+    "db:rb": "knex migrate:rollback",
+    "db:mc": "knex migrate:make"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.14",
+    "express": "^5.1.0",
+    "express-async-errors": "^3.1.1",
+    "javascript-obfuscator": "^4.1.1",
+    "knex": "^3.1.0",
+    "mysql2": "^3.14.3",
+    "nodemon": "^3.1.10",
+    "objection": "^3.1.5",
+    "request": "^2.88.2",
+    "request-promise-native": "^1.0.9"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/knex": "^0.16.1",
+    "@types/mysql": "^2.15.27",
+    "@types/node": "^24.3.0",
+    "@types/request": "^2.48.13",
+    "@types/request-promise-native": "^1.0.21",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

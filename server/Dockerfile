@@ -4,8 +4,6 @@ ENV GO111MODULE=on \
     GOPROXY=https://goproxy.cn,direct
 WORKDIR /app
 COPY . .
-#RUN go build .
-#
-#FROM scratch
-#COPY --from=builder /app/ /app
+RUN go mod tidy \
+    && CGO_ENABLED=1 go install github.com/mattn/go-sqlite3
 ENTRYPOINT ["go","run","server.go"]
