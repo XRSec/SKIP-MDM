@@ -1,0 +1,17 @@
+/mdm-darwin-amd64
+/mdm-darwin-arm64
+/mdm/mdm
+/**/node_modules
+/test.sh
+/html/*.sh
+/scf.zip
+/server/bash-obfuscate
+/custom/rust_client/target
+/custom/dev/dist
+!/server/logs/app.log
+/xgo
+/bash-obfuscate
+filtered_app.log
+functions
+src
+.env

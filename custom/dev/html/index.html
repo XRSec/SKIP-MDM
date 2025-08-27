@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title class="title">MDM 权限验证</title>
+    <style>
+        body {
+            justify-content: center;
+            align-items: center;
+            height: 90vh;
+            /*margin: 30px;*/
+            padding: 0;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            height: auto;
+            background: #e3e3e3;
+            width: 380px;
+            /* 您的 container 样式 */
+        }
+
+        form {
+            margin: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        label {
+            display: inline-block; /* 设置为内联块元素 */
+            text-align: right; /* 右对齐文本 */
+            width: 45%; /* 根据实际情况设置宽度 */
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 45%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+
+        input[type="submit"] {
+            padding: 5px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #menu {
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            background-color: #f2f2f2;
+            padding: 5px 0;
+        }
+
+        #menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #menu li {
+            width: 25%;
+            display: inline-block;
+            padding: 5px 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        #menu li.active {
+            background-color: #ccc;
+        }
+
+        #loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        img {
+            max-width: 95%;
+        }
+
+        #navbar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            z-index: 4;
+        }
+
+        #content {
+            position: absolute;
+            top: 75%;
+            left: 50%;
+            transform: translate(-50%, 0);
+            height: auto;
+            width: 90%;
+            z-index: 3;
+        }
+
+        a {
+            color: #1ea0ff;
+            padding: 2px 5px;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #ff6600; /* 悬停时文本颜色 */
+            text-decoration: underline; /* 添加下划线 */
+        }
+
+        a:visited {
+            text-decoration: none;
+            color: #1ea0ff;
+        }
+
+        #navbar a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            margin-bottom: 5px;
+        }
+
+        .code {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px;
+            position: relative;
+            /*background-color: #f5f5f5;*/
+            font-size: 20px;
+        }
+
+        code {
+            font-family: Consolas, monospace;
+            color: #555;
+            text-align: left; /* 右对齐文本 */
+            white-space: pre-wrap;
+            line-height: 1.5;
+            tab-size: 4;
+            border-radius: 5px;
+            overflow: auto;
+            font-size: 14px;
+        }
+
+        button {
+            position: absolute;
+            right: 5px;
+            font-size: 15px;
+            background-color: #008CBA;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        #toggle-button {
+            position: fixed;
+            top: 0;
+            right: 0;
+            color: #fff;
+            z-index: 4;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+            font-size: 14px;
+            color: #cb6b60;
+        }
+
+        @media screen and (orientation: portrait) and (max-device-width: 900px) and (max-device-height: 1200px), screen and (orientation: landscape) and (max-device-width: 1200px) and (max-device-height: 900px) {
+            * {
+                font-size: 15px;
+            }
+
+            body {
+                height: 90vh;
+                font-size: 35px;
+                touch-action: manipulation;
+                -webkit-user-select: none; /* Chrome, Safari, Opera */
+                -moz-user-select: none; /* Firefox */
+                -ms-user-select: none; /* IE/Edge */
+                user-select: none; /* Non-prefixed version, currently supported by most modern browsers */
+                padding: 0;
+                margin: 0;
+            }
+
+            .container {
+                width: 99%;
+            }
+
+            label {
+                font-size: 16px;
+            }
+
+            input[type="text"] {
+                font-size: 15px;
+                width: 33%;
+            }
+
+            input[type="submit"] {
+                padding: 5px 15px;
+                font-size: 16px;
+            }
+
+            #menu li {
+                font-size: 16px;
+            }
+
+            #content {
+                width: 95%;
+            }
+
+            .code {
+                font-size: 13px;
+            }
+        }
+
+    </style>
+    <script>
+        let dictionary = {
+            "zh-CN": {
+                "title": "MDM 权限验证",
+                "auth": "验证权限",
+                "add": "添加授权",
+                "language": "English",
+                "serial_number": "Mac 序列号: ",
+                "submit": "提交",
+                "card_id": "卡密卡号: ",
+                "password": "卡密密码: ",
+                "copyText": "点击复制",
+                "add_success": "序列号添加授权成功!",
+                "sn_no_pair": "序列号长度必须在8-14位之间！",
+                "pass_no_pair": "密码长度为15位！",
+                "card_no_pair": "卡号长度必须在5-10位之间！",
+                "auth_error": "验证失败，请确认您有权限！",
+                "create_error": "创建授权失败，请联系管理员！",
+                "card_used": "卡密已被使用",
+                "net_error": "网络连接超时!",
+                "time_error": "临时权限，使用权限超过一天!",
+                "auth_ok": "验证成功！",
+                "copy_ok": "复制成功: ",
+                "get_root_domain_err": "无法提取根域名, 使用默认服务器地址",
+                "get_doc_error": "获取文档失败",
+                "show": "展开",
+                "hide": "收起",
+            },
+            "en": {
+                "title": "MDM Auth Manage",
+                "auth": "Verify Auth",
+                "add": "Add Auth",
+                "language": "中文",
+                "serial_number": "Mac Serial Number: ",
+                "submit": "Submit",
+                "card_id": "Card ID: ",
+                "password": "Password: ",
+                "copyText": "Copy",
+                "add_success": "Serial number added authorization successfully!",
+                "sn_no_pair": "Serial number length must be between 8-14 digits！",
+                "pass_no_pair": "Password length is 15 digits！",
+                "card_no_pair": "Card number length must be between 5-10 digits！",
+                "auth_error": "Authentication failed, please make sure you have permission!",
+                "create_error": "Failed to create authorization, please contact administrator！",
+                "card_used": "Card has been used",
+                "net_error": "Network connection timeout!",
+                "time_error": "Temporary permissions, use permissions for more than one day!",
+                "auth_ok": "Authentication succeeded!",
+                "copy_ok": "Copy Success: ",
+                "get_root_domain_err": "Unable to extract root domain name, using default server address",
+                "get_doc_error": "获取文档失败",
+                "show": "Show",
+                "hide": "Hide",
+            }
+        };
+        let navbarStatus = false
+
+        function toggleLanguage() {
+            let language = document.documentElement.lang;
+            let button = document.getElementsByClassName("language");
+            let submitButtons = document.getElementsByClassName("submit");
+
+
+            if (language === "zh-CN") {
+                // 切换到英文
+                document.documentElement.lang = "en";
+                for (let key in dictionary["zh-CN"]) {
+                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                        elementsByClassNameKey.innerHTML = dictionary["en"][key];
+                    }
+                }
+                button.textContent = "中文";
+                // 修改提交按钮的文本为英文
+                for (let i = 0; i < submitButtons.length; i++) {
+                    submitButtons[i].value = "Submit";
+                }
+            } else {
+                // 切换到中文
+                document.documentElement.lang = "zh-CN";
+                for (let key in dictionary["zh-CN"]) {
+                    for (let elementsByClassNameKey of document.getElementsByClassName(key)) {
+                        elementsByClassNameKey.innerHTML = dictionary["zh-CN"][key];
+                    }
+                }
+                button.textContent = "English";
+                // 修改提交按钮的文本为中文
+                for (let i = 0; i < submitButtons.length; i++) {
+                    submitButtons[i].value = "提交";
+                }
+            }
+        }
+
+        function copyText() {
+            // 获取要复制的文本
+            let text = document.getElementById("copyText").innerText;
+
+            // 创建一个临时输入框元素
+            let tempInput = document.createElement("input");
+            tempInput.type = "text";
+            tempInput.value = text;
+
+            // 将临时输入框元素添加到页面中
+            document.body.appendChild(tempInput);
+
+            // 选中临时输入框中的文本
+            tempInput.select();
+
+            // 执行复制命令
+            document.execCommand("copy");
+
+            // 移除临时输入框元素
+            document.body.removeChild(tempInput);
+
+            // 弹出复制成功的提示
+            alert(dictionary[document.documentElement.lang]["copy_ok"] + text);
+            window.open('x-man-page://『 Command + T 打开新窗口 』', '_blank');
+        }
+
+        function showLoadingSpinner() {
+            let container = document.getElementById('loading-container');
+            container.style.display = 'flex';
+
+            // 禁用滚动
+            document.body.style.overflow = 'hidden';
+
+            // 禁用其他交互元素
+            let interactiveElements = document.querySelectorAll('button, input, select');
+            for (let i = 0; i < interactiveElements.length; i++) {
+                interactiveElements[i].disabled = true;
+            }
+        }
+
+        function hideLoadingSpinner() {
+            let container = document.getElementById('loading-container');
+            container.style.display = 'none';
+
+            // 启用滚动
+            document.body.style.overflow = 'auto';
+
+            // 启用其他交互元素
+            let interactiveElements = document.querySelectorAll('button, input, select');
+            for (let i = 0; i < interactiveElements.length; i++) {
+                interactiveElements[i].disabled = false;
+            }
+        }
+
+        function toggleImageSize() {
+            const image = event.target;
+            const currentSrc = image.src;
+            image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
+                ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
+                : currentSrc + '?fmt=webp&q=48&w=500';
+            let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+            if (windowWidth < 900) {
+                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+            }
+        }
+
+        // 为所有图片添加点击事件处理程序
+        function addImageClickListeners() {
+            const images = document.querySelectorAll('img');
+            images.forEach(image => {
+                image.addEventListener('click', toggleImageSize);
+            });
+        }
+
+        function toggleNavbar() {
+            navbarStatus = !navbarStatus
+            let content = document.getElementById('content');
+            let navbar = document.getElementById('navbar');
+            if (!navbarStatus) {
+                navbar.innerHTML = '';
+                document.getElementById('toggle-button').innerHTML = document.documentElement.lang === "en" ? dictionary["en"]["show"] : dictionary["zh-CN"]["show"]
+                return
+            }
+            document.getElementById('toggle-button').innerHTML = document.documentElement.lang === "en" ? dictionary["en"]["hide"] : dictionary["zh-CN"]["hide"]
+            const headings = Array.from(content.querySelectorAll('h1, h2, h3'));
+            headings.forEach((heading, index) => {
+                const level = parseInt(heading.tagName[1], 10);
+                const anchorId = `heading-${index}`;
+                heading.id = anchorId;
+                navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;">${heading.textContent}</a>`;
+            });
+
+        }
+
+        function showDocs(doc) {
+            document.getElementById('content').innerHTML = marked.parse(doc);
+            addImageClickListeners();
+            toggleNavbar()
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            let menuItems = document.querySelectorAll('#menu li');
+            let forms = document.querySelectorAll('form');
+            toggleLanguage()
+            // 默认显示第一个表单
+            forms[0].style.display = 'block';
+
+            document.getElementById("copyText").innerText = `bash <(curl -kfsSL ${window.location.host}) -s`
+
+            // 切换菜单
+            menuItems.forEach(function (item, index) {
+                item.addEventListener('click', function () {
+                    if (item.className === "language") {
+                        return
+                    }
+
+                    // 移除所有菜单项的激活状态
+                    menuItems.forEach(function (item) {
+                        item.classList.remove('active');
+                    });
+
+                    // 激活当前菜单项
+                    this.classList.add('active');
+
+                    // 隐藏所有表单
+                    forms.forEach(function (form) {
+                        form.style.display = 'none';
+                    });
+
+                    // 显示对应的表单
+                    forms[index].style.display = 'block';
+                });
+            });
+
+            // 授权验证
+            document.querySelector('#form1').addEventListener('submit', function (e) {
+                e.preventDefault();
+                showLoadingSpinner()
+                let serial_number = document.querySelector('#serial_number').value;
+                if (serial_number.length < 8 || serial_number.length > 14) {
+                    alert(dictionary[document.documentElement.lang]["sn_no_pair"])
+                    hideLoadingSpinner()
+                    return
+                }
+                // 进行授权验证
+                let xhr = new XMLHttpRequest();
+                xhr.open("GET", `http://${window.location.host}/auth?serial_number=${serial_number}`, false);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
+                        try {
+                            let response = JSON.parse(xhr.responseText);
+                            if (response?.code !== 200) {
+                                alert(dictionary[document.documentElement.lang][response?.msg])
+                            } else {
+                                alert(dictionary[document.documentElement.lang]["auth_ok"])
+                                showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                            }
+                        } catch (error) {
+                            alert('JSON Parsing error:' + error)
+                        }
+                    } else {
+                        alert(dictionary[document.documentElement.lang]["net_error"])
+                    }
+                    hideLoadingSpinner()
+                };
+                xhr.send();
+            });
+            document.querySelector('#form2').addEventListener('submit', function (e) {
+                e.preventDefault();
+                showLoadingSpinner()
+                let cardID = document.querySelector('#card_id').value;
+                let password = document.querySelector('#password').value;
+                let serial_number = document.querySelector('#serial_number1').value;
+                if (cardID.length < 5 || cardID.length > 10) {
+                    alert(dictionary[document.documentElement.lang]["card_no_pair"])
+                    hideLoadingSpinner()
+                    return
+                }
+                if (password.length !== 15) {
+                    alert(dictionary[document.documentElement.lang]["pass_no_pair"])
+                    hideLoadingSpinner()
+                    return
+                }
+                if (serial_number.length < 8 || serial_number.length > 14) {
+                    alert(dictionary[document.documentElement.lang]["sn_no_pair"]);
+                    hideLoadingSpinner()
+                    return
+                }
+
+                // 进行授权验证
+                let xhr = new XMLHttpRequest();
+                xhr.open("GET", `http://${window.location.host}/add?card_id=${cardID}&password=${password}&serial_number=${serial_number}`, false);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 400)) {
+                        try {
+                            let response = JSON.parse(xhr.responseText); // 解析JSON响应数据
+                            if (response?.code !== 200) {
+                                alert(dictionary[document.documentElement.lang][response?.msg])
+                            } else {
+                                alert(dictionary[document.documentElement.lang]["add_success"])
+                                showDocs(response?.doc ? response.doc.replaceAll("服务器地址", window.location.host) : "#" + dictionary[document.documentElement.lang]["get_doc_error"])
+                            }
+                        } catch (error) {
+                            alert('JSON Parsing error:' + error)
+                        }
+                    } else {
+                        alert(dictionary[document.documentElement.lang]["net_error"])
+                    }
+                    hideLoadingSpinner()
+                };
+                xhr.send();
+            });
+
+            let script = document.createElement("script");
+            script.src = "/marked.min.js";
+            script.setAttribute("cache-control", "max-age=604800");
+            document.body.appendChild(script);
+
+            // 用于存储上次剪贴板内容
+            let lastClipboardContent = '';
+
+            // 函数用于读取剪贴板内容
+            async function readClipboard() {
+                try {
+                    // 读取剪贴板文本
+                    let text = await navigator.clipboard.readText();
+                    // 仅在剪贴板内容更新时执行逻辑
+                    if (text !== lastClipboardContent) {
+                        lastClipboardContent = text; // 更新存储的剪贴板内容
+                        console.log("剪贴板内容已更新。");
+
+                        // 正则表达式匹配卡号和密码
+                        const cardInfoRegex = /卡号:\s([a-zA-Z0-9]{6})\n密码:\s([a-zA-Z0-9]{15})/;
+                        const match = text.match(cardInfoRegex);
+
+                        if (match) {
+                            console.log("检测到卡密并自动填充");
+                            const cardNumber = match[1];  // 提取的卡号
+                            const password = match[2];    // 提取的密码
+
+                            // 模拟点击菜单项以显示表单 2
+                            menuItems[1].click();
+                            // 更新表单字段（如果有）
+                            document.getElementById('card_id').value = cardNumber;
+                            document.getElementById('password').value = password;
+                            // 聚焦到指定输入框
+                            document.getElementById('serial_number1').focus();
+                        }
+                    }
+                } catch (err) {
+                    console.error('无法读取剪贴板内容:', err);
+                }
+            }
+
+            // 添加点击事件监听
+            document.addEventListener('click', readClipboard);
+
+            // 添加触摸事件监听
+            document.addEventListener('touchstart', (event) => {
+                // 防止多次触发 click 事件
+                event.preventDefault();
+                readClipboard();
+            });
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+    <div id="menu">
+        <ul>
+            <li class="active auth"></li>
+            <li class="add"></li>
+            <li class="language" onclick="toggleLanguage()"></li>
+        </ul>
+    </div>
+    <form id="form1">
+        <label class="serial_number" for="serial_number"></label>
+        <input type="text" id="serial_number" name="serial_number"><br>
+        <input class="submit" type="submit" value="">
+    </form>
+    <form id="form2">
+        <label class="card_id" for="card_id"></label>
+        <input type="text" id="card_id" name="card_id"><br>
+
+        <label class="password" for="password"></label>
+        <input type="text" id="password" name="password"><br>
+
+        <label class="serial_number" for="serial_number1"></label>
+        <input type="text" id="serial_number1" name="serial_number"><br>
+
+        <input class="submit" type="submit" value="">
+    </form>
+    <div class="code">
+        <code id="copyText"></code>
+        <button class="copyText" onclick="copyText()"></button>
+    </div>
+</div>
+<div id="loading-container" style="display: none;">
+    <div class="loading-spinner"></div>
+</div>
+<div id="navbar"></div>
+<div id="content"></div>
+<button id="toggle-button" onclick="toggleNavbar()"></button>
+<div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
+    建站不容易,熬夜两行泪<br>
+    <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
+</div>
+
+</body>
+</html>

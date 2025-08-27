@@ -1,0 +1,34 @@
+app: mdm
+component: scf
+inputs:
+  description: MDM
+  eip: false
+  environment:
+    variables:
+      TZ: Asia/Shanghai
+  events:
+    - http:
+        parameters:
+          authType: NONE
+          netConfig:
+            enableExtranet: true
+            enableIntranet: false
+          qualifier: $DEFAULT
+#  handler: ''
+  initTimeout: 120
+  memorySize: 256
+  name: mdm
+  namespace: default
+  publicAccess: true
+  region: ap-nanjing
+  runtime: Nodejs18.15
+  src: ./src
+  timeout: 10
+  type: web
+name: ap-nanjing_default_mdm
+#org: '1316823487'
+stage: dev
+# npm install -g serverless-cloud-framework
+# scf deploy
+# When using this configuration file for deployment, make sure the file name is "serverless.yml".
+# For more information: https://github.com/serverless-components/tencent-scf/blob/master/docs/configure.md

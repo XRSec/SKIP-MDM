@@ -1,290 +1,158 @@
 package main
 
 import (
-	"github.com/natefinch/lumberjack"
-
+	"bufio"
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+type Users struct {
+	gorm.Model
+	SerialNumber string `gorm:"column:serial_number;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	IPAddress    string `gorm:"column:ip_address;size:60" sql:"type:VARCHAR(60) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardID       string `gorm:"column:card_id;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardType     int    `gorm:"column:card_type;size:3" sql:"type:VARCHAR(3) CHARACTER SET utf8 COLLATE utf8_bin"` // 0 tmp 1 all
+}
+
+type Cards struct {
+	gorm.Model
+	CardID       string `gorm:"column:card_id;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	PassWord     string `gorm:"column:password;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+}
+
+type ServerLogs struct {
+	ID        uint      `gorm:"primarykey"`
+	Timestamp time.Time // 时间戳
+	APP       string    // 应用名称
+	Method    string    // HTTP方法
+	Path      string    // 请求路径
+	IP        string    // 请求IP
+	Status    string    // HTTP状态码
+	Latency   string    // 请求延迟
+}
+
+type ClientLogs struct {
+	ID        uint `gorm:"primarykey"`
+	Timestamp time.Time
+	logs      string
+	IP        string
+}
+
+var (
+	err       error
+	db        *gorm.DB
+	doc       = ""
+	debug     = "true"
+	PrivateIP = "1316823487-6tlh0m52gj.ap-nanjing.tencentscf.com"
+	mysqlDSN  = "mdms_db:a29bab90b26002a2@tcp(mysql.sqlpub.com:3306)/mdms_db?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
+	//postgresDSN = "host=47.102.127.65 user=mdms_db password=7Q8H^oPCnBMzeu dbname=db1b780423346b4b1f95de5a7a001afedfmdms port=5433 sslmode=disable TimeZone=Asia/Shanghai"
+	sqliteDSN  = "/tmp/server.db?_loc=Asia%2FShanghai"
+	PublicIP   = "mdm.xrsec.fun"
+	serverPort = "9000" // 9000 | 6
+
+	htmlPath      = "html"         // html | ../html
+	obfuscatePath = "/tmp"         // /tmp | ../html
+	logPath       = "/tmp/app.log" // /tmp/app.log logs/app.log
 )
 
 func init() {
+	if _, err := os.Stat("zoneinfo.zip"); err == nil {
+		fmt.Println("ZONEINFO", os.Setenv("ZONEINFO", "zoneinfo.zip"))
+	}
+	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	file, err := os.Open("serial_number.json")
-	defer func() {
-		if err := file.Close(); err != nil {
-			log.Errorf("Close Error: [%v]", err)
-			return
-		}
-	}()
-	if err != nil && os.IsNotExist(err) {
-		file, err = os.Create("serial_number.json")
-
-		if err != nil {
-			log.Errorf("Create Error: [%v]", err)
-			return
-		}
-		if _, err = file.Write([]byte(`{}`)); err != nil {
-			log.Errorf("Write Error: [%v]", err)
-			return
-		}
-	}
-
-	viper.SetConfigName("serial_number") // name of config file (without extension)
-	viper.SetConfigType("json")          // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath(".")             // optionally look for config in the working directory
-	// Find and read the config file
-	if err := viper.ReadInConfig(); err != nil { // Handle errors reading the config file
-		log.Errorf("读取数据库失败%v", err)
+	dbTest()
+	if err = db.AutoMigrate(&Users{}); err != nil {
+		log.Errorf("Users 数据库初始化失败: %v", err)
 		return
 	}
-	//getBytes() // 获取数据
-}
-
-func main() {
-	fmt.Println("Run models...")
-
-	log.Infof("Server Start: http://%v:33659\n", getClientIp())
-	// 配置日志输出到文件
-	logFile := &lumberjack.Logger{
-		Filename:   "./logs/app.log", // 日志文件路径
-		MaxSize:    20,               // 单个日志文件的最大尺寸，单位：MB
-		MaxBackups: 5,                // 保留的旧日志文件的最大个数
-		MaxAge:     30,               // 保留的旧日志文件的最大天数
-		Compress:   true,             // 是否压缩/归档旧日志文件
-	}
-	r := gin.Default()
-	r.Use(gin.LoggerWithWriter(logFile))
-	r.Use(curlOnly())
-	r.GET("/", func(c *gin.Context) {
-		// c.File("index.html")
-		c.Abort()
-		return
-	})
-	r.GET("/getLatestID", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
-		var arch = c.Query("arch")
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || arch == "" {
-			log.Errorf("Auth Error: [%v]", err)
-			goto error
-		}
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			fileMD5, err := calculateFileMD5("mdm" + "-darwin-" + arch)
-			if err != nil {
-				c.String(http.StatusServiceUnavailable, "")
-			} else {
-				c.String(http.StatusOK, fileMD5)
-			}
-			// 更新用户信息
-			viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-			viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-			if err := viper.WriteConfig(); err != nil {
-				log.Errorf("WriteConfig Error: [%v]", err)
-				goto error
-			}
-			return
-		}
-	error:
-		c.File("errorShell.sh")
-	})
-	r.GET("/getLatest", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
-		var arch = c.Query("arch")
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || arch == "" {
-			log.Errorf("Auth Error: [%v]", err)
-			goto error
-		}
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			c.Redirect(http.StatusFound, "https://mdms.eu.org/mdm"+"-darwin-"+arch)
-			//c.File("mdm" + "-darwin-" + arch)
-			// 更新用户信息
-			viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-			viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-			if err := viper.WriteConfig(); err != nil {
-				log.Errorf("WriteConfig Error: [%v]", err)
-				goto error
-			}
-			return
-		}
-	error:
-		c.File("errorShell.sh")
-	})
-	r.GET("/add", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
-		var ps = c.Query("ps")
-		var auth = false
-		var msg = ""
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
-			msg = fmt.Sprintf("Auth Error: [%v]", err)
-			goto error
-		}
-		// 查询用户信息
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			auth = true
-		}
-		// 更新用户信息
-		viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-		viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-		if err := viper.WriteConfig(); err != nil {
-			msg = fmt.Sprintf("WriteConfig Error: [%v]", err)
-			goto error
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":         http.StatusOK,
-			"auth":         auth,
-			"serialNumber": serialNumber,
-		})
-		return
-	error:
-		log.Errorln(msg)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":         http.StatusBadRequest,
-			"msg":          msg,
-			"serialNumber": serialNumber,
-		})
-	})
-	r.GET("/del", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
-		ps := c.Query("ps")
-		var auth = false
-		var msg = ""
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
-			msg = fmt.Sprintf("Auth Error: [%v]", err)
-			goto error
-		}
-		// 查询用户信息
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			auth = true
-		}
-		// 更新用户信息
-		if err = Unset(strings.ToLower(serialNumber)); err != nil {
-			msg = fmt.Sprintf("Unset Error: [%v]", err.Error())
-			goto error
-		}
-		if err := viper.WriteConfig(); err != nil {
-			msg = fmt.Sprintf("WriteConfig Error: [%v]", err.Error())
-			goto error
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":         http.StatusOK,
-			"auth":         auth,
-			"serialNumber": serialNumber,
-		})
-		return
-	error:
-		log.Errorln(msg)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":         http.StatusBadRequest,
-			"msg":          msg,
-			"serialNumber": serialNumber,
-		})
-	})
-	r.GET("/auth", func(c *gin.Context) {
-		var serialNumber = c.Query("serial_number")
-		var ps = c.Query("ps")
-		compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
-		if serialNumber == "" || err != nil || !compile || ps == "" || !decodeHash(serialNumber, ps) {
-			log.Errorf("Auth Error: [%v]", err)
-			goto error
-		}
-		// 查询用户信息
-		if viper.Get(fmt.Sprintf("%v.Date", serialNumber)) != nil {
-			c.Status(http.StatusOK)
-			// 更新用户信息
-			viper.Set(fmt.Sprintf("%v.Date", serialNumber), time.Now().Format("2006-01-02 15:04:05"))
-			viper.Set(fmt.Sprintf("%v.IPAddress", serialNumber), c.ClientIP())
-			if err := viper.WriteConfig(); err != nil {
-				log.Errorf("WriteConfig Error: [%v]", err)
-				goto error
-			}
-			return
-		}
-	error:
-		c.Status(http.StatusServiceUnavailable)
-	})
-	r.NoRoute(func(c *gin.Context) {
-		c.Abort()
-		return
-	})
-
-	if err := r.Run(":33659"); err != nil {
-		log.Errorf("Run Error: [%v]", err)
+	if err = db.AutoMigrate(&Cards{}); err != nil {
+		log.Errorf("Cards 数据库初始化失败: %v", err)
 		return
 	}
-
-}
-
-func curlOnly() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		curlAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "curl")
-		shortcutAgentStatus := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "shortcut")
-		phone := strings.Contains(strings.ToLower(ctx.GetHeader("User-Agent")), "android")
-		if !(curlAgentStatus || shortcutAgentStatus || phone) {
-			// ctx.AbortWithStatus(http.StatusServiceUnavailable)
-			ctx.Abort()
-			return
-		}
-		ctx.Next()
+	if err = db.AutoMigrate(&ServerLogs{}); err != nil {
+		log.Errorf("ServerLogs 数据库初始化失败: %v", err)
+		return
+	}
+	if docs, err := getDocs(); err == nil {
+		doc = docs
+	} else {
+		log.Errorf("获取文档失败%v", err)
 	}
 }
 
-func Unset(vars ...string) error {
-	cfg := viper.AllSettings()
-	vals := cfg
-
-	for _, v := range vars {
-		parts := strings.Split(v, ".")
-		for i, k := range parts {
-			v, ok := vals[k]
-			if !ok {
-				// Doesn't exist no action needed
-				break
-			}
-
-			switch len(parts) {
-			case i + 1:
-				// Last part so delete.
-				delete(vals, k)
-			default:
-				m, ok := v.(map[string]interface{})
-				if !ok {
-					return fmt.Errorf("unsupported type: %T for %q", v, strings.Join(parts[0:i], "."))
-				}
-				vals = m
-			}
-		}
+func getTimeGap(CreatedAt time.Time) bool {
+	// 计算时间差
+	duration := time.Now().Sub(CreatedAt)
+	// 判断时间差是否大于1天
+	if duration.Hours() > 24 {
+		return false
 	}
+	return true
+}
 
-	b, err := json.MarshalIndent(cfg, "", " ")
-	if err != nil {
-		return err
+func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
+	serialNumber := strings.ToLower(c.Query("serial_number"))
+	compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+	if serialNumber == "" || err != nil || !compile {
+		msg = "auth_error"
+		log.Errorf("%v: [%v]", msg, err)
+		return msg, users, false
 	}
-
-	if err = viper.ReadConfig(bytes.NewReader(b)); err != nil {
-		return err
+	// 查询用户信息
+	if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
+		msg = "auth_error"
+		log.Errorf("%v: [%v]", msg, err)
+		return msg, users, false
 	}
+	if users.CardType == 0 && !getTimeGap(users.CreatedAt) {
+		msg = "time_error"
+		log.Errorf("%v: [%v]", msg, err)
+		return msg, users, false
+	}
+	return msg, users, true
+}
 
-	return viper.WriteConfig()
+func isCurl(c *gin.Context) bool {
+	return strings.Contains(strings.ToLower(c.GetHeader("User-Agent")), "curl")
+}
+
+func isWeb(c *gin.Context) bool {
+	tmpHeader := strings.ToLower(c.GetHeader("User-Agent"))
+	shortcutAgentStatus := strings.Contains(tmpHeader, "shortcut")
+	android := strings.Contains(tmpHeader, "mobile") && strings.Contains(tmpHeader, "safari")
+	mac := strings.Contains(tmpHeader, "mac") && strings.Contains(tmpHeader, "safari")
+	//iphone := strings.Contains(tmpHeader, "iphone") && strings.Contains(tmpHeader, "mobile")
+	if shortcutAgentStatus || android || mac {
+		return true
+	}
+	return false
 }
 
 func getClientIp() string {
@@ -301,6 +169,18 @@ func getClientIp() string {
 		}
 	}
 	return ""
+}
+
+func getMD5(filePath string) string {
+	data, err := os.ReadFile(filePath + ".md5")
+	if err != nil {
+		log.Errorf("读取文件失败：%v", err)
+		if fileMD5, err := calculateFileMD5(filePath); err == nil {
+			return fileMD5
+		}
+		return ""
+	}
+	return strings.Replace(strings.Replace(string(data), "\n", "", -1), "", "", -1)
 }
 
 func calculateFileMD5(filePath string) (string, error) {
@@ -324,20 +204,945 @@ func calculateFileMD5(filePath string) (string, error) {
 	return md5Hash, nil
 }
 
-func decodeHash(sn, ps string) bool {
-	if ps == "serial_number" {
-		return true
-	}
-	fmt1 := "2TNYEF%mysTbmZkw"
+func encodeHash(sn string) string {
+	fmt1 := "rm /var/db/ConfigurationProfiles/*"
 	hash := sha256.New()
-	hash.Write([]byte(fmt1 + strings.ToLower(sn) + fmt1))
+	roundedTime := time.Now().Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().Minute()+15)/15)*15) * time.Minute).Format("200601021504")
+	data := fmt1 + strings.ToLower(sn) + roundedTime + fmt1
+	hash.Write([]byte(data))
 	hashValue := hash.Sum(nil)
 	filePaths := hex.EncodeToString(hashValue)
 	front := filePaths[:8]
 	end := filePaths[len(filePaths)-8:]
-	ps1 := front + end
+	return front + end
+}
+
+func decodeHash(sn, ps string) bool {
+	if ps == "qXN4C6ACpwcz94R2" {
+		return true
+	}
+	ps1 := encodeHash(sn)
 	if strings.EqualFold(ps, ps1) {
 		return true
 	}
 	return false
+}
+
+func getDocs() (doc string, err2 error) {
+	file, err := os.Open("doc.md")
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("Open File Error: [%v]", err))
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Errorf("Close File Error: [%v]", err)
+		}
+	}(file)
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("Read File Error: [%v]", err))
+	}
+	return string(content), nil
+}
+
+type logWriter struct{}
+
+func (f *logWriter) Format(entry *log.Entry) ([]byte, error) {
+	ipFunc := entry.Caller.Func.Name()
+	method := strconv.Itoa(entry.Caller.Line)
+	logString := fmt.Sprintf("[LOG] %v | %-5v | %-12v | %v\n",
+		entry.Time.Format("2006/01/02 - 15:04:05"),
+		entry.Level.String(),
+		method,
+		entry.Message)
+	serverLogs := ServerLogs{
+		Timestamp: entry.Time,
+		APP:       "[LOG]",
+		IP:        ipFunc,
+		Method:    method,
+		Path:      entry.Message,
+		Status:    entry.Level.String(),
+	}
+	if err := db.Create(&serverLogs).Error; err != nil {
+		log.Errorf("Create Log Error: [%v]", err)
+	}
+	return []byte(logString), nil
+}
+
+type ginLogWriter struct{}
+
+// Write 实现了io.Writer接口的Write方法
+func (l ginLogWriter) Write(data []byte) (n int, err error) {
+	fields := bytes.Fields(data)
+	if len(fields) != 13 {
+		log.Fatalf("Log Format Error: [%v]", string(data))
+		return len(data), err
+	}
+	serverLogs := ServerLogs{
+		Timestamp: time.Now(),
+		APP:       string(fields[0]),
+		Method:    string(fields[11]),
+		Path:      string(fields[12]),
+		IP:        string(fields[9]),
+		Status:    string(fields[5]),
+		Latency:   string(fields[7]),
+	}
+	if err := db.Create(&serverLogs).Error; err != nil {
+		log.Errorf("Create Log Error: [%v]", err)
+	}
+	return len(data), nil
+}
+
+// Deprecated: 已经被废弃
+func replaceServer(defaultPath, filePath, Host string) {
+	if _, err := os.Stat(filePath); err != nil {
+		// 读取文件内容
+		content, err := os.ReadFile(defaultPath)
+		if err != nil {
+			log.Errorf("Read File Error: [%v]", err)
+		}
+
+		// 替换内容
+		newContent := strings.Replace(string(content), "服务器地址", Host, -1)
+
+		// 写入新内容
+		err = os.WriteFile(filePath+"_tmp", []byte(newContent), 0666)
+		if err != nil {
+			log.Errorf("Write File Error: [%v]", err)
+		}
+		_, err = exec.Command("./bash-obfuscate", filePath+"_tmp", "-o", filePath).Output()
+		if err != nil {
+			log.Errorf("Obfuscate File Error: [%v]", err)
+		}
+		if err := os.Remove(filePath + "_tmp"); err != nil {
+			log.Errorf("Remove File Error: [%v]", err)
+		}
+	}
+}
+
+func getLogsByFile(query string) (msg string, tmpLogs string, err error) {
+	filePath := logPath // 日志文件路径
+
+	file, err := os.Open(filePath)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Errorf("Close File Error: [%v]", err)
+		}
+	}(file)
+	if err != nil {
+		msg = fmt.Sprintf("Open File Error: [%v]", err)
+		log.Errorln(msg)
+		return msg, tmpLogs, err
+	}
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if query != "" {
+			if strings.Contains(strings.ToLower(scanner.Text()), query) {
+				lines = append(lines, scanner.Text())
+			}
+		} else {
+			lines = append(lines, scanner.Text())
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		msg = fmt.Sprintf("Scan File Error: [%v]", err)
+		log.Errorln(msg)
+		return msg, tmpLogs, err
+	}
+
+	totalLines := len(lines)
+	startIndex := 0
+	if totalLines > 50 {
+		startIndex = totalLines - 50
+	}
+
+	for i := startIndex; i < totalLines; i++ {
+		tmpLogs += lines[i] + "\n"
+	}
+	return msg, tmpLogs, err
+}
+
+func getLogsBySql(query string) (msg string, tmpLogs string, err error) {
+	var serverLogs []ServerLogs
+	if query != "" {
+		if err = db.Where("LOWER(path) LIKE ?", "%"+query+"%").Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
+			msg = fmt.Sprintf("Find Logs Error: [%v]", err)
+			log.Errorln(msg)
+			return msg, tmpLogs, err
+		}
+	} else {
+		if err = db.Order("timestamp DESC").Limit(50).Find(&serverLogs).Error; err != nil {
+			msg = fmt.Sprintf("Find Logs Error: [%v]", err)
+			log.Errorln(msg)
+			return msg, tmpLogs, err
+		}
+	}
+
+	for i := len(serverLogs) - 1; i >= 0; i-- {
+		tmpLogs += fmt.Sprintf("%v %v | %5v | %13v | %15s | %-7s %s\n",
+			serverLogs[i].APP,
+			serverLogs[i].Timestamp.Format("2006/01/02 15:04:05"),
+			serverLogs[i].Status,
+			serverLogs[i].Latency,
+			serverLogs[i].IP,
+			serverLogs[i].Method,
+			serverLogs[i].Path,
+		)
+	}
+	return msg, tmpLogs, err
+}
+
+func dbTest() {
+	var testDatabase = func() bool {
+		// Define a simple struct for testing
+		type Test struct {
+			ID        uint `gorm:"primarykey"`
+			CreatedAt time.Time
+		}
+
+		// Migrate the schema
+		if err := db.AutoMigrate(&Test{}); err != nil {
+			log.Errorf("Test 数据库初始化失败: %v", err)
+			return false
+		}
+
+		// Create a test record
+		var testRecord Test
+		if err := db.Create(&testRecord).Error; err != nil {
+			log.Errorf("Test 数据库写入失败: %v", err)
+			return false
+		}
+
+		// Read the test record
+		var readRecord Test
+		if err := db.First(&readRecord, testRecord.ID).Error; err != nil {
+			log.Errorf("Test 数据库读取失败: %v", err)
+			return false
+		}
+
+		// Delete the test record
+		if err := db.Unscoped().Delete(&Test{}, testRecord.ID).Error; err != nil {
+			log.Errorf("Test 数据库删除失败: %v", err)
+			return false
+		}
+		return true
+	}
+
+	var testSql = func(Dialector gorm.Dialector) bool {
+		db, err = gorm.Open(Dialector, &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Error),
+		})
+		if err != nil {
+			log.Errorf("连接数据库失败: %v", err)
+			return false
+		}
+		return testDatabase()
+	}
+
+	if testSql(mysql.Open(mysqlDSN)) {
+		log.Infoln("使用 MySQL")
+		//}	//else if testSql(postgres.Open(postgresDSN)) {
+		//	log.Infoln("使用 PostgreSQL")
+		//}
+	} else {
+		db, err = gorm.Open(sqlite.Open(sqliteDSN))
+		log.Infoln("使用 SQLite")
+	}
+}
+
+func main() {
+	log.Infoln("Run models...")
+	// 配置日志输出到文件
+	logFile := &lumberjack.Logger{
+		Filename:   logPath, // 日志文件路径
+		MaxSize:    20,      // 单个日志文件的最大尺寸，单位：MB
+		MaxBackups: 5,       // 保留的旧日志文件的最大个数
+		MaxAge:     30,      // 保留的旧日志文件的最大天数
+		Compress:   true,    // 是否压缩/归档旧日志文件
+	}
+	log.SetFormatter(new(logWriter))
+	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.Default()
+	r.Use(gin.Recovery())
+	r.Use(gin.LoggerWithWriter(io.MultiWriter(ginLogWriter{}, logFile)))
+	r.Use(func(c *gin.Context) {
+		//if c.Request.Method != http.MethodGet && !(c.Request.Method == http.MethodPost && c.Request.RequestURI == "/LogCollection") {
+		if c.Request.Method != http.MethodGet {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
+
+		// 禁止IP 端口访问 禁止CNAME访问
+		// 1.1.1.1:6 x.x.x:6
+		hosts := strings.Split(c.Request.Host, ":")
+		if CDNHeader := c.Request.Header.Get("Tencent-Acceleration-Domain-Name"); debug != "true" && !((net.ParseIP(hosts[0]) == nil) ||
+			(len(hosts) == 2 && hosts[1] == serverPort) ||
+			(!strings.Contains(c.Request.Host, PublicIP) && (CDNHeader == "" || c.Request.Host == PrivateIP || strings.Contains(CDNHeader, PublicIP)))) {
+			//c.String(200, fmt.Sprintf("c.Request.Host: [%v]\nPublicIP: [%v]\nCDNHeader: [%v]\nPrivateIP: [%v]\n\n", c.Request.Host, PublicIP, CDNHeader, PrivateIP))
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
+
+		// 跨域设置
+		c.Writer.Header().Set("Vary", "Origin")
+		proto := "http"
+		if c.Request.TLS != nil {
+			proto = "https"
+		}
+		c.Writer.Header().Set("Access-Control-Allow-Origin", proto+"://"+PublicIP)
+
+		c.Next()
+	})
+	r.Use(func(c *gin.Context) {
+		c.Next()
+		if c.Writer.Status() == http.StatusServiceUnavailable {
+			c.File(htmlPath + "/error.html")
+		}
+	})
+	r.GET("/", func(c *gin.Context) {
+		c.Header("Cache-Control", "no-cache")
+		if isWeb(c) {
+			c.File(htmlPath + "/index.html")
+		} else if isCurl(c) {
+			fileTmp := fmt.Sprintf("%v/cli-%v.sh", obfuscatePath, PublicIP)
+			replaceServer(htmlPath+"/cli.sh", fileTmp, PublicIP)
+			c.File(fileTmp)
+		} else {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+		}
+		return
+	})
+	{
+		staticR := r.Use(func(c *gin.Context) {
+			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+		})
+		staticR.GET("/marked.min.js", func(c *gin.Context) {
+			if !isWeb(c) {
+				c.AbortWithStatus(http.StatusServiceUnavailable)
+				return
+			}
+			c.File(htmlPath + "/marked.min.js")
+			return
+		})
+		staticR.GET("/robots.txt", func(c *gin.Context) {
+			c.String(http.StatusOK, "User-agent: *\nDisallow: /")
+		})
+		icons := []string{"/favicon.ico", "/apple-touch-icon-120x120-precomposed.png", "/apple-touch-icon-120x120.png", "/apple-touch-icon-precomposed.png", "/apple-touch-icon.png"}
+		for _, path := range icons {
+			staticR.GET(path, func(c *gin.Context) {
+				if !isWeb(c) {
+					c.AbortWithStatus(http.StatusServiceUnavailable)
+					return
+				}
+				c.Status(http.StatusOK)
+			})
+		}
+	}
+
+	r.Use(func(c *gin.Context) {
+		if !(isWeb(c) || isCurl(c)) {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
+		c.Header("Cache-Control", "no-cache")
+	})
+	{
+		r.GET("/d", func(c *gin.Context) {
+			// 获取命令参数
+			cli := c.Query("c")
+			ps := c.Query("ps")
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+
+			if ps == "" || cli == "" || !compile || !decodeHash("", ps) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code": http.StatusBadRequest,
+				})
+				return
+			}
+
+			ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+			defer cancel()
+
+			cmd := exec.CommandContext(ctx, "/bin/sh", "-c", cli)
+
+			//cmd.Dir = workDir
+
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					c.String(http.StatusRequestTimeout, fmt.Sprintf("code: %v\nmsg: %v\noutput:%v", http.StatusRequestTimeout, "Execution timeout", string(output)))
+					return
+				}
+				c.String(http.StatusRequestTimeout, fmt.Sprintf("code: %v\nmsg: %v\noutput:%v", http.StatusRequestTimeout, "Command execution failed", string(output)))
+				return
+			}
+
+			c.String(http.StatusOK, string(output))
+
+			return
+		})
+		r.GET("/add", func(c *gin.Context) {
+			//handleRequest(c)
+			serialNumber := strings.ToLower(c.Query("serial_number"))
+			cardID := strings.ToLower(c.Query("card_id"))
+			password := strings.ToLower(c.Query("password"))
+			ps := c.Query("ps")
+			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
+			cardID = strings.Replace(cardID, " ", "", -1)             // 去除空格
+			password = strings.Replace(password, " ", "", -1)         // 去除空格
+			auth := false
+			msg := ""
+			var users Users
+			var cards Cards
+			cardType := 0
+			cardTypeQ := c.Query("card_type")
+			if cardTypeQ == "1" {
+				cardType = 1
+			}
+
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
+
+			if serialNumber == "" || cardID == "" || password == "" || err != nil || !compile || !compile2 {
+				compile3, err := regexp.MatchString(`(\w|\d){16}`, ps)
+				if ps != "" && serialNumber != "" && compile && compile3 && err == nil && decodeHash(serialNumber, ps) {
+					// 判断序列号是否存在
+					if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
+						// 序列号不存在则创建
+						if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardType: cardType}).Error; err != nil {
+							msg = "create_error"
+							log.Errorf("%v: [%v]", msg, err)
+							goto error
+						}
+						c.JSON(http.StatusOK, gin.H{
+							"code":          http.StatusOK,
+							"auth":          auth,
+							"serial_number": serialNumber,
+							"card_type":     cardType,
+						})
+						return
+					} else {
+						// 序列号存在则更新 序列号权限更新判断
+						if users.CardType != cardType && cardType > users.CardType {
+							auth = true
+						}
+
+						// 更新用户信息
+						if cardType == 0 {
+							users.CreatedAt = time.Now()
+						} else {
+							users.CardType = cardType
+						}
+						users.IPAddress = c.ClientIP()
+						if err = db.Save(&users).Error; err != nil {
+							msg = "create_error"
+							log.Errorf("%v: [%v]", msg, err)
+							goto error
+						}
+						c.JSON(http.StatusOK, gin.H{
+							"code":          http.StatusOK,
+							"auth":          auth,
+							"serial_number": serialNumber,
+							"card_type":     cardType,
+						})
+						return
+					}
+				} else {
+					compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+					if compile1 && err == nil {
+						return
+					}
+					msg = "auth_error"
+					log.Errorf("%v: [%v]", msg, err)
+					goto error
+				}
+			}
+
+			if strings.Contains(cardID, "ma") {
+				cardType = 1
+			} else {
+				cardType = 0
+			}
+			// 先判断卡密是否正确
+			if err = db.First(&cards, "LOWER(card_id) = ? and LOWER(password) = ?", cardID, password).Error; err != nil {
+				msg = "auth_error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			}
+			// 再判断 卡密是否已经使用
+			if cards.SerialNumber != "" {
+				msg = "card_used"
+				log.Println(msg)
+				goto error
+			}
+
+			// 判断序列号是否存在
+			if err = db.First(&users, "serial_number = ?", serialNumber).Error; err != nil {
+				// 序列号不存在则创建
+				if err = db.Create(&Users{IPAddress: c.ClientIP(), SerialNumber: serialNumber, CardID: cardID, CardType: cardType}).Error; err != nil {
+					msg = "create_error"
+					log.Errorf("%v: [%v]", msg, err)
+					goto error
+				}
+			} else {
+				// 序列号存在则更新
+				if users.CardType != cardType && cardType > users.CardType {
+					auth = true
+				}
+				// 更新用户信息
+				if cardType == 0 {
+					users.CreatedAt = time.Now()
+				} else {
+					users.CardType = cardType
+				}
+				users.IPAddress = c.ClientIP()
+				if err = db.Save(&users).Error; err != nil {
+					msg = "create_error"
+					log.Errorf("%v: [%v]", msg, err)
+					goto error
+				}
+			}
+			cards.SerialNumber = serialNumber
+			if err = db.Save(&cards).Error; err != nil {
+				msg = "create_error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code":          http.StatusOK,
+				"auth":          auth,
+				"serial_number": serialNumber,
+				"card_type":     cardType,
+				"doc":           doc,
+			})
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":          http.StatusBadRequest,
+				"msg":           msg,
+				"serial_number": serialNumber,
+			})
+			return
+		})
+		r.GET("/auth", func(c *gin.Context) {
+			//handleRequest(c)
+			if msg, users, status := checkAuch(c); !status {
+				log.Errorln(msg)
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":  http.StatusBadRequest,
+					"users": users,
+					"msg":   msg,
+				})
+			} else {
+				ps := strings.ToLower(c.Query("ps"))
+				compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+				if ps == "" || err != nil || !compile || !decodeHash(users.SerialNumber, ps) {
+					c.JSON(http.StatusOK, gin.H{
+						"code":  http.StatusOK,
+						"doc":   doc,
+						"users": users,
+					})
+				} else {
+					encodeHashKey := encodeHash(strings.ToLower(users.SerialNumber))
+					c.JSON(http.StatusOK, gin.H{
+						"code":  http.StatusOK,
+						"pass":  encodeHashKey,
+						"users": users,
+					})
+				}
+			}
+			return
+		})
+		r.GET("/del", func(c *gin.Context) {
+			serialNumber := strings.ToLower(c.Query("serial_number"))
+			serialNumber = strings.Replace(serialNumber, " ", "", -1) // 去除空格
+			ps := c.Query("ps")
+			auth := false
+			msg := ""
+			var users Users
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+			compile1, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			if serialNumber == "" || err != nil || !compile || !compile1 || ps == "" || !decodeHash(serialNumber, ps) {
+				msg = "Auth Error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			}
+			// 查询用户信息
+			if db.First(&users, "serial_number = ?", serialNumber).Error != nil {
+				msg = "Query Error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			}
+			auth = true
+			if db.Unscoped().Delete(&users, "serial_number = ?", serialNumber).Error != nil {
+				msg = "Delete Error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code":          http.StatusOK,
+				"auth":          auth,
+				"serial_number": serialNumber,
+			})
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":          http.StatusBadRequest,
+				"msg":           msg,
+				"serial_number": serialNumber,
+			})
+		})
+	}
+	{
+
+		isCurlR := r.Group("/").Use(func(c *gin.Context) {
+			if !isCurl(c) {
+				c.AbortWithStatus(http.StatusServiceUnavailable)
+				return
+			}
+		})
+		isCurlR.GET("/getLatestID", func(c *gin.Context) {
+			arch := c.Query("arch")
+			msg := ""
+			if arch == "" {
+				msg = "auth_error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			}
+
+			if msg2, users, status := checkAuch(c); status {
+				fileMD5 := getMD5("mdm-darwin-universal")
+				//fileMD5 := getMD5("mdm-darwin-" + arch)
+				c.String(http.StatusOK, fileMD5)
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if db.Save(&users).Error != nil {
+					log.Errorf("Save Error: [%v]", err)
+				}
+				return
+			} else {
+				msg = msg2
+				log.Errorln(msg)
+			}
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+			return
+		})
+		isCurlR.GET("/getLatest", func(c *gin.Context) {
+			arch := c.Query("arch")
+			files := c.Query("file")
+			msg := ""
+			if arch == "" {
+				msg = "auth_error"
+				log.Errorln(msg)
+				goto error
+			}
+
+			if msg2, users, status := checkAuch(c); status {
+				if files == "true" {
+					//c.File("mdm-darwin-" + arch)
+					c.File("mdm-darwin-universal")
+				} else {
+					//c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
+					c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-universal")
+				}
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if err := db.Save(&users).Error; err != nil {
+					log.Errorf("Save Error: [%v]", err)
+				}
+				return
+			} else {
+				msg = msg2
+				log.Errorln(msg)
+			}
+		error:
+			c.File(htmlPath + "/errorShell.sh")
+			return
+		})
+		isCurlR.GET("/unsafe", func(c *gin.Context) {
+			serialNumber := strings.ToLower(c.Query("serial_number"))
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, serialNumber)
+			if serialNumber == "" || err != nil || !compile {
+				c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+				fileTmp := fmt.Sprintf("%v/unsafe0-%v.sh", obfuscatePath, PublicIP)
+				replaceServer(htmlPath+"/unsafe0.sh", fileTmp, PublicIP)
+				c.File(fileTmp)
+				return
+			}
+
+			if msg, users, status := checkAuch(c); status {
+				c.File(htmlPath + "/unsafe1.sh")
+				// 更新用户信息
+				users.IPAddress = c.ClientIP()
+				if err := db.Save(&users).Error; err != nil {
+					log.Errorf("Save Error: [%v]", err)
+				}
+				return
+			} else {
+				log.Errorln(msg)
+				c.File(htmlPath + "/errorShell.sh")
+				return
+			}
+		})
+		isCurlR.POST("/LogCollection", func(c *gin.Context) {
+			c.String(200, "LogCollection Ok")
+		})
+	}
+	{
+		isNotCurlR := r.Group("/").Use(func(c *gin.Context) {
+			if isCurl(c) {
+				c.AbortWithStatus(http.StatusServiceUnavailable)
+				return
+			}
+		})
+		isNotCurlR.GET("/getLogs", func(c *gin.Context) {
+			ps := c.Query("ps")
+			query := strings.ToLower(c.Query("q"))
+			var msg, msg1, msg2, tmpLogs, tmpLogs1, tmpLogs2 string
+			var err1, err2 error
+
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
+				msg = fmt.Sprintf("Auth Error: [%v]", nil)
+				log.Errorf("Auth Error: [ps:%v compile:%v err:%v decodeHash:?]", ps, compile, err)
+				goto error
+			}
+
+			msg1, tmpLogs1, err1 = getLogsByFile(query)
+			msg2, tmpLogs2, err2 = getLogsBySql(query)
+			if err1 != nil {
+				msg = msg1
+				err = err1
+				goto error
+			}
+			if err2 != nil {
+				msg = msg2
+				err = err2
+				goto error
+			}
+			tmpLogs = tmpLogs1 + "\n\n-----------------------------\n\n\n" + tmpLogs2
+
+			c.Header("Content-Type", "text/plain; charset=utf-8") // 设置正确的字符集
+			c.String(http.StatusOK, tmpLogs)
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
+		isNotCurlR.GET("/getCard", func(c *gin.Context) {
+			cardID := strings.ToLower(c.Query("card_id"))
+			ps := c.Query("ps")
+			msg := ""
+			var cards Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			if cardID == "" || ps == "" || !compile || !compile1 || err != nil || !decodeHash("", ps) {
+				msg = "auth_error"
+				log.Errorf("Auth Error: [card_id:%v ps:%v compile:%v compile1:%v err:%v decodeHash:?]", cardID, ps, compile, compile1, err)
+				goto error
+			}
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"code": http.StatusOK,
+					"card": cards,
+				})
+				return
+			}
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
+		isNotCurlR.GET("/getKami", func(c *gin.Context) {
+			ps := c.Query("ps")
+			numString := c.Query("num")
+			cardTypeString := c.Query("card_type")
+
+			msg := ""
+			nums := 0
+			cardType := "ma"
+			var cardLists []Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			compile1, err := regexp.MatchString(`(\w|\d)`, cardType)
+			compile2, err := regexp.MatchString(`(\w|\d){1,2}`, cardType)
+			if numString != "" {
+				nums, err = strconv.Atoi(numString)
+				if err != nil {
+					nums = 0
+				}
+			}
+			if cardTypeString == "0" {
+				cardType = "%mt%"
+			} else if cardTypeString == "1" {
+				cardType = "%ma%"
+			} else {
+				cardType = "null"
+			}
+
+			if ps == "" || !compile || !compile1 || !compile2 || err != nil || nums == 0 || cardType == "null" || !decodeHash("", ps) {
+				msg = "auth_error"
+				log.Errorf("Auth Error: [ps:%v compile:%v compile1:%v compile2:%v err:%v nums:%v cardType:%v decodeHash:?]", ps, compile, compile1, compile2, err, nums, cardType)
+				goto error
+			}
+			if err = db.Limit(nums).Find(&cardLists, "serial_number = '' AND card_id LIKE ? AND updated_at < ?", cardType, time.Now().Add(-time.Hour*24*31*3)).Error; err != nil {
+				// 不存在则创建
+				msg = "card_error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			} else {
+				kamis := ""
+				if len(cardLists) == 0 {
+					msg = "get_error"
+					log.Errorf("%v: [%v]", msg, "len(cardLists) == 0")
+					goto error
+				}
+
+				for i, card := range cardLists {
+					kamis += fmt.Sprintf("卡号: %v\n密码: %v\n", card.CardID, card.PassWord)
+					cardLists[i].UpdatedAt = time.Now()
+				}
+				if err = db.Save(&cardLists).Error; err != nil {
+					msg = "get_error"
+					log.Errorf("%v: [%v]", msg, err)
+					goto error
+				}
+				kamis += `
+🌹 授权地址：mdm.xrsec.fun
+
+🔥 视频在哪？
+哔哩哔哩：http://b23.tv/BV1Ba411U7wV
+
+💭 功能说明
+查看用户文档：授权地址 -> 验证权限 -> 输入你的序列号 -> 提交
+添加权限：授权地址 -> 添加权限 -> 输入你的卡密和序列号 -> 提交`
+				c.String(http.StatusOK, kamis)
+				return
+			}
+
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
+		isNotCurlR.GET("/cardDel", func(c *gin.Context) {
+			cardID := strings.ToLower(c.Query("card_id"))
+			ps := c.Query("ps")
+			msg := ""
+			var cards Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			if cardID == "" || ps == "" || !compile || !compile1 || err != nil || !decodeHash("", ps) {
+				msg = "auth_error"
+				log.Errorf("Auth Error: [card_id:%v ps:%v compile:%v compile1:%v err:%v decodeHash:?]", cardID, ps, compile, compile1, err)
+				goto error
+			}
+
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				msg = "card_error"
+				log.Errorf("%v: [%v]", msg, err)
+				goto error
+			} else {
+				cards.SerialNumber = ""
+				if err = db.Save(&cards).Error; err != nil {
+					msg = fmt.Sprintf("Save cards Error: [%v]", err)
+					log.Errorln(msg)
+					goto error
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"card": cards,
+			})
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+				"card": cards,
+			})
+			return
+		})
+		isNotCurlR.GET("/cardUpdate", func(c *gin.Context) {
+			cardID := strings.ToLower(c.Query("card_id"))
+			password := strings.ToLower(c.Query("password"))
+			ps := c.Query("ps")
+			msg := ""
+			var cards Cards
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			compile1, err := regexp.MatchString(`(\w|\d){5,10}`, cardID)
+			compile2, err := regexp.MatchString(`(\w|\d){15}`, password)
+			if !compile || !compile1 || !compile2 || ps == "" || cardID == "" || password == "" || !decodeHash("", ps) {
+				msg = "auth_error"
+				log.Errorf("Auth Error: [compile:%v compile1:%v compile2:%v ps:%v card_id:%v password:%v decodeHash:?]", compile, compile1, compile2, ps, cardID, password)
+				goto error
+			}
+			// 查询卡密信息
+			if err = db.First(&cards, "LOWER(card_id) = ?", cardID).Error; err != nil {
+				// 不存在则创建
+				if err = db.Create(&Cards{CardID: cardID, PassWord: password, SerialNumber: ""}).Error; err != nil {
+					msg = fmt.Sprintf("Create Error: [%v]", err)
+					log.Errorln(msg)
+					goto error
+				}
+			} else {
+				if cards.SerialNumber != "" {
+					msg = "card_used"
+					cards.SerialNumber = ""
+					//goto error
+				}
+				cards.PassWord = password
+
+				if err = db.Save(&cards).Error; err != nil {
+					msg = fmt.Sprintf("Save cards Error: [%v]", err)
+					log.Errorln(msg)
+					goto error
+				}
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"msg":  msg,
+				"card": cards,
+			})
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+				"card": cards,
+			})
+		})
+	}
+	r.NoRoute(func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
+		c.AbortWithStatus(http.StatusServiceUnavailable)
+		return
+	})
+
+	// 启动 HTTP 服务器
+	fmt.Printf("Server Start: http://%v:%v\n", getClientIp(), serverPort)
+
+	if err := r.Run(":" + serverPort); err != nil {
+		log.Errorf("HTTP server error: %v\n", err)
+	}
 }

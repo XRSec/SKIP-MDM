@@ -1,0 +1,36 @@
+name: backup-mysql
+on:
+  schedule:
+    # Run at 7:00 UTC every day
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
+jobs:
+  run_mysqldump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+      - name: Dump database
+        env:
+          MYSQL_PWD: ${{ secrets.MYSQL_PWD }}
+        run: |
+          cd custom/sync/
+          go mod tidy
+          # go run syncSql.go
+          # go run mysql2postgre.go || echo "mysql2postgre.go failed"
+          cd -
+          mysqldump \
+            -u "${{ secrets.MYSQL_USER }}" \
+            -h "${{ secrets.MYSQL_HOST }}" \
+            -P "${{ secrets.MYSQL_PORT }}" \
+            --single-transaction --skip-add-locks --no-tablespaces \
+            --triggers --routines --events --set-gtid-purged=OFF \
+            --verbose \
+            "${{ secrets.MYSQL_DATABASE }}" \
+            | bzip2 -c > ".github/$(date +%u).sql.bz2"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "Backup database by Action" -a
+          git push
