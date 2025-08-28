@@ -68,10 +68,10 @@ var i18n = map[int]map[string]string{
 		// disableSip
 		"disabled_sip":         "Disabling SIP...",
 		"disabled_sip_1":       "If [y/n], enter y & press enter",
-		"disabled_sip_2":       "[usr] enter u name, [pwd] enter u pwd & press enter",
+		"disabled_sip_2":       "[usr] enter name, [pwd] enter pwd & press enter",
 		"disabled_sip_run_err": "SIP disable fail",
 		"disabled_sip_err":     "Fail 2 disable SIP",
-		"re_goto_recovery":     "Start normally 2 desktop, then shut down, & enter recovery mode.",
+		"re_goto_recovery":     "Start normally, shut down, enter recovery mode.",
 		"disabled_sip_ok":      "SIP disabled",
 		// enableSip
 		"enabled_sip":         "Enabling SIP...",
@@ -102,7 +102,7 @@ var i18n = map[int]map[string]string{
 		// findOSPATH
 		"find_os_path_err": "Fail 2 find sys path",
 		"find_os_path_1":   "Sys disk not found.",
-		"find_os_path_2":   "Multiple sys disks found. Common startup disk: Macintosh HD. Select u disk: ",
+		"find_os_path_2":   "Multiple sys disks found. Common: Macintosh HD. Select u disk: ",
 		"in_put_err":       "Input error!",
 		"os_path":          "Sys Path: ",
 
@@ -112,20 +112,20 @@ var i18n = map[int]map[string]string{
 
 		// cleanMdm
 		"cleaning_mdm":    "Clearing regulatory subs",
-		"cleaned_mdm":     "Regulatory sub cleared. Contact admin 4 updates if needed.",
+		"cleaned_mdm":     "Regulatory sub cleared. Contact admin if needed.",
 		"reboot_by_clean": "Restart computer.",
 
 		// checkDiskEncryption
-		"cant_find_mdm":   "Admin folder not found. Contact Admin Updater.",
-		"disk_encryption": "Exit terminal, use Disk Utility 2 expand all disks, find % v-DATA, select mount, then return 2 terminal & rerun program.",
+		"cant_find_mdm":   "Admin folder not found. Contact admin.",
+		"disk_encryption": "Exit terminal, use Disk Utility 2 expand disks, find %v-DATA, mount, return 2 terminal & rerun.",
 
 		// disableMdm
 		"disabling_mdm":           "Deactivating regulatory process",
-		"delete_mdm_file_err":     "Fail 2 delete supervision file. Restart & enter recovery mode 2 disable supervision.",
-		"delete_mdm_database_err": "Fail 2 delete supervision database. Restart & enter recovery mode 2 disable supervision.",
+		"delete_mdm_file_err":     "Fail 2 delete supervision file. Restart & enter recovery 2 disable.",
+		"delete_mdm_database_err": "Fail 2 delete supervision db. Restart & enter recovery 2 disable.",
 		"get_user_info_err":       "Can't get usr info",
 		"disabled_mdm_ok":         "Regulatory deactivation complete",
-		"reboot_by_disable":       "Restart computer. Run program in desktop mode & choose 2 disable supervision.",
+		"reboot_by_disable":       "Restart. Run program in desktop & choose 2 disable supervision.",
 		"read_user_doc":           "Click link 2 open usr doc: ",
 
 		// SetHosts
@@ -149,7 +149,7 @@ var i18n = map[int]map[string]string{
 		"input_sn":      "Enter serial number",
 		"sn_not_pair":   "Serial numbers do not match",
 		"get_auth_err":  "Fail 2 get authorization!",
-		"sn_not_pair_1": "Serial number mismatch, no damage. Contact admin",
+		"sn_not_pair_1": "SN mismatch, no damage. Contact admin",
 
 		// AuthSN
 		"decode_date_err": "Parsing packet fail",
@@ -170,13 +170,13 @@ var i18n = map[int]map[string]string{
 		"cleaned_wifi":  "Wi-Fi clean complete",
 
 		// menuBypassMacos13Step1
-		"bypassing_macos_13_step_1": "Preparing macOS 13 Bypass Work 1!",
+		"bypassing_macos_13_step_1": "Preparing macOS 13 Bypass Step 1!",
 		"changing_root_password":    "Changing root pwd (no spaces)",
 		"input_root_password":       "Set root pwd: ",
 		"root_password":             "ROOT PWD: ",
-		"reset_root_password_ok":    "Reset complete. Remember this pwd. Create a usr.",
-		"reboot_by_bypass":          "Start page, press Ctrl+Cmd+T, open terminal, click Apple logo, open settings, find usrs & groups, create admin usr 'root' with this pwd!",
-		"reboot_by_bypass_1":        "New usr is admin. After, enter recovery mode & select (macOS 13 Bypass step 2)",
+		"reset_root_password_ok":    "Reset done. Remember pwd. Create usr.",
+		"reboot_by_bypass":          "Start page, press Ctrl+Cmd+T, open terminal, Apple logo, settings, usrs & groups, create admin 'root' with pwd!",
+		"reboot_by_bypass_1":        "New usr is admin. Enter recovery & select (macOS 13 Bypass step 2)",
 
 		//deleteUser
 		"delete_user_start": "Deleting usr. Choose usr 2 delete",
@@ -195,9 +195,9 @@ var i18n = map[int]map[string]string{
 		"get_os_version_err": "Get sys version fail",
 		"parse_version_err":  "Parsing sys version fail",
 		// menuByPassMacos13Step2
-		"bypassing_macos_13_step_2":  "Preparing macOS 13 Bypass Work 2!",
+		"bypassing_macos_13_step_2":  "Preparing macOS 13 Bypass Step 2!",
 		"perfecting_macos13_install": "Perfecting macOS 13 install",
-		"reboot_by_step2":            "Restart & execute after system entry (disable root login)",
+		"reboot_by_step2":            "Restart & execute after sys entry (disable root login)",
 
 		// menuDisableRoot
 		"disabling_root":        "Disabling root login",
@@ -205,7 +205,7 @@ var i18n = map[int]map[string]string{
 		"input_your_password":   "Enter u pwd: ",
 		"disable_root_err":      "Fail 2 disable root login!",
 		"disable_root_err_pass": "Fail 2 disable root login! Check pwd: ",
-		"disable_root_ok":       "Root login disabled! Complete clean-up supervision (more people choose)",
+		"disable_root_ok":       "Root login disabled! Complete clean-up supervision (popular choice)",
 
 		// menuAddHosts
 		"adding_hosts": "Blocking Apple services",
@@ -217,14 +217,14 @@ var i18n = map[int]map[string]string{
 
 		// menuDeleteAppleDone
 		"deleting_apple_done": "Removing Apple Setup done",
-		"deleted_apple_done":  "Apple install lock file deleted. Restart 2 enter Hello installation page",
+		"deleted_apple_done":  "Apple install lock deleted. Restart 2 enter Hello page",
 
 		// menuTouchAppleDone
 		"touching_apple_done": "Creating Apple Setup done",
-		"touched_apple_done":  "Apple install lock file created. Restart 2 enter Hello installation page",
+		"touched_apple_done":  "Apple install lock created. Restart 2 enter Hello page",
 
 		// menuNewMachine
-		"new_machine": "New machine mode! Apple server blocked. If issues, select: Clear HOSTS shield (Apple service related)",
+		"new_machine": "New machine mode! Apple server blocked. If issues: Clear HOSTS shield",
 
 		// menuExit
 		"exiting": "EXITING...",
@@ -234,18 +234,18 @@ var i18n = map[int]map[string]string{
 		"choose_options":    "   AVAILABLE FOR SELECTION:",
 		"disable_mdm":       "Disable MDM/DEP (More People Choose)",
 		"clean_mdm":         "Clean MDM_Agent (Installed Profile)",
-		"bypass_install_1":  "Bypass Installation Step 1 (macOS > 12)",
-		"bypass_install_2":  "Bypass Installation Step 2 (macOS > 12)",
+		"bypass_install_1":  "Bypass Install Step 1 (macOS > 12)",
+		"bypass_install_2":  "Bypass Install Step 2 (macOS > 12)",
 		"disable_root":      "Disable Root Account (macOS version > 12)",
-		"clean_wifi":        "Clean Wi-Fi data (stuck in install supervision page)",
+		"clean_wifi":        "Clean Wi-Fi data (stuck in supervision page)",
 		"add_hosts":         "Block Apple MDM/DEP HOSTS",
-		"clean_hosts":       "Clear HOSTS Shielding (Apple service related)",
+		"clean_hosts":       "Clear HOSTS Shield (Apple service)",
 		"delete_apple_lock": "Delete Apple Install Lock (Go to Hello Page)",
 		"touch_apple_lock":  "Create Apple Install Lock (Go to Login Page)",
 		"new_user":          "Create New Usr",
 		"exit":              "Exit Operation",
 		"choose_menu":       "   Select one: ",
-		"new_menu":          "Congrats on discovering a new continent!",
+		"new_menu":          "Congrats on discovering new continent!",
 		"delete_user":       "Delete Usr",
 	},
 	1: {
