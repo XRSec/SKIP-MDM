@@ -58,7 +58,7 @@ var (
 var i18n = map[int]map[string]string{
 	0: {
 		// init
-		"cant_get_user_info":   "Unable 2 get current usr info.",
+		"cant_get_user_info":   "Can't get current usr info.",
 		"please_use_root":      "Plz use root usr 2 rerun.",
 		"debug_mode_opened":    "Dbg mode is on.",
 		"menu_all_mode_opened": "Menu All mode on.",
@@ -67,92 +67,92 @@ var i18n = map[int]map[string]string{
 
 		// disableSip
 		"disabled_sip":         "Disabling SIP...",
-		"disabled_sip_1":       "If [y/n], enter y & enter",
-		"disabled_sip_2":       "[usr] enter u name,[pwd] enter u pwd & enter",
-		"disabled_sip_run_err": "SIP disable failed",
-		"disabled_sip_err":     "Failed 2 disable SIP",
-		"re_goto_recovery":     "Start normally to desktop, then shut down, & enter recovery mode.",
+		"disabled_sip_1":       "If [y/n], enter y & press enter",
+		"disabled_sip_2":       "[usr] enter u name, [pwd] enter u pwd & press enter",
+		"disabled_sip_run_err": "SIP disable fail",
+		"disabled_sip_err":     "Fail 2 disable SIP",
+		"re_goto_recovery":     "Start normally 2 desktop, then shut down, & enter recovery mode.",
 		"disabled_sip_ok":      "SIP disabled",
 		// enableSip
 		"enabled_sip":         "Enabling SIP...",
-		"enabled_sip_run_err": "SIP enable failed",
-		"enabled_sip_err":     "Failed 2 enable SIP",
+		"enabled_sip_run_err": "SIP enable fail",
+		"enabled_sip_err":     "Fail 2 enable SIP",
 		"enabled_sip_run_ok":  "SIP enabled",
 
 		// getSip
 		"get_sip":          "Querying SIP status",
 		"get_sip_1":        "Dual system might be inaccurate!",
-		"get_sip_run_err":  "Query SIP failed",
+		"get_sip_run_err":  "Query SIP fail",
 		"get_sip_disabled": "SIP disabled",
 		"get_sip_enabled":  "SIP enabled",
 
 		// execCmd
-		"exec_cmd_run_err": "Run Failed",
+		"exec_cmd_run_err": "Run Fail",
 
 		// findAndDelete
-		"read_dir_err": "Dir read failed, Don't worry",
+		"read_dir_err": "Dir read fail, Don't worry",
 
 		// deleteFile
-		"delete_file_err": "File delete failed",
+		"delete_file_err": "File delete fail",
 
 		// handleError
 		"permission_denied": "Permission denied",
 		"file_not_found":    "File not found, Don't worry.",
 
 		// findOSPATH
-		"find_os_path_err": "Failed to find sys path",
+		"find_os_path_err": "Fail 2 find sys path",
 		"find_os_path_1":   "Sys disk not found.",
-		"find_os_path_2":   "Multiple sys disks found. Common startup disk: Macintosh HD. Select your disk: ",
+		"find_os_path_2":   "Multiple sys disks found. Common startup disk: Macintosh HD. Select u disk: ",
 		"in_put_err":       "Input error!",
 		"os_path":          "Sys Path: ",
 
 		// checkUser
-		"check_user": "   Multiple users found, please select your user: ",
-		"user_name":  "User Name: ",
+		"check_user": "   Multiple users found, plz select u usr: ",
+		"user_name":  "Usr Name: ",
 
 		// cleanMdm
 		"cleaning_mdm":    "Clearing regulatory subs",
-		"cleaned_mdm":     "Regulatory sub cleared. Contact admin for updates if needed.",
+		"cleaned_mdm":     "Regulatory sub cleared. Contact admin 4 updates if needed.",
 		"reboot_by_clean": "Restart computer.",
 
 		// checkDiskEncryption
 		"cant_find_mdm":   "Admin folder not found. Contact Admin Updater.",
-		"disk_encryption": "Exit terminal, use Disk Utility to expand all disks, find % v-DATA, select mount, then return to terminal & rerun program.",
+		"disk_encryption": "Exit terminal, use Disk Utility 2 expand all disks, find % v-DATA, select mount, then return 2 terminal & rerun program.",
 
 		// disableMdm
 		"disabling_mdm":           "Deactivating regulatory process",
-		"delete_mdm_file_err":     "Failed to delete supervision file. Restart & enter recovery mode to disable supervision.",
-		"delete_mdm_database_err": "Failed to delete supervision database. Restart & enter recovery mode to disable supervision.",
-		"get_user_info_err":       "Unable 2 get user info",
+		"delete_mdm_file_err":     "Fail 2 delete supervision file. Restart & enter recovery mode 2 disable supervision.",
+		"delete_mdm_database_err": "Fail 2 delete supervision database. Restart & enter recovery mode 2 disable supervision.",
+		"get_user_info_err":       "Can't get usr info",
 		"disabled_mdm_ok":         "Regulatory deactivation complete",
 		"reboot_by_disable":       "Restart computer. Run program in desktop mode & choose 2 disable supervision.",
-		"read_user_doc":           "Click link 2 open user doc: ",
+		"read_user_doc":           "Click link 2 open usr doc: ",
 
 		// SetHosts
-		"cant_open_hosts":   "Unable 2 open hosts file:",
-		"close_hosts_err":   "Failed 2 close hosts file:",
-		"cant_create_temp":  "Unable 2 create temp file:",
-		"write_temp_err":    "Failed 2 write temp file:",
-		"close_temp_err":    "Failed 2 close temp file:",
-		"replace_hosts_err": "Failed 2 replace hosts file:",
+		"cant_open_hosts":   "Can't open hosts file:",
+		"close_hosts_err":   "Fail 2 close hosts file:",
+		"cant_create_temp":  "Can't create temp file:",
+		"write_temp_err":    "Fail 2 write temp file:",
+		"close_temp_err":    "Fail 2 close temp file:",
+		"replace_hosts_err": "Fail 2 replace hosts file:",
 
 		// getLanguage
-		"create_request_err":  "Failed 2 create request",
-		"network_request_err": "Network request failed",
-		"closes_body_err":     "Failed 2 close Body",
-		"read_data_err":       "Failed 2 read packet",
+		"create_request_err":  "Fail 2 create request",
+		"network_request_err": "Network request fail",
+		"closes_body_err":     "Fail 2 close Body",
+		"read_data_err":       "Fail 2 read packet",
 
 		// getServerIP
-		"get_server_ip_err": "Failed 2 get server IP",
+		"get_server_ip_err": "Fail 2 get server IP",
 
 		// getSN
 		"input_sn":      "Enter serial number",
 		"sn_not_pair":   "Serial numbers do not match",
-		"get_auth_err":  "Failed 2 get authorization!",
+		"get_auth_err":  "Fail 2 get authorization!",
 		"sn_not_pair_1": "Serial number mismatch, no damage. Contact admin",
 
 		// AuthSN
-		"decode_date_err": "Parsing packet failed",
+		"decode_date_err": "Parsing packet fail",
 		"pass_not_found":  "Password not found",
 
 		// menuDisableSip
@@ -171,29 +171,29 @@ var i18n = map[int]map[string]string{
 
 		// menuBypassMacos13Step1
 		"bypassing_macos_13_step_1": "Preparing macOS 13 Bypass Work 1!",
-		"changing_root_password":    "Changing root password (no spaces)",
-		"input_root_password":       "Set root password: ",
-		"root_password":             "ROOT PASSWORD: ",
-		"reset_root_password_ok":    "Reset complete. Remember this password. Create a user.",
-		"reboot_by_bypass":          "Start page, press Ctrl+Cmd+T, open terminal, click Apple logo, open settings, find users & groups, create admin user 'root' with this password!",
-		"reboot_by_bypass_1":        "New user is admin. After, enter recovery mode & select (macOS 13 Bypass step 2)",
+		"changing_root_password":    "Changing root pwd (no spaces)",
+		"input_root_password":       "Set root pwd: ",
+		"root_password":             "ROOT PWD: ",
+		"reset_root_password_ok":    "Reset complete. Remember this pwd. Create a usr.",
+		"reboot_by_bypass":          "Start page, press Ctrl+Cmd+T, open terminal, click Apple logo, open settings, find usrs & groups, create admin usr 'root' with this pwd!",
+		"reboot_by_bypass_1":        "New usr is admin. After, enter recovery mode & select (macOS 13 Bypass step 2)",
 
 		//deleteUser
-		"delete_user_start": "Deleting user. Choose user to delete",
-		"delete_user_ok":    "User deleted",
+		"delete_user_start": "Deleting usr. Choose usr 2 delete",
+		"delete_user_ok":    "Usr deleted",
 
 		// menuNewUser
 		"temp_user_name": "Create an admin acct & then delete the usr.",
 
 		// menuSupplier
 		"supplier_mode_now": "Currently in special supplier mode.",
-		"creating_user":     "Creating user",
-		"password":          "PASSWORD: ",
+		"creating_user":     "Creating usr",
+		"password":          "PWD: ",
 		"supplier_mode_ok":  "Supplier, regulatory process complete!",
 
 		// productVersion
-		"get_os_version_err": "Get sys version failed",
-		"parse_version_err":  "Parsing sys version failed",
+		"get_os_version_err": "Get sys version fail",
+		"parse_version_err":  "Parsing sys version fail",
 		// menuByPassMacos13Step2
 		"bypassing_macos_13_step_2":  "Preparing macOS 13 Bypass Work 2!",
 		"perfecting_macos13_install": "Perfecting macOS 13 install",
@@ -202,9 +202,9 @@ var i18n = map[int]map[string]string{
 		// menuDisableRoot
 		"disabling_root":        "Disabling root login",
 		"run_normal":            "Run in desktop mode",
-		"input_your_password":   "Enter your password: ",
-		"disable_root_err":      "Failed 2 disable root login!",
-		"disable_root_err_pass": "Failed 2 disable root login! Check password: ",
+		"input_your_password":   "Enter u pwd: ",
+		"disable_root_err":      "Fail 2 disable root login!",
+		"disable_root_err_pass": "Fail 2 disable root login! Check pwd: ",
 		"disable_root_ok":       "Root login disabled! Complete clean-up supervision (more people choose)",
 
 		// menuAddHosts
@@ -242,11 +242,11 @@ var i18n = map[int]map[string]string{
 		"clean_hosts":       "Clear HOSTS Shielding (Apple service related)",
 		"delete_apple_lock": "Delete Apple Install Lock (Go to Hello Page)",
 		"touch_apple_lock":  "Create Apple Install Lock (Go to Login Page)",
-		"new_user":          "Create New User",
+		"new_user":          "Create New Usr",
 		"exit":              "Exit Operation",
 		"choose_menu":       "   Select one: ",
 		"new_menu":          "Congrats on discovering a new continent!",
-		"delete_user":       "Delete User",
+		"delete_user":       "Delete Usr",
 	},
 	1: {
 		// init
@@ -366,7 +366,7 @@ var i18n = map[int]map[string]string{
 		"changing_root_password":    "正在修改 root 用户密码 (不要使用空格)",
 		"input_root_password":       "   请设置root密码: ",
 		"root_password":             "root密码: ",
-		"reste_root_password_ok":    "重置完成, 请记住这个密码，创建用户时需要!",
+		"reset_root_password_ok":    "重置完成, 请记住这个密码，创建用户时需要!",
 		"reboot_by_bypass":          "在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！",
 		"reboot_by_bypass_1":        "新建用户类型为管理员，操作完成后进入恢复模式，选择 (macOS13绕过步骤2)",
 
