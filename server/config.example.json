@@ -1,0 +1,24 @@
+{
+    "database": {
+        "host": "localhost",
+        "port": 3306,
+        "username": "root",
+        "password": "your_password_here",
+        "database": "mdm_logs",
+        "charset": "utf8mb4"
+    },
+    "server": {
+        "host": "0.0.0.0",
+        "port": 8080,
+        "read_timeout": 30,
+        "write_timeout": 30
+    },
+    "auth": {
+        "secret_key": "m'd'm",
+        "token_ttl_minutes": 10
+    },
+    "logging": {
+        "level": "info",
+        "file": "/var/log/mdm-server.log"
+    }
+}

@@ -1,5 +1,7 @@
-module mdm
+module mdm-client
 
-go 1.20
+go 1.21
 
-require howett.net/plist v1.0.1
+require (
+    howett.net/plist v1.0.0
+)

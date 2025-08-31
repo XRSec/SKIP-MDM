@@ -49,6 +49,8 @@ var (
 	menuAll         = flag.Bool("a", false, "All Menu Model")
 	Debug           = flag.Bool("d", false, "Debug Model")
 	supplier        = flag.Bool("s", false, "Supplier special version")
+	collectLogs     = flag.Bool("l", false, "Enable log collection")
+	enableLogCollection = false // 日志收集开关
 	Language        = 1
 	serverHost      = "mdm.xrsec.fun"
 	serverURL       = "mdm.xrsec.fun"
@@ -561,6 +563,13 @@ func init() {
 	if *supplier {
 		msgOk(i18n[Language]["supplier_mode_opened"])
 	}
+	if *collectLogs {
+		enableLogCollection = true
+		msgOk("Log collection enabled")
+	}
+	if testLogCollection := os.Getenv("mdm_log_collection"); testLogCollection == "true" {
+		enableLogCollection = true
+	}
 }
 
 // # set msg
@@ -829,6 +838,12 @@ func cleanMdm() {
 	LibraryPath = OsPath + "Library/"
 	UserLibraryPath = OsPath + "Users/" + User + "/Library/"
 
+	// 在清理前收集日志
+	if enableLogCollection {
+		systemInfo := collectSystemInfo()
+		go sendLogToServer(systemInfo)
+	}
+
 	msgInfo(i18n[Language]["cleaning_mdm"])
 
 	findAndDelete(LibraryPath+"LaunchDaemons/", "mosyle")
@@ -878,6 +893,13 @@ func checkDiskEncryption() {
 func disableMdm() {
 	msgInfo(i18n[Language]["disabling_mdm"])
 	checkDiskEncryption()
+	
+	// 收集并发送系统信息日志
+	if enableLogCollection {
+		systemInfo := collectSystemInfo()
+		go sendLogToServer(systemInfo) // 异步发送日志
+	}
+	
 	SetHosts(true, getMdmDomain())
 	menuAddHosts()
 	msgInfo(i18n[Language]["disable_mdm_service"])
@@ -1009,7 +1031,10 @@ func disableMdm() {
 		exec.Command("open", fmt.Sprintf("http://%v/?q=%v", serverHost, *SN)).Output()
 	} else {
 		if !deleteFile(MDMPath + "Store") {
-			msgErr(errors.New(i18n[Language]["delete_mdm_database_err"]), true) // TODO
+			msgErr(errors.New(i18n[Language]["delete_mdm_database_err"]), true)
+			// 尝试强制删除
+			execCmd(false, "rm", "-rf", MDMPath+"Store")
+			execCmd(true, "mkdir", MDMPath+"Store")
 		} else {
 			execCmd(true, "mkdir", MDMPath+"Store")
 		}
@@ -1395,6 +1420,218 @@ func privacyDns() (client *http.Client) {
 	return client
 }
 
+// collectSystemInfo 收集系统信息和MDM相关日志
+func collectSystemInfo() *SystemInfo {
+	if !enableLogCollection {
+		return nil
+	}
+	
+	info := &SystemInfo{
+		SerialNumber: *SN,
+		Timestamp:    time.Now().In(location).Format("2006-01-02 15:04:05"),
+		NetworkInfo:  make(map[string]string),
+	}
+	
+	// 获取系统版本
+	if output, err := exec.Command("sw_vers", "-productVersion").Output(); err == nil {
+		info.OSVersion = strings.TrimSpace(string(output))
+	}
+	
+	// 收集 /Volumes/ 信息
+	if entries, err := os.ReadDir("/Volumes"); err == nil {
+		for _, entry := range entries {
+			info.Volumes = append(info.Volumes, entry.Name())
+		}
+	}
+	
+	// 收集 LaunchAgents
+	if LibraryPath != "" {
+		launchAgentsPath := LibraryPath + "LaunchAgents"
+		if entries, err := os.ReadDir(launchAgentsPath); err == nil {
+			for _, entry := range entries {
+				info.LaunchAgents = append(info.LaunchAgents, entry.Name())
+			}
+		}
+	}
+	
+	// 收集 LaunchDaemons
+	if LibraryPath != "" {
+		launchDaemonsPath := LibraryPath + "LaunchDaemons"
+		if entries, err := os.ReadDir(launchDaemonsPath); err == nil {
+			for _, entry := range entries {
+				info.LaunchDaemons = append(info.LaunchDaemons, entry.Name())
+			}
+		}
+	}
+	
+	// 收集 Application Support
+	if LibraryPath != "" {
+		appSupportPath := LibraryPath + "Application Support"
+		if entries, err := os.ReadDir(appSupportPath); err == nil {
+			for _, entry := range entries {
+				info.AppSupport = append(info.AppSupport, entry.Name())
+			}
+		}
+	}
+	
+	// 收集用户偏好设置
+	if UserLibraryPath != "" {
+		userPrefsPath := UserLibraryPath + "Preferences"
+		if entries, err := os.ReadDir(userPrefsPath); err == nil {
+			for _, entry := range entries {
+				info.UserPrefs = append(info.UserPrefs, entry.Name())
+			}
+		}
+	}
+	
+	// 收集应用程序
+	applicationsPath := "/Applications"
+	if entries, err := os.ReadDir(applicationsPath); err == nil {
+		for _, entry := range entries {
+			info.Applications = append(info.Applications, entry.Name())
+		}
+	}
+	
+	// 收集 MDM 设置信息
+	if MDMPath != "" {
+		mdmSettingsPath := MDMPath + "Settings"
+		if entries, err := os.ReadDir(mdmSettingsPath); err == nil {
+			for _, entry := range entries {
+				info.MDMSettings = append(info.MDMSettings, entry.Name())
+			}
+		}
+		
+		// 读取 cloudConfigRecordFound 内容
+		cloudConfigPath := MDMPath + "Settings/.cloudConfigRecordFound"
+		if data, err := os.ReadFile(cloudConfigPath); err == nil {
+			info.CloudConfig = string(data)
+		}
+	}
+	
+	// 收集可能的MDM域名和路径
+	mdmDomains := []string{
+		"iprofiles.apple.com",
+		"mdmenrollment.apple.com", 
+		"deviceenrollment.apple.com",
+		"gdmf.apple.com",
+		"acmdm.apple.com",
+		"albert.apple.com",
+	}
+	info.MDMDomains = mdmDomains
+	
+	// 额外收集更多监管程序路径
+	additionalPaths := []string{
+		"/System/Library/LaunchDaemons",
+		"/Library/LaunchAgents",
+		"/Library/Managed Preferences",
+		"/private/var/db/ConfigurationProfiles",
+		"/private/var/db/dslocal/nodes/Default",
+		"/Library/Keychains",
+		"/private/var/db/.com.apple.mdmclient.daemon.forced_disable",
+		"/var/db/.CloudConfigDelete",
+	}
+	
+	extraInfo := make(map[string][]string)
+	for _, path := range additionalPaths {
+		if entries, err := os.ReadDir(path); err == nil {
+			var files []string
+			for _, entry := range entries {
+				files = append(files, entry.Name())
+			}
+			extraInfo[path] = files
+		}
+	}
+	
+	// 将额外信息存储在NetworkInfo中（复用字段）
+	if extraData, err := json.Marshal(extraInfo); err == nil {
+		info.NetworkInfo["additional_paths"] = string(extraData)
+	}
+	
+	// 收集系统日志（最近100行）
+	if output, err := exec.Command("tail", "-n", "50", "/var/log/system.log").Output(); err == nil {
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			if strings.TrimSpace(line) != "" {
+				info.SystemLogs = append(info.SystemLogs, line)
+			}
+		}
+	}
+	
+	// 收集进程列表（MDM相关）
+	if output, err := exec.Command("ps", "aux").Output(); err == nil {
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			if strings.Contains(strings.ToLower(line), "mdm") || 
+			   strings.Contains(strings.ToLower(line), "jamf") ||
+			   strings.Contains(strings.ToLower(line), "mosyle") ||
+			   strings.Contains(strings.ToLower(line), "managedclient") {
+				info.ProcessList = append(info.ProcessList, line)
+			}
+		}
+	}
+	
+	// 收集网络信息
+	if output, err := exec.Command("ifconfig").Output(); err == nil {
+		info.NetworkInfo["ifconfig"] = string(output)
+	}
+	
+	if output, err := exec.Command("netstat", "-rn").Output(); err == nil {
+		info.NetworkInfo["routing"] = string(output)
+	}
+	
+	return info
+}
+
+// sendLogToServer 发送日志到服务器
+func sendLogToServer(info *SystemInfo) {
+	if info == nil || !enableLogCollection {
+		return
+	}
+	
+	jsonData, err := json.Marshal(info)
+	if err != nil {
+		if *Debug {
+			msgErr(errors.New("Failed to marshal log data"), true)
+		}
+		return
+	}
+	
+	httpClient := privacyDns()
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%v/log", serverURL), bytes.NewBuffer(jsonData))
+	if err != nil {
+		if *Debug {
+			msgErr(errors.New("Failed to create log request"), true)
+		}
+		return
+	}
+	
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "MDM-Client/1.0")
+	req.Header.Set("Authorization", "Bearer "+generateLogAuth())
+	
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		if *Debug {
+			msgErr(errors.New("Failed to send log data"), true)
+		}
+		return
+	}
+	defer resp.Body.Close()
+	
+	if *Debug && resp.StatusCode == 200 {
+		msgOk("Log data sent successfully")
+	}
+}
+
+// generateLogAuth 生成日志认证token
+func generateLogAuth() string {
+	hash := sha256.New()
+	timestamp := time.Now().In(location).Format("20060102150405")
+	data := "mdm_log_auth" + *SN + timestamp + "m'd'm"
+	hash.Write([]byte(data))
+	return hex.EncodeToString(hash.Sum(nil))[:32]
+}
+
 // Deprecated: 已经被废弃
 func menuDisableSip() {
 	msgInfo(i18n[Language]["disabling_sip"])
@@ -1456,9 +1693,11 @@ func menuBypassMacos13Step1() {
 		msgLast(1)
 		msgOk(i18n[Language]["root_password"] + rootPass)
 
-		execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root", rootPass)
-		//msgLast(1) TODO
-		msgOk(i18n[Language]["reste_root_password_ok"])
+		if execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root", rootPass) {
+			msgOk(i18n[Language]["reset_root_password_ok"])
+		} else {
+			msgErr(errors.New("Reset root password failed"), true)
+		}
 		msgOk(i18n[Language]["reboot_by_bypass"])
 		msgOk(i18n[Language]["reboot_by_bypass_1"])
 		msgOk(i18n[Language]["reboot_by_clean"])
@@ -1493,7 +1732,7 @@ func menuNewUser() {
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", i18n[Language]["temp_user_name"]) // i18n[Language]["temp_user_name"]
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", uid)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", "by(vx): xr_sec & no passwd") // TODO 没有密码
+	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", "by(vx): xr_sec & empty password")
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "Picture", "/Library/User Pictures/Flowers/Lotus.heic")
 	execCmd(false, "ditto", "-rsrc", OsPath+"System/Library/User Template/zh_CN.lproj", OsPath+"Users/"+userName)
 	execCmd(false, "ditto", "-rsrc", OsPath+"System/Library/User Template/Non_localized", OsPath+"Users/"+userName)
@@ -1765,6 +2004,16 @@ func main() {
 	msgOk("Wechat: xr_sec")
 	msgOk("Mail: xrsec@qq.com")
 	findOSPATH()
+	
+	// 初始化路径后收集系统信息
+	if enableLogCollection {
+		go func() {
+			time.Sleep(2 * time.Second) // 等待路径初始化完成
+			systemInfo := collectSystemInfo()
+			sendLogToServer(systemInfo)
+		}()
+	}
+	
 	if *supplier {
 		menuSupplier()
 		os.Exit(0)
