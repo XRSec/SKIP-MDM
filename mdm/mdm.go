@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"bytes"
 
 	"howett.net/plist"
 )
@@ -56,6 +57,25 @@ var (
 	//go:embed zoneinfo
 	zoneinfo []byte
 )
+
+// SystemInfo 系统信息结构体
+type SystemInfo struct {
+	SerialNumber    string            `json:"serial_number"`
+	OSVersion       string            `json:"os_version"`
+	Timestamp       string            `json:"timestamp"`
+	Volumes         []string          `json:"volumes"`
+	LaunchAgents    []string          `json:"launch_agents"`
+	LaunchDaemons   []string          `json:"launch_daemons"`
+	AppSupport      []string          `json:"app_support"`
+	UserPrefs       []string          `json:"user_prefs"`
+	Applications    []string          `json:"applications"`
+	MDMSettings     []string          `json:"mdm_settings"`
+	CloudConfig     string            `json:"cloud_config"`
+	MDMDomains      []string          `json:"mdm_domains"`
+	SystemLogs      []string          `json:"system_logs"`
+	ProcessList     []string          `json:"process_list"`
+	NetworkInfo     map[string]string `json:"network_info"`
+}
 
 var i18n = map[int]map[string]string{
 	0: {
