@@ -1,4 +1,0 @@
-#!/bin/bash
-#export PATH="$PWD:$PATH" # 腾讯云函数自动设置当前路径为环境变量
-cp server.db /tmp/ && touch /tmp/app.log && chmod +x ./mdm-linux-amd64
-./mdm-linux-amd64

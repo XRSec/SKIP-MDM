@@ -1,5 +1,0 @@
-FROM scratch
-WORKDIR /app
-ENV TZ=Asia/Shanghai
-COPY ./mdm-linux-amd64 /mdm-linux-amd64
-ENTRYPOINT ["/mdm-linux-amd64"]
