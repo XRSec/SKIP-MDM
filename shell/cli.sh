@@ -1,6 +1,5 @@
 #!/bin/bash
 set +exv
-
 export CLICOLOR=1
 export LSCOLORS=GxFxCxDxBxegedabagaced
 COL_NC='\033[0m' # No Color
@@ -63,10 +62,15 @@ dict() {
 }
 
 fetch() {
+  local url="$1"
+  local timeout="${2:-5}"
+  local retries="${3:-2}"
+  local maxtime="${4:-30}"
+
   if command -v curl >/dev/null 2>&1; then
-    curl -ksSL "$@"
+    curl -ksSL --retry "$retries" --retry-delay 0 --connect-timeout "$timeout" "$url"
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO- "$@"
+    wget --connect-timeout="$timeout" --tries=$((retries+1)) --waitretry=0 -qO- "$url"
   else
     return 1
   fi
@@ -94,7 +98,7 @@ checkUser() {
 
 if [ -z "$mdm_lang" ]; then
   mdm_lang=1
-  response="$(fetch 'http://ip-api.com/json?lang=zh-CN&fields=country' || echo "中国")"
+  response="$(fetch 'http://ip-api.com/json?lang=zh-CN&fields=country' 3 1 5 || echo "中国")"
   case "$response" in
     *中国*) mdm_lang=1 ;;
     *) mdm_lang=0 ;;
@@ -139,11 +143,11 @@ export mdm_server
 #fi
 
 if [ -e "${exePATH}" ]; then
-  lastID="$(fetch "http://${mdm_server}/getLatestID?serial_number=${serial_number}&arch=${ARCH}")"
+  lastID="$(fetch "http://${mdm_server}/getLatestID?serial_number=${serial_number}&arch=${ARCH}" 5 2 20)"
   if [ -n "$lastID" ]; then
     if [[ "${lastID}" != "$(checksum "${exePATH}" | awk '{print $4}')" ]]; then
-      fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" > "${exePATH}" \
-        || fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true" > "${exePATH}" \
+      fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" 5 2 20 > "${exePATH}" \
+        || fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true" 5 2 20 > "${exePATH}" \
         || msg_err "$(dict $((mdm_lang+21)))"
       msg_ok "$(dict $((mdm_lang+11)))"
     else
@@ -153,8 +157,8 @@ if [ -e "${exePATH}" ]; then
     msg_err "$(dict $((mdm_lang+13)))"
   fi
 else
-  fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" > "${exePATH}" \
-    || fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true" > "${exePATH}" \
+  fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}" 5 2 20 > "${exePATH}" \
+    || fetch "http://${mdm_server}/getLatest?serial_number=${serial_number}&arch=${ARCH}&file=true" 5 2 20 > "${exePATH}" \
     || msg_err "$(dict $((mdm_lang+21)))"
 fi
 

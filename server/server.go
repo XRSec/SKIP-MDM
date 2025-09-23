@@ -860,8 +860,8 @@ func main() {
 
 			if msg2, users, status := checkAuch(c); status {
 				if files == "true" {
-					//c.File("mdm-darwin-" + arch)
-					c.File("mdm-darwin-universal")
+					c.File("mdm-darwin-" + arch)
+					//c.File("mdm-darwin-universal")
 				} else {
 					c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-"+arch)
 					//c.Redirect(http.StatusFound, "https://xrsec.s3.bitiful.net/MDM/mdm-darwin-universal")
