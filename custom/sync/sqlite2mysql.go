@@ -1,6 +1,8 @@
 package main
 
 import (
+	. "mdm_sync/custom"
+
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -8,7 +10,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	. "mdm_sync/custom"
 )
 
 func main() {

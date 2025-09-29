@@ -35,7 +35,7 @@ ikuai:
 getMD5:
 	@md5sum mdm-darwin-arm64 | cut -d ' ' -f1 > mdm-darwin-arm64.md5
 	@md5sum mdm-darwin-amd64 | cut -d ' ' -f1 > mdm-darwin-amd64.md5
-	@md5sum mdm-darwin-universal | cut -d ' ' -f1 > mdm-darwin-universal.md5
+	@#md5sum mdm-darwin-universal | cut -d ' ' -f1 > mdm-darwin-universal.md5
 	@cp -v mdm-darwin-*.md5 server/
 
 mdm.copyFile:
@@ -183,8 +183,12 @@ n1:
 	@echo "all done"
 
 scf:
+	@cd custom/sync && go run mysql2sqlite.go && cd -
+	@$(MAKE) scf.debug
+	@rm -rfv mdm-*-*
+
+scf.debug:
 	@$(MAKE) dockerStart
-	@rm -f scf.zip
 	@$(MAKE) buildServer
 	@$(MAKE) buildClient
 	@if [[ ! -f "server/bash-obfuscate" ]]; then make pkgObfuscate; fi
@@ -192,28 +196,11 @@ scf:
 	@$(MAKE) scf.upload
 	@chmod +x server/scf_bootstrap mdm-linux-amd64
 	@$(MAKE) deleteDsStore
-	@cd custom/sync && go run mysql2sqlite.go && cd -
 	@#zip -9 -j scf.zip server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate mdm-*-*
 	@#zip -9 -r scf.zip html
 	@cp -r server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate mdm-*-* src
 	@cp -r html src
-	@rm -rfv mdm-*-*
 	@scf deploy
-	@echo "scf done"
-
-scf.debug:
-	@$(MAKE) dockerStart
-	@make buildServer
-	@make buildClient
-	@rm -f scf.zip
-	@$(MAKE) obfuscate
-	@$(MAKE) deleteDsStore
-#	@zip -9 -j scf.zip server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate server/zoneinfo.zip mdm-*-*
-#	@zip -9 -r scf.zip html
-	@cp -r server/doc.md server/server.db server/scf_bootstrap server/bash-obfuscate mdm-*-* src
-	@cp -r html src
-	@scf deploy
-	 @rm -rfv mdm-*-*
 	@echo "scf done"
 
 debug:

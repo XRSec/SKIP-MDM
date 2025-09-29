@@ -3,15 +3,16 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
 	. "mdm_sync/custom"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const (

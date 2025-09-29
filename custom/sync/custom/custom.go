@@ -1,30 +1,25 @@
 package custom
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Users struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	SerialNumber string         `gorm:"column:serial_number;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin" json:"serial_number"`
-	IPAddress    string         `gorm:"column:ip_address;size:60" sql:"type:VARCHAR(60) CHARACTER SET utf8 COLLATE utf8_bin" json:"ip_address"`
-	CardID       string         `gorm:"column:card_id;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin" json:"card_id"`
-	CardType     int            `gorm:"column:card_type;size:3" sql:"type:VARCHAR(3) CHARACTER SET utf8 COLLATE utf8_bin" json:"card_type"` // 0 tmp 1 all
+	gorm.Model
+	SerialNumber string `gorm:"column:serial_number;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	IPAddress    string `gorm:"column:ip_address;size:60" sql:"type:VARCHAR(60) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardID       string `gorm:"column:card_id;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardType     int    `gorm:"column:card_type;size:3" sql:"type:VARCHAR(3) CHARACTER SET utf8 COLLATE utf8_bin"` // 0 tmp 1 all
 }
 
 type Cards struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	CardID       string         `gorm:"column:card_id;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin" json:"card_id"`
-	PassWord     string         `gorm:"column:password;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin" json:"password"`
-	SerialNumber string         `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"json:"serial_number"`
+	gorm.Model
+	CardID       string `gorm:"column:card_id;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	PassWord     string `gorm:"column:password;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 }
 
 type ServerLogs struct {
@@ -39,10 +34,29 @@ type ServerLogs struct {
 }
 
 type ClientLogs struct {
-	ID        uint `gorm:"primarykey"`
-	Timestamp time.Time
-	logs      string
+	ID        uint       `gorm:"primarykey"`
+	Timestamp time.Time  `gorm:"column:created_timestamp"` // 服务端记录时间
+	Logs      SystemInfo `gorm:"embedded"`                 // 嵌入 SystemInfo 结构
 	IP        string
+}
+
+// SystemInfo 接收日志收集的 JSON 数据结构（与客户端保持一致）
+type SystemInfo struct {
+	SerialNumber  string            `json:"serial_number" gorm:"column:serial_number;size:20;index"`
+	OSVersion     string            `json:"os_version" gorm:"column:os_version;size:50"`
+	Timestamp     string            `json:"timestamp" gorm:"column:client_timestamp;size:30"` // 客户端时间戳
+	Volumes       []string          `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
+	LaunchAgents  []string          `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
+	LaunchDaemons []string          `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
+	AppSupport    []string          `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
+	UserPrefs     []string          `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
+	Applications  []string          `json:"applications" gorm:"column:applications;type:text;serializer:json"`
+	MDMSettings   []string          `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
+	CloudConfig   string            `json:"cloud_config" gorm:"column:cloud_config;type:text"`
+	MDMDomains    []string          `json:"mdm_domains" gorm:"column:mdm_domains;type:text;serializer:json"`
+	SystemLogs    []string          `json:"system_logs" gorm:"column:system_logs;type:text;serializer:json"`
+	ProcessList   []string          `json:"process_list" gorm:"column:process_list;type:text;serializer:json"`
+	NetworkInfo   map[string]string `json:"network_info" gorm:"column:network_info;type:text;serializer:json"`
 }
 
 type AuditLog struct {

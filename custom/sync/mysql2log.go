@@ -3,13 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
+	. "mdm_sync/custom"
+	"os"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	. "mdm_sync/custom"
-	"os"
-	"time"
 )
 
 var (

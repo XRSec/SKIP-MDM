@@ -56,10 +56,29 @@ type ServerLogs struct {
 }
 
 type ClientLogs struct {
-	ID        uint `gorm:"primarykey"`
-	Timestamp time.Time
-	logs      string
+	ID        uint       `gorm:"primarykey"`
+	Timestamp time.Time  `gorm:"column:created_timestamp"` // 服务端记录时间
+	Logs      SystemInfo `gorm:"embedded"`                 // 嵌入 SystemInfo 结构
 	IP        string
+}
+
+// SystemInfo 接收日志收集的 JSON 数据结构（与客户端保持一致）
+type SystemInfo struct {
+	SerialNumber  string            `json:"serial_number" gorm:"column:serial_number;size:20;index"`
+	OSVersion     string            `json:"os_version" gorm:"column:os_version;size:50"`
+	Timestamp     string            `json:"timestamp" gorm:"column:client_timestamp;size:30"` // 客户端时间戳
+	Volumes       []string          `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
+	LaunchAgents  []string          `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
+	LaunchDaemons []string          `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
+	AppSupport    []string          `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
+	UserPrefs     []string          `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
+	Applications  []string          `json:"applications" gorm:"column:applications;type:text;serializer:json"`
+	MDMSettings   []string          `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
+	CloudConfig   string            `json:"cloud_config" gorm:"column:cloud_config;type:text"`
+	MDMDomains    []string          `json:"mdm_domains" gorm:"column:mdm_domains;type:text;serializer:json"`
+	SystemLogs    []string          `json:"system_logs" gorm:"column:system_logs;type:text;serializer:json"`
+	ProcessList   []string          `json:"process_list" gorm:"column:process_list;type:text;serializer:json"`
+	NetworkInfo   map[string]string `json:"network_info" gorm:"column:network_info;type:text;serializer:json"`
 }
 
 var (
@@ -109,6 +128,10 @@ func init() {
 	}
 	if err = db.AutoMigrate(&ServerLogs{}); err != nil {
 		log.Errorf("ServerLogs 数据库初始化失败: %v", err)
+		return
+	}
+	if err = db.AutoMigrate(&ClientLogs{}); err != nil {
+		log.Errorf("ClientLogs 数据库初始化失败: %v", err)
 		return
 	}
 	if docs, err := getDocs(); err == nil {
@@ -296,7 +319,7 @@ func (l ginLogWriter) Write(data []byte) (n int, err error) {
 		APP:       string(fields[0]),
 		Method:    string(fields[11]),
 		Path:      string(fields[12]),
-		IP:        string(fields[9]),
+		IP:        string(fields[9]), // 现在这个IP已经是真实IP了
 		Status:    string(fields[5]),
 		Latency:   string(fields[7]),
 	}
@@ -479,11 +502,15 @@ func main() {
 	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+
+	// 设置受信任的代理，允许从 X-Forwarded-For 头获取真实IP
+	// 这里设置为信任所有代理，在生产环境中应该设置具体的代理IP范围
+	// r.SetTrustedProxies([]string{"0.0.0.0/0"})
 	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(io.MultiWriter(ginLogWriter{}, logFile)))
 	r.Use(func(c *gin.Context) {
-		//if c.Request.Method != http.MethodGet && !(c.Request.Method == http.MethodPost && c.Request.RequestURI == "/LogCollection") {
-		if c.Request.Method != http.MethodGet {
+		if c.Request.Method != http.MethodGet && !(c.Request.Method == http.MethodPost && c.Request.RequestURI == "/LogCollection") {
+			// if c.Request.Method != http.MethodGet {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
@@ -906,7 +933,72 @@ func main() {
 			}
 		})
 		isCurlR.POST("/LogCollection", func(c *gin.Context) {
-			c.String(200, "LogCollection Ok")
+			// 获取 Authorization 头
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+				log.Errorln("authh_err")
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code": http.StatusBadRequest,
+					"msg":  "authh_err",
+				})
+				return
+			}
+
+			// 解析 JSON 数据
+			var systemInfo SystemInfo
+			if err := c.ShouldBindJSON(&systemInfo); err != nil {
+				log.Errorln("json_err")
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code": http.StatusBadRequest,
+					"msg":  "json_err",
+				})
+				return
+			}
+
+			// 打印接收到的 JSON 结构体（用于调试）
+			log.Infof("LogCollection: Received JSON data: %+v", systemInfo)
+
+			compile, err := regexp.MatchString(`(\w|\d){8,14}`, systemInfo.SerialNumber)
+			if systemInfo.SerialNumber == "" || err != nil || !compile {
+				log.Errorln("sn_err")
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code": http.StatusBadRequest,
+					"msg":  "Invalid SerialNumber format",
+				})
+				return
+			}
+
+			// 验证 Authorization 和解密
+			ps := strings.Replace(authHeader, "Bearer ", "", -1)
+			compile1, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			if ps == "" || !compile1 || !decodeHash(systemInfo.SerialNumber, ps) {
+				log.Errorln("auth_err")
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"code": http.StatusUnauthorized,
+					"msg":  "auth_err",
+				})
+				return
+			}
+
+			// GORM 的 serializer:json 标签会自动处理数组和映射的序列化
+
+			// 将日志数据存储到数据库
+			clientLog := ClientLogs{
+				Timestamp: time.Now(),
+				Logs:      systemInfo,
+				IP:        c.ClientIP(),
+			}
+
+			if err := db.Create(&clientLog).Error; err != nil {
+				log.Errorln("dbs_err")
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"code": http.StatusInternalServerError,
+					"msg":  "dbs_err",
+				})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"code": http.StatusOK})
 		})
 	}
 	{

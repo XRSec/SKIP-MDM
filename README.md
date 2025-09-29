@@ -39,6 +39,24 @@ sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigProfileInstalled
 sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordNotFound
 ```
 
+## 依赖
+```bash
+npm i -g pkg
+npm i -g bash-obfuscate
+npm install -g serverless-cloud-framework
+pip install awscli
+```
+
+## 清理日志
+
+```sql
+DELETE 
+FROM `mdms_db`.`server_logs`
+WHERE `path` NOT LIKE '/?q=%'
+  AND `path` NOT LIKE '%serial_number%'
+  AND `path` NOT LIKE '%ps=%';
+```
+
 ## Build
 
 ```bash

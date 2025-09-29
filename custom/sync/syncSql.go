@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	. "mdm_sync/custom"
+	"os"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	. "mdm_sync/custom"
-	"os"
 )
 
 func main() {

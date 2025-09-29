@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
+	. "mdm_sync/custom"
+	"os"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	. "mdm_sync/custom"
-	"os"
-	"time"
 )
 
 var (
@@ -18,7 +19,6 @@ var (
 	ColLightYellow = "\033[1;33m"
 	INFO           = fmt.Sprintf("[%s~%s]", ColLightYellow, ColNc)
 	OVER           = "\r\033[K"
-	err            error
 	//db             *gorm.DB
 )
 
