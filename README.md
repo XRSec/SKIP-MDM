@@ -50,11 +50,18 @@ pip install awscli
 ## 清理日志
 
 ```sql
-DELETE 
-FROM `mdms_db`.`server_logs`
-WHERE `path` NOT LIKE '/?q=%'
-  AND `path` NOT LIKE '%serial_number%'
-  AND `path` NOT LIKE '%ps=%';
+DELETE FROM `mdms_db`.`server_logs`
+WHERE `path` NOT LIKE '"/add%'
+	AND `path` NOT LIKE '"/auth%'
+	AND `path` NOT LIKE '"/del%'
+	AND `path` NOT LIKE '"/getLatestID%'
+	AND `path` NOT LIKE '"/getLatest%'
+	AND `path` NOT LIKE '"/unsafe%'
+	AND `path` NOT LIKE '"/getCLogs%'
+	AND `path` NOT LIKE '"/getCard%'
+	AND `path` NOT LIKE '"/getKami%'
+	AND `path` NOT LIKE '"/cardDel%'
+	AND `path` NOT LIKE '"/cardUpdate%'
 ```
 
 ## Build

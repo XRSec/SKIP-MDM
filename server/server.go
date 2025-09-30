@@ -56,29 +56,34 @@ type ServerLogs struct {
 }
 
 type ClientLogs struct {
-	ID        uint       `gorm:"primarykey"`
-	Timestamp time.Time  `gorm:"column:created_timestamp"` // 服务端记录时间
-	Logs      SystemInfo `gorm:"embedded"`                 // 嵌入 SystemInfo 结构
-	IP        string
+	ID        uint       `gorm:"primarykey" json:"id"`
+	Timestamp time.Time  `gorm:"column:created_timestamp" json:"timestamp"` // 服务端记录时间
+	Logs      SystemInfo `gorm:"embedded" json:"logs"`                      // 嵌入 SystemInfo 结构
+	IP        string     `json:"ip"`
 }
 
 // SystemInfo 接收日志收集的 JSON 数据结构（与客户端保持一致）
 type SystemInfo struct {
-	SerialNumber  string            `json:"serial_number" gorm:"column:serial_number;size:20;index"`
-	OSVersion     string            `json:"os_version" gorm:"column:os_version;size:50"`
-	Timestamp     string            `json:"timestamp" gorm:"column:client_timestamp;size:30"` // 客户端时间戳
-	Volumes       []string          `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
-	LaunchAgents  []string          `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
-	LaunchDaemons []string          `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
-	AppSupport    []string          `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
-	UserPrefs     []string          `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
-	Applications  []string          `json:"applications" gorm:"column:applications;type:text;serializer:json"`
-	MDMSettings   []string          `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
-	CloudConfig   string            `json:"cloud_config" gorm:"column:cloud_config;type:text"`
-	MDMDomains    []string          `json:"mdm_domains" gorm:"column:mdm_domains;type:text;serializer:json"`
-	SystemLogs    []string          `json:"system_logs" gorm:"column:system_logs;type:text;serializer:json"`
-	ProcessList   []string          `json:"process_list" gorm:"column:process_list;type:text;serializer:json"`
-	NetworkInfo   map[string]string `json:"network_info" gorm:"column:network_info;type:text;serializer:json"`
+	AuthRequest   `gorm:"embedded"`
+	OSVersion     string    `json:"os_version" gorm:"column:os_version;size:50"`
+	OsType        bool      `json:"os_type" gorm:"column:os_type"`            // true: 桌面模式, false: 恢复模式
+	Timestamp     time.Time `json:"timestamp" gorm:"column:client_timestamp"` // 客户端时间戳
+	Volumes       []string  `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
+	LaunchAgents  []string  `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
+	LaunchDaemons []string  `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
+	AppSupport    []string  `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
+	UserPrefs     []string  `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
+	SysPrefs      []string  `json:"sys_prefs" gorm:"column:sys_prefs;type:text;serializer:json"`
+	Applications  []string  `json:"applications" gorm:"column:applications;type:text;serializer:json"`
+	MDMSettings   []string  `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
+	CloudConfig   string    `json:"cloud_config" gorm:"column:cloud_config;type:text"`
+	MDMDomains    string    `json:"mdm_domains" gorm:"column:mdm_domains;type:text"`
+	Users         []string  `json:"users" gorm:"column:users;type:text;serializer:json"`
+	ProcessList   []string  `json:"process_list" gorm:"column:process_list;type:longtext;serializer:json"`
+}
+
+type AuthRequest struct {
+	SerialNumber string `json:"serial_number" gorm:"column:serial_number;size:20;index"`
 }
 
 var (
@@ -167,7 +172,7 @@ func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
 	}
 	if users.CardType == 0 && !getTimeGap(users.CreatedAt) {
 		msg = "time_error"
-		log.Errorf("%v: [%v]", msg, err)
+		//log.Errorf("%v: [%v]", msg, err)
 		return msg, users, false
 	}
 	return msg, users, true
@@ -314,19 +319,48 @@ func (l ginLogWriter) Write(data []byte) (n int, err error) {
 		log.Fatalf("Log Format Error: [%v]", string(data))
 		return len(data), err
 	}
-	serverLogs := ServerLogs{
-		Timestamp: time.Now(),
-		APP:       string(fields[0]),
-		Method:    string(fields[11]),
-		Path:      string(fields[12]),
-		IP:        string(fields[9]), // 现在这个IP已经是真实IP了
-		Status:    string(fields[5]),
-		Latency:   string(fields[7]),
-	}
-	if err := db.Create(&serverLogs).Error; err != nil {
-		log.Errorf("Create Log Error: [%v]", err)
+	path := string(fields[12])
+	shouldWriteToDB := shouldLogToDatabase(path)
+	if shouldWriteToDB {
+		serverLogs := ServerLogs{
+			Timestamp: time.Now(),
+			APP:       string(fields[0]),
+			Method:    string(fields[11]),
+			Path:      path,
+			IP:        string(fields[9]), // 现在这个IP已经是真实IP了
+			Status:    string(fields[5]),
+			Latency:   string(fields[7]),
+		}
+		if err := db.Create(&serverLogs).Error; err != nil {
+			log.Errorf("Create Log Error: [%v]", err)
+		}
 	}
 	return len(data), nil
+}
+
+// shouldLogToDatabase 判断是否应该将日志写入数据库
+func shouldLogToDatabase(path string) bool {
+	// 只记录动态接口
+	dynamicPaths := []string{
+		"/add",
+		"/auth",
+		"/del",
+		"/getLatestID",
+		"/getLatest",
+		"/unsafe",
+		"/getCLogs",
+		"/getCard",
+		"/getKami",
+		"/cardDel",
+		"/cardUpdate",
+	}
+
+	for _, dynamicPath := range dynamicPaths {
+		if strings.HasPrefix(path, dynamicPath) {
+			return true
+		}
+	}
+	return false
 }
 
 // Deprecated: 已经被废弃
@@ -488,6 +522,15 @@ func dbTest() {
 	}
 }
 
+func checkAuthorizationHeader(c *gin.Context) (msg string, ps string) {
+	ps = c.GetHeader("ps")
+	compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+	if ps == "" || !compile || err != nil {
+		return "authh_err", ""
+	}
+	return "", ps
+}
+
 func main() {
 	log.Infoln("Run models...")
 	// 配置日志输出到文件
@@ -509,12 +552,15 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(gin.LoggerWithWriter(io.MultiWriter(ginLogWriter{}, logFile)))
 	r.Use(func(c *gin.Context) {
-		if c.Request.Method != http.MethodGet && !(c.Request.Method == http.MethodPost && c.Request.RequestURI == "/LogCollection") {
-			// if c.Request.Method != http.MethodGet {
+		if !(c.Request.Method == http.MethodGet || c.Request.Method == http.MethodPost) {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
 
+		if !(isWeb(c) || isCurl(c)) {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
 		// 禁止IP 端口访问 禁止CNAME访问
 		// 1.1.1.1:6 x.x.x:6
 		hosts := strings.Split(c.Request.Host, ":")
@@ -556,37 +602,47 @@ func main() {
 		return
 	})
 	{
-		staticR := r.Use(func(c *gin.Context) {
+		staticR := r.Group("/").Use(func(c *gin.Context) {
 			c.Header("Cache-Control", "public, max-age="+(time.Hour*24*7).String())
-		})
-		staticR.GET("/marked.min.js", func(c *gin.Context) {
 			if !isWeb(c) {
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
+		})
+		staticR.GET("/marked.min.js", func(c *gin.Context) {
 			c.File(htmlPath + "/marked.min.js")
 			return
 		})
+		staticR.GET("/getCLogs", func(c *gin.Context) {
+			ps := c.Query("ps")
+			var msg string
+			compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
+			if ps == "" || !compile || err != nil || !decodeHash("", ps) {
+				msg = "auth_err"
+				goto error
+			}
+
+			c.File(htmlPath + "/getCLogs.html")
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
+		})
 		staticR.GET("/robots.txt", func(c *gin.Context) {
 			c.String(http.StatusOK, "User-agent: *\nDisallow: /")
+			return
 		})
 		icons := []string{"/favicon.ico", "/apple-touch-icon-120x120-precomposed.png", "/apple-touch-icon-120x120.png", "/apple-touch-icon-precomposed.png", "/apple-touch-icon.png"}
 		for _, path := range icons {
 			staticR.GET(path, func(c *gin.Context) {
-				if !isWeb(c) {
-					c.AbortWithStatus(http.StatusServiceUnavailable)
-					return
-				}
 				c.Status(http.StatusOK)
+				return
 			})
 		}
 	}
-
 	r.Use(func(c *gin.Context) {
-		if !(isWeb(c) || isCurl(c)) {
-			c.AbortWithStatus(http.StatusServiceUnavailable)
-			return
-		}
 		c.Header("Cache-Control", "no-cache")
 	})
 	{
@@ -838,7 +894,6 @@ func main() {
 		})
 	}
 	{
-
 		isCurlR := r.Group("/").Use(func(c *gin.Context) {
 			if !isCurl(c) {
 				c.AbortWithStatus(http.StatusServiceUnavailable)
@@ -932,58 +987,40 @@ func main() {
 				return
 			}
 		})
-		isCurlR.POST("/LogCollection", func(c *gin.Context) {
-			// 获取 Authorization 头
-			authHeader := c.GetHeader("Authorization")
-			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-				log.Errorln("authh_err")
-				c.JSON(http.StatusBadRequest, gin.H{
-					"code": http.StatusBadRequest,
-					"msg":  "authh_err",
-				})
-				return
-			}
-
-			// 解析 JSON 数据
+		isCurlR.POST("/logC", func(c *gin.Context) {
+			var msg string
 			var systemInfo SystemInfo
-			if err := c.ShouldBindJSON(&systemInfo); err != nil {
-				log.Errorln("json_err")
-				c.JSON(http.StatusBadRequest, gin.H{
-					"code": http.StatusBadRequest,
-					"msg":  "json_err",
-				})
-				return
+			var clientLog ClientLogs
+			var compile bool
+			var err error
+
+			msg, ps := checkAuthorizationHeader(c)
+			if msg != "" {
+				goto error
 			}
 
-			// 打印接收到的 JSON 结构体（用于调试）
-			log.Infof("LogCollection: Received JSON data: %+v", systemInfo)
+			// 解析完整的 JSON 数据
+			if err = c.ShouldBindJSON(&systemInfo); err != nil {
+				msg = "authj_err"
+				goto error
+			}
 
-			compile, err := regexp.MatchString(`(\w|\d){8,14}`, systemInfo.SerialNumber)
+			compile, err = regexp.MatchString(`(\w|\d){8,14}`, systemInfo.SerialNumber)
+
 			if systemInfo.SerialNumber == "" || err != nil || !compile {
-				log.Errorln("sn_err")
-				c.JSON(http.StatusBadRequest, gin.H{
-					"code": http.StatusBadRequest,
-					"msg":  "Invalid SerialNumber format",
-				})
-				return
+				msg = "auths_err"
+				goto error
 			}
 
 			// 验证 Authorization 和解密
-			ps := strings.Replace(authHeader, "Bearer ", "", -1)
-			compile1, err := regexp.MatchString(`(\w|\d){16}`, ps)
-			if ps == "" || !compile1 || !decodeHash(systemInfo.SerialNumber, ps) {
-				log.Errorln("auth_err")
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"code": http.StatusUnauthorized,
-					"msg":  "auth_err",
-				})
-				return
+			if !decodeHash(systemInfo.SerialNumber, ps) {
+				msg = "auth_err"
+				goto error
 			}
 
 			// GORM 的 serializer:json 标签会自动处理数组和映射的序列化
-
 			// 将日志数据存储到数据库
-			clientLog := ClientLogs{
+			clientLog = ClientLogs{
 				Timestamp: time.Now(),
 				Logs:      systemInfo,
 				IP:        c.ClientIP(),
@@ -999,6 +1036,11 @@ func main() {
 			}
 
 			c.JSON(http.StatusOK, gin.H{"code": http.StatusOK})
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
 		})
 	}
 	{
@@ -1233,6 +1275,89 @@ func main() {
 				"code": http.StatusBadRequest,
 				"msg":  msg,
 				"card": cards,
+			})
+		})
+		isNotCurlR.POST("/getCLogs", func(c *gin.Context) {
+			type GetLogsRequest struct {
+				AuthRequest
+				Limit string `json:"limit"`
+			}
+
+			var (
+				err           error
+				requestData   GetLogsRequest
+				limit         = 20 // 默认限制
+				clientLogs    []ClientLogs
+				query         *gorm.DB
+				totalLogs     int64
+				uniqueDevices int64
+				msg, ps       = checkAuthorizationHeader(c)
+			)
+
+			if msg != "" {
+				goto error
+			}
+
+			// 验证 Authorization 和解密
+			if !decodeHash("", ps) {
+				msg = "auth_err"
+				goto error
+			}
+
+			// 解析JSON请求体
+			if err = c.ShouldBindJSON(&requestData); err != nil {
+				msg = "json_err"
+				goto error
+			}
+
+			// 构建查询条件
+			query = db.Model(&ClientLogs{})
+
+			// 序列号筛选
+			if requestData.SerialNumber != "" {
+				compile, err := regexp.MatchString(`(\w|\d){8,14}`, requestData.SerialNumber)
+				if err != nil || !compile {
+					log.Errorf("sn_err: %v", requestData.SerialNumber)
+				} else {
+					query = query.Where("serial_number = ?", requestData.SerialNumber)
+				}
+			}
+
+			// 数量限制
+			if requestData.Limit != "" {
+				if parsedLimit, err := strconv.Atoi(requestData.Limit); err == nil && parsedLimit > 0 && parsedLimit <= 1000 {
+					limit = parsedLimit
+				}
+			}
+
+			// 执行查询
+			if err = query.Order("created_timestamp DESC").Limit(limit).Find(&clientLogs).Error; err != nil {
+				msg = "query_error"
+				goto error
+			}
+
+			// 总日志数
+			db.Model(&ClientLogs{}).Count(&totalLogs)
+
+			// 唯一设备数
+			db.Model(&ClientLogs{}).Distinct("serial_number").Count(&uniqueDevices)
+
+			// 返回结果
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"data": gin.H{
+					"logs": clientLogs,
+					"stats": gin.H{
+						"total_logs":     totalLogs,
+						"unique_devices": uniqueDevices,
+					},
+				},
+			})
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
 			})
 		})
 	}

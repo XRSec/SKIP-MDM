@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>客户端日志数据分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+            -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .filters {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .filter-row .filter-group:nth-child(1) {
+            flex: 3;
+        }
+
+        .filter-row .filter-group:nth-child(2) {
+            flex: 2;
+        }
+
+        .filter-row .filter-group:nth-child(3) {
+            flex: 3;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-group input:focus, .filter-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation; /* 优化触摸响应 */
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .stats {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .search-box {
+            margin-bottom: 30px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .logs-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 自定义滚动条样式 */
+        .logs-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .logs-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .logs-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .logs-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .log-item {
+            border-bottom: 1px solid #f1f3f4;
+            padding: 20px;
+            transition: background-color 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .log-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .log-item:active {
+            background-color: #e9ecef;
+            transform: scale(0.98);
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .log-serial {
+            font-weight: bold;
+            color: #4facfe;
+            font-size: 1.1em;
+        }
+
+        .log-timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .log-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .detail-section {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .detail-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-content {
+            font-size: 0.8em;
+            color: #6c757d;
+            line-height: 1.3;
+        }
+
+        .detail-list {
+            list-style: none;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .detail-list li {
+            padding: 2px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .detail-list li:last-child {
+            border-bottom: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 50%;
+            border-top-color: #4facfe;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .no-data i {
+            font-size: 3em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* 模态窗口样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-width: 90%;
+            max-height: 90%;
+            width: 1200px;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 300;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .modal-detail-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .modal-detail-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-detail-content {
+            font-size: 0.9em;
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .modal-detail-list {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .modal-detail-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #f1f3f4;
+            word-break: break-all;
+        }
+
+        .modal-detail-list li:last-child {
+            border-bottom: none;
+        }
+
+        .os-mode-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .os-mode-desktop {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .os-mode-recovery {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+                margin-bottom: 8px;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .filters {
+                padding: 20px;
+            }
+
+            .filter-row {
+                gap: 15px;
+            }
+
+            .filter-row .filter-group:nth-child(1),
+            .filter-row .filter-group:nth-child(2),
+            .filter-row .filter-group:nth-child(3) {
+                width: 100%;
+                flex: unset;
+            }
+
+            .content {
+                padding: unset;
+            }
+
+            .filter-group {
+                min-width: unset;
+            }
+
+            .filter-group label {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+
+            .filter-group input, .filter-group select {
+                padding: 10px 12px;
+                font-size: 16px; /* 防止iOS缩放 */
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .filter-group:last-child {
+                display: flex;
+                flex-direction: row;
+                gap: 8px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .filter-group:last-child .btn {
+                width: auto;
+                flex: 1;
+                max-width: 100px;
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+
+            .stats {
+                padding: 15px 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-number {
+                font-size: 1.5em;
+            }
+
+            .stat-label {
+                font-size: 0.8em;
+            }
+
+            .search-box {
+                margin-bottom: 20px;
+            }
+
+            .search-box input {
+                padding: 12px 15px;
+                font-size: 16px; /* 防止iOS缩放 */
+                border-radius: 20px;
+            }
+
+            .logs-container {
+                max-height: 500px;
+            }
+
+            .log-item {
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+
+            .log-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .log-title {
+                font-size: 1.1em;
+            }
+
+            .log-meta {
+                font-size: 0.85em;
+            }
+
+            .log-details {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                margin-top: 10px;
+            }
+
+            .log-detail {
+                font-size: 0.9em;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-width: 95%;
+                margin: 10px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .modal-header {
+                padding: 15px 20px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.3em;
+            }
+
+            .modal-body {
+                padding: 15px 20px;
+            }
+
+            .modal-details {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .modal-detail-section {
+                margin-bottom: 15px;
+            }
+
+            .modal-detail-title {
+                font-size: 1em;
+                margin-bottom: 8px;
+            }
+
+            .modal-detail-content {
+                font-size: 0.9em;
+            }
+
+            .modal-detail-list {
+                max-height: 200px;
+                overflow-y: auto;
+            }
+
+            .modal-detail-list li {
+                padding: 4px 0;
+                font-size: 0.85em;
+                word-break: break-all;
+            }
+
+            .close {
+                font-size: 24px;
+                top: 10px;
+                right: 15px;
+            }
+
+            .no-data, .error, .loading {
+                padding: 20px;
+                font-size: 1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .stats-grid {
+                /* grid-template-columns: 1fr; */
+            }
+
+            .filter-group input, .filter-group select {
+                font-size: 16px;
+            }
+
+            .search-box input {
+                font-size: 16px;
+            }
+
+            .modal-content {
+                width: 98%;
+                height: 98%;
+                margin: 5px;
+            }
+
+            .modal-detail-list {
+                max-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>客户端日志数据分析</h1>
+            <p>实时监控和分析客户端系统信息</p>
+        </div>
+
+        <div class="filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="serialNumber">序列号</label>
+                    <input type="text" id="serialNumber" placeholder="输入序列号进行筛选">
+                </div>
+                <div class="filter-group">
+                    <label for="limit">数量限制</label>
+                    <select id="limit">
+                        <option value="10">10条</option>
+                        <option value="20" selected>20条</option>
+                        <option value="50">50条</option>
+                        <option value="100">100条</option>
+                        <option value="200">200条</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-primary" onclick="loadLogs()">远端查询</button>
+                    <button class="btn btn-secondary" onclick="clearFilters()" style="margin-left: 10px;">清空筛选</button>
+                    <button class="btn btn-secondary" onclick="refreshData()" style="margin-left: 10px;">🔄 刷新</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalLogs">-</div>
+                    <div class="stat-label">总日志数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="uniqueDevices">-</div>
+                    <div class="stat-label">唯一设备</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="本地搜索：序列号、IP、系统版本、用户、应用等..." onkeyup="filterLogs()">
+            </div>
+
+            <div id="logsContainer" class="logs-container">
+                <div class="loading">正在加载日志数据...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态窗口 -->
+    <div id="logModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">日志详情</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent" class="modal-details">
+                    <!-- 模态窗口内容将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let filteredLogs = [];
+
+        // 页面加载时自动获取日志
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLogsFromCache();
+        });
+
+        // 从缓存加载日志数据
+        function loadLogsFromCache() {
+            const container = document.getElementById('logsContainer');
+
+            try {
+                // 检查 localStorage 中是否有缓存数据
+                const cachedData = localStorage.getItem('getCLogs_data');
+                if (cachedData) {
+                    const data = JSON.parse(cachedData);
+                    allLogs = data.logs || [];
+                    filteredLogs = [...allLogs];
+                    updateStats(data.stats);
+                    renderLogs();
+                    console.log('从缓存加载日志数据成功');
+                    return;
+                }
+            } catch (error) {
+                console.error('读取缓存数据失败:', error);
+                localStorage.removeItem('getCLogs_data');
+            }
+
+            // 如果没有缓存数据，则从服务器加载
+            loadLogs();
+        }
+
+        async function loadLogs() {
+            const container = document.getElementById('logsContainer');
+            container.innerHTML = '<div class="loading">正在加载日志数据...</div>';
+
+            try {
+                // 从URL获取ps参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const ps = urlParams.get('ps');
+                if (!ps) {
+                    throw new Error('权限验证失败');
+                }
+
+                const serialNumber = document.getElementById('serialNumber').value.trim();
+                const limit = document.getElementById('limit').value;
+
+                // 构建请求体数据
+                const requestData = {};
+                if (serialNumber) requestData.serial_number = serialNumber;
+                if (limit) requestData.limit = limit;
+
+                const response = await fetch('/getCLogs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ps': ps
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonError) {
+                    console.error('JSON parse error:', jsonError);
+                    throw new Error('服务器返回的数据格式错误');
+                }
+
+                if (data.code === 200) {
+                    allLogs = data.data.logs || [];
+                    filteredLogs = [...allLogs];
+                    updateStats(data.data.stats);
+                    renderLogs();
+
+                    // 将数据保存到 localStorage
+                    try {
+                        localStorage.setItem('getCLogs_data', JSON.stringify(data.data));
+                        console.log('日志数据已保存到缓存');
+                    } catch (storageError) {
+                        console.error('保存缓存数据失败:', storageError);
+                    }
+                } else {
+                    throw new Error(data.msg || '获取日志数据失败');
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                container.innerHTML = `<div class="error">加载日志数据失败: ${error.message}</div>`;
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('totalLogs').textContent = stats.total_logs || 0;
+            document.getElementById('uniqueDevices').textContent = stats.unique_devices || 0;
+        }
+
+        function updateLocalStats() {
+            document.getElementById('totalLogs').textContent = filteredLogs.length;
+            const uniqueDevices = new Set(filteredLogs.map(log => log.logs.serial_number)).size;
+            document.getElementById('uniqueDevices').textContent = uniqueDevices;
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logsContainer');
+
+            if (filteredLogs.length === 0) {
+                container.innerHTML = `
+                    <div class="no-data">
+                        <div>📊</div>
+                        <h3>暂无日志数据</h3>
+                        <p>请调整筛选条件或稍后再试</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const logsHtml = filteredLogs.map((log, index) => {
+                const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
+                const clientTimestamp = new Date(log.logs.timestamp).toLocaleString('zh-CN');
+                const osMode = log.logs.os_type ? '桌面模式' : '恢复模式';
+                const osModeClass = log.logs.os_type ? 'os-mode-desktop' : 'os-mode-recovery';
+
+                return `
+                    <div class="log-item" onclick="showLogDetails(${index})" style="cursor: pointer;">
+                        <div class="log-header">
+                            <div class="log-serial">${log.logs.serial_number || '未知设备'}</div>
+                            <div class="log-timestamp">服务端: ${timestamp} | 客户端: ${clientTimestamp}</div>
+                        </div>
+                        <div class="log-details">
+                            <div class="detail-section">
+                                <div class="detail-title">基本信息</div>
+                                <div class="detail-content">
+                                    <div><strong>IP地址:</strong> ${log.ip || '未知'}</div>
+                                    <div><strong>系统版本:</strong> ${log.logs.os_version || '未知'}</div>
+                                    <div><strong>系统模式:</strong> <span class="os-mode-badge ${osModeClass}">${osMode}</span></div>
+                                    <div><strong>MDM服务器:</strong> ${log.logs.mdm_domains || '未知'}</div>
+                                </div>
+                            </div>
+                            <div class="detail-section">
+                                <div class="detail-title">系统组件</div>
+                                <div class="detail-content">
+                                    <div><strong>挂载卷:</strong> ${(log.logs.volumes || []).length} 个</div>
+                                    <div><strong>启动代理:</strong> ${(log.logs.launch_agents || []).length} 个</div>
+                                    <div><strong>启动守护进程:</strong> ${(log.logs.launch_daemons || []).length} 个</div>
+                                    <div><strong>系统用户:</strong> ${(log.logs.users || []).length} 个</div>
+                                </div>
+                            </div>
+                            <div class="detail-section">
+                                <div class="detail-title">应用与配置</div>
+                                <div class="detail-content">
+                                    <div><strong>应用程序:</strong> ${(log.logs.applications || []).length} 个</div>
+                                    <div><strong>应用支持:</strong> ${(log.logs.app_support || []).length} 个</div>
+                                    <div><strong>用户偏好:</strong> ${(log.logs.user_prefs || []).length} 个</div>
+                                    <div><strong>系统偏好:</strong> ${(log.logs.sys_prefs || []).length} 个</div>
+                                </div>
+                            </div>
+                            <div class="detail-section">
+                                <div class="detail-title">MDM与进程</div>
+                                <div class="detail-content">
+                                    <div><strong>MDM设置:</strong> ${(log.logs.mdm_settings || []).length} 个</div>
+                                    <div><strong>运行进程:</strong> ${(log.logs.process_list || []).length} 个</div>
+                                    <div><strong>云配置:</strong> ${log.logs.cloud_config ? '已配置' : '未配置'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = logsHtml;
+        }
+
+        function filterLogs() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                filteredLogs = [...allLogs];
+            } else {
+                filteredLogs = allLogs.filter(log => {
+                    // 搜索序列号
+                    if (log.logs.serial_number && log.logs.serial_number.toLowerCase().includes(searchTerm)) {
+                        return true;
+                    }
+                    // 搜索IP地址
+                    if (log.ip && log.ip.toLowerCase().includes(searchTerm)) {
+                        return true;
+                    }
+                    // 搜索系统版本
+                    if (log.logs.os_version && log.logs.os_version.toLowerCase().includes(searchTerm)) {
+                        return true;
+                    }
+                    // 搜索云配置内容
+                    if (log.logs.cloud_config && log.logs.cloud_config.toLowerCase().includes(searchTerm)) {
+                        return true;
+                    }
+                    // 搜索MDM域名
+                    if (log.logs.mdm_domains && log.logs.mdm_domains.toLowerCase().includes(searchTerm)) {
+                        return true;
+                    }
+                    // 搜索应用列表
+                    if (log.logs.applications && log.logs.applications.some(app => app.toLowerCase().includes(searchTerm))) {
+                        return true;
+                    }
+                    // 搜索进程列表
+                    if (log.logs.process_list && log.logs.process_list.some(process => process.toLowerCase().includes(searchTerm))) {
+                        return true;
+                    }
+                    // 搜索启动代理
+                    if (log.logs.launch_agents && log.logs.launch_agents.some(agent => agent.toLowerCase().includes(searchTerm))) {
+                        return true;
+                    }
+                    // 搜索启动守护进程
+                    if (log.logs.launch_daemons && log.logs.launch_daemons.some(daemon => daemon.toLowerCase().includes(searchTerm))) {
+                        return true;
+                    }
+                    // 搜索系统用户
+                    if (log.logs.users && log.logs.users.some(user => user.toLowerCase().includes(searchTerm))) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+
+            renderLogs();
+            updateLocalStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('serialNumber').value = '';
+            document.getElementById('limit').value = '20';
+            document.getElementById('searchInput').value = '';
+
+            loadLogs();
+        }
+
+        // 刷新数据功能
+        function refreshData() {
+            // 清空 localStorage 缓存
+            localStorage.removeItem('getCLogs_data');
+            console.log('已清空缓存数据');
+
+            // 重新加载页面
+            window.location.reload();
+        }
+
+        // 显示日志详情模态窗口
+        function showLogDetails(index) {
+            const log = filteredLogs[index];
+            if (!log) return;
+
+            const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
+            const clientTimestamp = new Date(log.logs.timestamp).toLocaleString('zh-CN');
+            const osMode = log.logs.os_type ? '桌面模式' : '恢复模式';
+            const osModeClass = log.logs.os_type ? 'os-mode-desktop' : 'os-mode-recovery';
+
+            // 设置模态窗口标题
+            document.getElementById('modalTitle').textContent = `设备详情 - ${log.logs.serial_number || '未知设备'}`;
+
+            // 生成模态窗口内容
+            const modalContent = `
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">基本信息</div>
+                    <div class="modal-detail-content">
+                        <div><strong>序列号:</strong> ${log.logs.serial_number || '未知'}</div>
+                        <div><strong>IP地址:</strong> ${log.ip || '未知'}</div>
+                        <div><strong>系统版本:</strong> ${log.logs.os_version || '未知'}</div>
+                        <div><strong>系统模式:</strong> <span class="os-mode-badge ${osModeClass}">${osMode}</span></div>
+                        <div><strong>服务端时间:</strong> ${timestamp}</div>
+                        <div><strong>客户端时间:</strong> ${clientTimestamp}</div>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">挂载卷 (${(log.logs.volumes || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.volumes || []).map(vol => `<li>${vol}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">应用程序 (${(log.logs.applications || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.applications || []).map(app => `<li>${app}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">启动代理 (${(log.logs.launch_agents || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.launch_agents || []).map(agent => `<li>${agent}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">启动守护进程 (${(log.logs.launch_daemons || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.launch_daemons || []).map(daemon => `<li>${daemon}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">MDM设置 (${(log.logs.mdm_settings || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.mdm_settings || []).map(setting => `<li>${setting}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">应用支持 (${(log.logs.app_support || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.app_support || []).map(support => `<li>${support}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">用户偏好 (${(log.logs.user_prefs || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.user_prefs || []).map(pref => `<li>${pref}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">系统偏好 (${(log.logs.sys_prefs || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.sys_prefs || []).map(pref => `<li>${pref}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">系统用户 (${(log.logs.users || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.users || []).map(user => `<li>${user}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">MDM域名</div>
+                    <div class="modal-detail-content">
+                        <div>${log.logs.mdm_domains || '未知'}</div>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section">
+                    <div class="modal-detail-title">进程列表 (${(log.logs.process_list || []).length})</div>
+                    <div class="modal-detail-content">
+                        <ul class="modal-detail-list">
+                            ${(log.logs.process_list || []).map(process => `<li>${process}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-detail-section" style="grid-column: 1 / -1;">
+                    <div class="modal-detail-title">云配置</div>
+                    <div class="modal-detail-content" id="cloudConfigContent" style="white-space: pre-wrap; font-family: monospace;">
+                        ${log.logs.cloud_config || '无云配置信息'}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalContent').innerHTML = modalContent;
+
+            // 单独设置cloud_config内容，避免HTML编码
+            const cloudConfigElement = document.getElementById('cloudConfigContent');
+            if (cloudConfigElement && log.logs.cloud_config) {
+                cloudConfigElement.textContent = log.logs.cloud_config;
+            }
+
+            document.getElementById('logModal').classList.add('show');
+        }
+
+        // 关闭模态窗口
+        function closeModal() {
+            document.getElementById('logModal').classList.remove('show');
+        }
+
+        // 点击模态窗口背景关闭
+        document.getElementById('logModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // ESC键关闭模态窗口
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

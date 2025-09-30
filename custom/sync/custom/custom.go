@@ -34,29 +34,34 @@ type ServerLogs struct {
 }
 
 type ClientLogs struct {
-	ID        uint       `gorm:"primarykey"`
-	Timestamp time.Time  `gorm:"column:created_timestamp"` // 服务端记录时间
-	Logs      SystemInfo `gorm:"embedded"`                 // 嵌入 SystemInfo 结构
-	IP        string
+	ID        uint       `gorm:"primarykey" json:"id"`
+	Timestamp time.Time  `gorm:"column:created_timestamp" json:"timestamp"` // 服务端记录时间
+	Logs      SystemInfo `gorm:"embedded" json:"logs"`                      // 嵌入 SystemInfo 结构
+	IP        string     `json:"ip"`
 }
 
 // SystemInfo 接收日志收集的 JSON 数据结构（与客户端保持一致）
 type SystemInfo struct {
-	SerialNumber  string            `json:"serial_number" gorm:"column:serial_number;size:20;index"`
-	OSVersion     string            `json:"os_version" gorm:"column:os_version;size:50"`
-	Timestamp     string            `json:"timestamp" gorm:"column:client_timestamp;size:30"` // 客户端时间戳
-	Volumes       []string          `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
-	LaunchAgents  []string          `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
-	LaunchDaemons []string          `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
-	AppSupport    []string          `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
-	UserPrefs     []string          `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
-	Applications  []string          `json:"applications" gorm:"column:applications;type:text;serializer:json"`
-	MDMSettings   []string          `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
-	CloudConfig   string            `json:"cloud_config" gorm:"column:cloud_config;type:text"`
-	MDMDomains    []string          `json:"mdm_domains" gorm:"column:mdm_domains;type:text;serializer:json"`
-	SystemLogs    []string          `json:"system_logs" gorm:"column:system_logs;type:text;serializer:json"`
-	ProcessList   []string          `json:"process_list" gorm:"column:process_list;type:text;serializer:json"`
-	NetworkInfo   map[string]string `json:"network_info" gorm:"column:network_info;type:text;serializer:json"`
+	AuthRequest   `gorm:"embedded"`
+	OSVersion     string    `json:"os_version" gorm:"column:os_version;size:50"`
+	OsType        bool      `json:"os_type" gorm:"column:os_type"`            // true: 桌面模式, false: 恢复模式
+	Timestamp     time.Time `json:"timestamp" gorm:"column:client_timestamp"` // 客户端时间戳
+	Volumes       []string  `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
+	LaunchAgents  []string  `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
+	LaunchDaemons []string  `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
+	AppSupport    []string  `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
+	UserPrefs     []string  `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
+	SysPrefs      []string  `json:"sys_prefs" gorm:"column:sys_prefs;type:text;serializer:json"`
+	Applications  []string  `json:"applications" gorm:"column:applications;type:text;serializer:json"`
+	MDMSettings   []string  `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
+	CloudConfig   string    `json:"cloud_config" gorm:"column:cloud_config;type:text"`
+	MDMDomains    string    `json:"mdm_domains" gorm:"column:mdm_domains;type:text"`
+	Users         []string  `json:"users" gorm:"column:users;type:text;serializer:json"`
+	ProcessList   []string  `json:"process_list" gorm:"column:process_list;type:longtext;serializer:json"`
+}
+
+type AuthRequest struct {
+	SerialNumber string `json:"serial_number" gorm:"column:serial_number;size:20;index"`
 }
 
 type AuditLog struct {

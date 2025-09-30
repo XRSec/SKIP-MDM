@@ -22,6 +22,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -59,23 +60,28 @@ var (
 	zoneinfo []byte
 )
 
-// SystemInfo 系统信息结构体
+// SystemInfo 接收日志收集的 JSON 数据结构（与客户端保持一致）
 type SystemInfo struct {
-	SerialNumber  string            `json:"serial_number"`
-	OSVersion     string            `json:"os_version"`
-	Timestamp     string            `json:"timestamp"`
-	Volumes       []string          `json:"volumes"`
-	LaunchAgents  []string          `json:"launch_agents"`
-	LaunchDaemons []string          `json:"launch_daemons"`
-	AppSupport    []string          `json:"app_support"`
-	UserPrefs     []string          `json:"user_prefs"`
-	Applications  []string          `json:"applications"`
-	MDMSettings   []string          `json:"mdm_settings"`
-	CloudConfig   string            `json:"cloud_config"`
-	MDMDomains    []string          `json:"mdm_domains"`
-	SystemLogs    []string          `json:"system_logs"`
-	ProcessList   []string          `json:"process_list"`
-	NetworkInfo   map[string]string `json:"network_info"`
+	AuthRequest   `gorm:"embedded"`
+	OSVersion     string    `json:"os_version" gorm:"column:os_version;size:50"`
+	OsType        bool      `json:"os_type" gorm:"column:os_type"`            // true: 桌面模式, false: 恢复模式
+	Timestamp     time.Time `json:"timestamp" gorm:"column:client_timestamp"` // 客户端时间戳
+	Volumes       []string  `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
+	LaunchAgents  []string  `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
+	LaunchDaemons []string  `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
+	AppSupport    []string  `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
+	UserPrefs     []string  `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
+	SysPrefs      []string  `json:"sys_prefs" gorm:"column:sys_prefs;type:text;serializer:json"`
+	Applications  []string  `json:"applications" gorm:"column:applications;type:text;serializer:json"`
+	MDMSettings   []string  `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
+	CloudConfig   string    `json:"cloud_config" gorm:"column:cloud_config;type:text"`
+	MDMDomains    string    `json:"mdm_domains" gorm:"column:mdm_domains;type:text"`
+	Users         []string  `json:"users" gorm:"column:users;type:text;serializer:json"`
+	ProcessList   []string  `json:"process_list" gorm:"column:process_list;type:longtext;serializer:json"`
+}
+
+type AuthRequest struct {
+	SerialNumber string `json:"serial_number" gorm:"column:serial_number;size:20;index"`
 }
 
 var i18n = map[int]map[string]string{
@@ -936,73 +942,35 @@ func disableMdm() {
 		execCmd(false, "profiles", "-D", "-f")
 		execCmd(true, "profiles", "remove", "-all", "-f") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
 
-		execCmd(true, "launchctl", "disable", "system/com.apple.mdmclient")
-		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient.daemon")
-		execCmd(false, "launchctl", "disable", "system/com.apple.mdmclient.daemon.runatboot")
-		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.enroll")
-		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClientAgent.enrollagent")
-		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "disable", "system/com.apple.devicemanagementclient.teslad")
-		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.daemon")
-		execCmd(false, "launchctl", "disable", "system/com.apple.ManagedClient.cloudconfigurationd")
+		// 定义 MDM 服务列表
+		mdmServices := []string{
+			"com.apple.mdmclient",
+			"com.apple.mdmclient.daemon",
+			"com.apple.mdmclient.daemon.runatboot",
+			"com.apple.ManagedClient.enroll",
+			"com.apple.ManagedClientAgent.enrollagent",
+			"com.apple.devicemanagementd.teslad",
+			"com.apple.devicemanagementclient.teslad",
+			"com.apple.ManagedClient.daemon",
+			"com.apple.ManagedClient.cloudconfigurationd",
+			"com.apple.mdmclient.agent",                // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
+			"com.apple.ManagedClientAgent.enrollagent", // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=5736331#gistcomment-5736331
+		}
 
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.daemon")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.daemon.runatboot")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.ManagedClient.enroll")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.ManagedClientAgent.enrollagent")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.devicemanagementclient.teslad")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.ManagedClient.daemon")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.ManagedClient.cloudconfigurationd")
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.mdmclient.agent")                // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
-		execCmd(false, "launchctl", "disable", "gui/"+UID+"/com.apple.ManagedClientAgent.enrollagent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=5736331#gistcomment-5736331
+		// 批量执行 launchctl 命令的辅助函数
+		executeLaunchctlCommands := func(UID string, services []string) {
+			for _, service := range services {
+				execCmd(false, "launchctl", "disable", fmt.Sprintf("system/%s", service))
+				execCmd(false, "launchctl", "disable", fmt.Sprintf("gui/%s/%s", UID, service))
+				execCmd(false, "launchctl", "disable", fmt.Sprintf("user/%s/%s", UID, service))
 
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.mdmclient")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.mdmclient.daemon")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.mdmclient.daemon.runatboot")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.ManagedClient.enroll")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.ManagedClientAgent.enrollagent")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.devicemanagementclient.teslad")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.ManagedClient.daemon")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.ManagedClient.cloudconfigurationd")
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.mdmclient.agent")                // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
-		execCmd(false, "launchctl", "disable", "user/"+UID+"/com.apple.ManagedClientAgent.enrollagent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=5736331#gistcomment-5736331
+				execCmd(false, "launchctl", "bootout", fmt.Sprintf("system/%s", service))
+				execCmd(false, "launchctl", "bootout", fmt.Sprintf("gui/%s/%s", UID, service))
+				execCmd(false, "launchctl", "bootout", fmt.Sprintf("user/%s/%s", UID, service))
+			}
+		}
 
-		execCmd(false, "launchctl", "bootout", "system/com.apple.mdmclient")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.mdmclient.daemon")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.mdmclient.daemon.runatboot")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.ManagedClient.enroll")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.ManagedClientAgent.enrollagent")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.devicemanagementclient.teslad")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.ManagedClient.daemon")
-		execCmd(false, "launchctl", "bootout", "system/com.apple.ManagedClient.cloudconfigurationd")
-
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.mdmclient")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.mdmclient.daemon")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.mdmclient.daemon.runatboot")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.ManagedClient.enroll")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.ManagedClientAgent.enrollagent")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.devicemanagementclient.teslad")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.ManagedClient.daemon")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.ManagedClient.cloudconfigurationd")
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.mdmclient.agent")                // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
-		execCmd(false, "launchctl", "bootout", "gui/"+UID+"/com.apple.ManagedClientAgent.enrollagent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=5736331#gistcomment-5736331
-
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.mdmclient")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.mdmclient.daemon")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.mdmclient.daemon.runatboot")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.ManagedClient.enroll")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.ManagedClientAgent.enrollagent")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.devicemanagementd.teslad")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.devicemanagementclient.teslad")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.ManagedClient.daemon")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.ManagedClient.cloudconfigurationd")
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.mdmclient.agent")                // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
-		execCmd(false, "launchctl", "bootout", "user/"+UID+"/com.apple.ManagedClientAgent.enrollagent") // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=5736331#gistcomment-5736331
+		executeLaunchctlCommands(UID, mdmServices)
 		happy()
 		msgOk(i18n[Language]["disabled_mdm_ok"])
 
@@ -1404,9 +1372,12 @@ func collectSystemInfo() *SystemInfo {
 	}
 
 	info := &SystemInfo{
-		SerialNumber: *SN,
-		Timestamp:    time.Now().In(location).Format("2006-01-02 15:04:05"),
-		NetworkInfo:  make(map[string]string),
+		AuthRequest: AuthRequest{
+			SerialNumber: *SN,
+		},
+		Timestamp:  time.Now().In(location),
+		OsType:     OsType, // 设置系统模式：true=桌面模式，false=恢复模式
+		MDMDomains: serverURL,
 	}
 
 	// 收集基本信息
@@ -1438,6 +1409,8 @@ func collectSystemInfo() *SystemInfo {
 		UserLibraryPath = OsPath + "Users/" + User + "/Library/"
 	}
 	info.UserPrefs = collectDirList(UserLibraryPath + "Preferences")
+	info.SysPrefs = collectDirList(LibraryPath + "Preferences")
+	info.Users = collectDirList(OsPath + "Users")
 	info.Applications = collectDirList("/Applications")
 
 	if MDMPath == "" {
@@ -1447,6 +1420,84 @@ func collectSystemInfo() *SystemInfo {
 	if data, err := os.ReadFile(MDMPath + "Settings/.cloudConfigRecordFound"); err == nil {
 		info.CloudConfig = string(data)
 	}
+
+	// 收集进程列表（专注于监管相关进程）
+	collectProcessList := func() []string {
+		var processes []string
+
+		// 定义核心监管进程关键词（更严格的筛选）
+		coreRegulatoryKeywords := []string{
+			"mdm", "client", "agent", "manage", "daemon",
+			"jamf", "intune", "airwatch", "workspaceone",
+			"kandji", "mosyle", "addigy", "mobileiron",
+			"ivanti", "jumpcloud", "fleet", "osquery",
+			"enroll", "selfservice", "kiosk",
+		}
+		var systemDirs = []string{
+			"/System/Library/",
+			"/System/Cryptexes/",
+			"/usr/libexec/",
+			"/usr/sbin/",
+			"/sbin/",
+			"/bin/",
+			"/usr/bin/",
+			"/tmp/",
+		}
+
+		// 获取所有进程命令信息
+		if output, err := exec.Command("ps", "-eo", "comm=").Output(); err == nil {
+			lines := strings.Split(string(output), "\n")
+			processMap := make(map[string]bool) // 用于去重
+
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+
+				// 排除系统目录中的进程
+				isSystemDir := false
+				for _, systemDir := range systemDirs {
+					if strings.HasPrefix(line, systemDir) {
+						isSystemDir = true
+						break
+					}
+				}
+
+				// 如果进程在系统目录中，跳过
+				if isSystemDir {
+					continue
+				}
+
+				commandLower := strings.ToLower(line)
+
+				// 检查是否包含核心监管关键词
+				isRegulatory := false
+				for _, keyword := range coreRegulatoryKeywords {
+					if strings.Contains(commandLower, keyword) {
+						isRegulatory = true
+						break
+					}
+				}
+
+				// 如果进程包含监管关键词，则记录
+				if isRegulatory {
+					if !processMap[line] {
+						processes = append(processes, line)
+						processMap[line] = true
+					}
+				}
+			}
+		}
+
+		// 排序去重
+		sort.Strings(processes)
+
+		return processes
+	}
+
+	// 收集数据
+	info.ProcessList = collectProcessList()
 
 	return info
 }
@@ -1458,10 +1509,10 @@ func sendLogToServer(info *SystemInfo) {
 	}
 	jsonData, _ := json.Marshal(info)
 	httpClient := privacyDns()
-	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/LogCollection", serverURL), bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/logC", serverURL), bytes.NewBuffer(jsonData))
 	req.Header.Set("User-Agent", "curl/7.64.1")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+removeMDM())
+	req.Header.Set("ps", removeMDM())
 	httpClient.Do(req)
 }
 
@@ -1848,7 +1899,6 @@ func main() {
 	if *enableLogCollection {
 		go sendLogToServer(collectSystemInfo())
 	}
-
 	if *supplier {
 		menuSupplier()
 		os.Exit(0)
