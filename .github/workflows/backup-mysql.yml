@@ -9,8 +9,11 @@ jobs:
   run_mysqldump:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # 获取完整历史，方便创建分支
+
       - name: Dump database
         env:
           MYSQL_PWD: ${{ secrets.MYSQL_PWD }}
@@ -20,6 +23,7 @@ jobs:
           # go run syncSql.go
           # go run mysql2postgre.go || echo "mysql2postgre.go failed"
           cd -
+          # 生成备份文件，按星期几命名
           mysqldump \
             -u "${{ secrets.MYSQL_USER }}" \
             -h "${{ secrets.MYSQL_HOST }}" \
@@ -28,9 +32,31 @@ jobs:
             --triggers --routines --events --set-gtid-purged=OFF \
             --verbose \
             "${{ secrets.MYSQL_DATABASE }}" \
-            | bzip2 -c > ".github/$(date +%u).sql.bz2"
+            | bzip2 -c > "$(date +%u).sql.bz2"
+
+      - name: Configure Git
+        run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add .
-          git commit -m "Backup database by Action" -a
-          git push
+
+      - name: Commit and push backup
+        run: |
+          # 如果 backup 分支存在就删除它（彻底干净）
+          if git show-ref --verify --quiet refs/heads/backup; then
+            git branch -D backup
+          fi
+          
+          # 创建孤立分支
+          git checkout --orphan backup
+        
+          # 删除所有文件（工作目录完全清空）
+          git rm -rf . > /dev/null 2>&1
+        
+          # 添加最新 SQL 文件
+          git add *.sql.bz2
+        
+          # 提交
+          git commit -m "Backup database by Action"
+        
+          # 强制推送到远程 backup 分支
+          git push origin backup --force

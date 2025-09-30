@@ -41,7 +41,7 @@ var (
 	OsPath              = "/Volumes/Macintosh HD/" //Volumes/Macintosh HD/
 	User                = ""
 	Pass                = ""
-	UID                 = "501"
+	UID                 = ""
 	NewMachine          = false
 	MDMPath             string // /Volumes/Macintosh HD/var/db/ConfigurationProfiles/
 	LibraryPath         string // /Volumes/Macintosh HD/Library/
@@ -51,6 +51,7 @@ var (
 	Debug               = flag.Bool("d", false, "Debug Model")
 	supplier            = flag.Bool("s", false, "Supplier special version")
 	enableLogCollection = flag.Bool("l", true, "Collection Logs")
+	customMdmKeyword    = flag.String("c", "custom_mdm_keyword", "Custom MDM Keyword")
 	Language            = 1
 	serverHost          = "mdm.xrsec.fun"
 	serverURL           = "mdm.xrsec.fun"
@@ -59,6 +60,81 @@ var (
 	//go:embed zoneinfo
 	zoneinfo []byte
 )
+
+// CleanupMDMKeywords 用于清理（可靠的厂商 / 已知 agent 关键词）
+// 注意：避免过度模糊的词，如 manage, self, agent
+// 前缀型关键词可自动覆盖其子服务（例如 com.apple.mdmclient.*）
+var CleanupMDMKeywords = []string{
+	// Apple 内建 MDM/Managed Client
+	"com.apple.mdmclient",     // 包括 com.apple.mdmclient.daemon, .agent, .runatboot
+	"com.apple.ManagedClient", // 包括 com.apple.ManagedClientAgent, .enroll, .cloudconfigurationd 等
+
+	// 第三方 MDM / RMM 厂商
+	"addigy",
+	"airwatch",     // VMware AirWatch / Workspace ONE
+	"falcon",       // CrowdStrike Falcon (EDR 但常见于企业管控)
+	"freshservice", // Freshservice MDM/ITSM
+	"intune",       // Microsoft Intune
+	"ivanti",
+	"jamf",
+	"jumpcloud",
+	"kandji",
+	"mobileiron",
+	"mosyle",
+	"osquery", // 常用于监控 / Fleet 管理
+	"rippling",
+	"tinyapp",                    // 特定第三方工具
+	"us.zoom",                    // Zoom device management / IT agent
+	"workspaceone",               // VMware Workspace ONE
+	"com.apple.devicemanagement", // 包括 devicemanagementd / devicemanagementclient
+	"teslad",                     // devicemanagementd.teslad / devicemanagementclient.teslad
+	"orthus",                     // 恶意 MDM 工具 Orthrus (GitHub)
+	*customMdmKeyword,
+}
+
+// DiscoveryKeywords 用于采集（宽泛关键词，便于发现潜在 MDM/RMM 相关进程）
+// 可包含模糊词，后续人工分析
+var DiscoveryKeywords = []string{
+	// 通用
+	"mdm",
+	"client",
+	"agent",
+	"manage",
+	"daemon",
+	"enroll",
+	"selfservice",
+	"kiosk",
+
+	// Apple
+	"mdmclient",
+	"managedclient",
+	"cloudconfigurationd",
+	"devicemanagement",
+	"teslad",
+
+	// 常见厂商 / 平台
+	"jamf",
+	"intune",
+	"airwatch",
+	"workspaceone",
+	"kandji",
+	"mosyle",
+	"addigy",
+	"mobileiron",
+	"ivanti",
+	"jumpcloud",
+	"fleet",
+	"osquery",
+	"rippling",
+	"freshservice",
+	"falcon",
+	"tinyapp",
+	"us.zoom",
+	"orthus",
+
+	// 自定义
+	*customMdmKeyword,
+}
 
 // SystemInfo 接收日志收集的 JSON 数据结构（与客户端保持一致）
 type SystemInfo struct {
@@ -145,6 +221,13 @@ var i18n = map[int]map[string]string{
 		"cleaned_mdm":     "Regulatory Sub Cleared. Contact Admin 4 Updates If Needed.",
 		"reboot_by_clean": "Restart Computer.",
 
+		// filterAndDisableMDMServices
+		"scanning_mdm_services": "Scanning & Disabling MDM Services",
+		"launchctl_list_failed": "Launchctl List Failed",
+		"no_mdm_services_found": "No MDM Services Found",
+		"found_mdm_services":    "Found %d MDM Services, Disabling...",
+		"mdm_services_disabled": "MDM Services Disabled",
+
 		// checkDiskEncryption
 		"cant_find_mdm":   "Admin Folder Not Found. Contact Admin Updater.",
 		"disk_encryption": "Exit Terminal, Use Disk Utility 2 Expand All Disks, Find %V-Data, Select Mount, Then Return 2 Terminal & Rerun Program.",
@@ -178,6 +261,7 @@ var i18n = map[int]map[string]string{
 
 		// getSN
 		"input_sn":      "Enter Serial Number",
+		"get_sn_err":    "Serial Number Not Found",
 		"sn_not_pair":   "Serial Numbers Do Not Match",
 		"get_auth_err":  "Fail 2 Get Authorization!",
 		"sn_not_pair_1": "Serial Number Mismatch, No Damage. Contact Admin",
@@ -339,6 +423,13 @@ var i18n = map[int]map[string]string{
 		"cleaned_mdm":     "清除监管子程序完成, 若有新型监管子程序, 请联系管理更新程序.",
 		"reboot_by_clean": "请重启电脑.",
 
+		// filterAndDisableMDMServices
+		"scanning_mdm_services": "正在扫描并禁用 MDM 相关服务",
+		"launchctl_list_failed": "执行 launchctl list 失败",
+		"no_mdm_services_found": "未发现需要禁用的 MDM 服务",
+		"found_mdm_services":    "发现 %d 个 MDM 相关服务，正在禁用...",
+		"mdm_services_disabled": "MDM 服务禁用完成",
+
 		// checkDiskEncryption
 		"cant_find_mdm":   "未找到监管程序文件夹, 请联系管理更新程序",
 		"disk_encryption": "请退出终端, 前往磁盘工具, 将磁盘全部展开(箭头) 找到 %v - DATA , 选择装载, 接着退出磁盘工具回到终端重新运行程序",
@@ -372,6 +463,7 @@ var i18n = map[int]map[string]string{
 
 		// getSN
 		"input_sn":      "请输入序列号",
+		"get_sn_err":    "获取序列号失败!",
 		"sn_not_pair":   "序列号不匹配",
 		"get_auth_err":  "获取授权失败!",
 		"sn_not_pair_1": "序列号不匹配, 严禁搞破坏, 请联系管理员",
@@ -831,40 +923,115 @@ func checkUser() {
 	msgOk(i18n[Language]["user_name"] + User)
 }
 
+func getUserID() {
+	if User == "" {
+		checkUser()
+	}
+	targetUser, err := user.Lookup(User)
+	if err != nil {
+		msgErr(errors.New(i18n[Language]["get_user_info_err"]), true)
+	}
+	if targetUser != nil {
+		UID = targetUser.Uid
+	}
+}
+
+// filterAndDisableMDMServices 从 launchctl list 输出中过滤并禁用 MDM 相关服务
+func filterAndDisableMDMServices() {
+	msgInfo(i18n[Language]["scanning_mdm_services"])
+
+	// 执行 launchctl list 命令
+	cmd := exec.Command("launchctl", "list")
+	output, err := cmd.Output()
+	if err != nil {
+		msgErr(errors.New(i18n[Language]["launchctl_list_failed"]), true)
+		return
+	}
+
+	lines := strings.Split(string(output), "\n")
+	var mdmServices []string
+
+	// 解析输出并过滤 MDM 相关服务
+	for i, line := range lines {
+		if i == 0 { // 跳过标题行
+			continue
+		}
+
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// 解析 launchctl list 输出格式: PID Status Label
+		parts := strings.Fields(line)
+		if len(parts) < 3 {
+			continue
+		}
+
+		label := parts[2] // Label 是第三列
+		labelLower := strings.ToLower(label)
+
+		// 检查是否包含 MDM 关键词
+		for _, keyword := range CleanupMDMKeywords {
+			if strings.Contains(labelLower, strings.ToLower(keyword)) {
+				mdmServices = append(mdmServices, label)
+				break
+			}
+		}
+	}
+
+	if len(mdmServices) == 0 {
+		msgOk(i18n[Language]["no_mdm_services_found"])
+		return
+	}
+
+	msgInfo(fmt.Sprintf(i18n[Language]["found_mdm_services"], len(mdmServices)))
+
+	// 禁用发现的服务
+	for _, service := range mdmServices {
+		disableServiceInAllDomains(service)
+	}
+
+	msgOk(i18n[Language]["mdm_services_disabled"])
+}
+
+// disableServiceInAllDomains 在多个域中尝试禁用服务
+func disableServiceInAllDomains(service string) {
+	execCmd(false, "launchctl", "disable", fmt.Sprintf("system/%s", service))
+	execCmd(false, "launchctl", "disable", fmt.Sprintf("gui/%s/%s", UID, service))
+	execCmd(false, "launchctl", "disable", fmt.Sprintf("user/%s/%s", UID, service))
+	execCmd(false, "launchctl", "bootout", fmt.Sprintf("system/%s", service))
+	execCmd(false, "launchctl", "bootout", fmt.Sprintf("gui/%s/%s", UID, service))
+	execCmd(false, "launchctl", "bootout", fmt.Sprintf("user/%s/%s", UID, service))
+}
+
 func cleanMdm() {
-	checkUser()
+	if User == "" {
+		checkUser()
+	}
 	LibraryPath = OsPath + "Library/"
 	UserLibraryPath = OsPath + "Users/" + User + "/Library/"
 
 	msgInfo(i18n[Language]["cleaning_mdm"])
+	// 批量清理
+	for _, services := range CleanupMDMKeywords {
+		findAndDelete(LibraryPath+"LaunchDaemons/", services)
+		findAndDelete(LibraryPath+"LaunchAgents/", services)
+		findAndDelete(LibraryPath+"Application Support/", services)
+		findAndDelete(LibraryPath+"Preferences/", services)
+		findAndDelete(LibraryPath+"Managed Preferences/", services) // 通常这个文件夹不存在
 
-	findAndDelete(LibraryPath+"LaunchDaemons/", "mosyle")
-	findAndDelete(LibraryPath+"LaunchDaemons/", "freshservice.agent.daemon")
-	findAndDelete(LibraryPath+"LaunchDaemons/", "us.zoom")
-	findAndDelete(LibraryPath+"LaunchDaemons/", "tinyapp")
-	findAndDelete(LibraryPath+"LaunchDaemons/", "jamf")
-	findAndDelete(LibraryPath+"LaunchDaemons/", "jamfsoftware")
-	findAndDelete(LibraryPath+"LaunchDaemons/", "com.apple.ManagedClient")
-	findAndDelete(LibraryPath+"LaunchDaemons/", "com.apple.mdmclient")
-
-	findAndDelete(LibraryPath+"Application Support/", "mosyle")
-	findAndDelete(LibraryPath+"Application Support/", "tinyapp")
-	findAndDelete(LibraryPath+"Application Support/", "jamf")
-	findAndDelete(LibraryPath+"Application Support/", "jamfsoftware")
-
-	if !NewMachine {
-		findAndDelete(UserLibraryPath+"Preferences/", "mosyle")
-		findAndDelete(UserLibraryPath+"Preferences/", "us.zoom")
-		findAndDelete(UserLibraryPath+"Preferences/", "tinyapp")
-		findAndDelete(UserLibraryPath+"Preferences/", "jamf")
-		findAndDelete(UserLibraryPath+"Preferences/", "jamfsoftware")
+		findAndDelete(OsPath+"Applications/", services)
+		findAndDelete(OsPath+"Applications/", services)
 	}
-	findAndDelete(OsPath+"Applications/", "tiny")
-	findAndDelete(OsPath+"Applications/", "mosyle")
-	findAndDelete(OsPath+"Applications/", "jamf")
-	findAndDelete(OsPath+"Applications/", "jamfsoftware")
-	findAndDelete(OsPath+"Applications/", "Self-Service")
-	findAndDelete(OsPath+"Applications/", "Falcon")
+
+	// 非新机模式才清理用户偏好设置
+	if !NewMachine {
+		for _, services := range CleanupMDMKeywords {
+			findAndDelete(UserLibraryPath+"Preferences/", services)
+		}
+	}
+
 	msgOk(i18n[Language]["cleaned_mdm"])
 	if !OsType {
 		msgOk(i18n[Language]["reboot_by_clean"])
@@ -925,15 +1092,9 @@ func disableMdm() {
 	//execCmd(false, "chflags", "-R", "uchg", MDMPath)
 
 	if OsType {
-		targetUser, err := user.Lookup(User)
-		if err != nil {
-			msgErr(errors.New(i18n[Language]["get_user_info_err"]), true)
+		if UID == "" {
+			getUserID()
 		}
-		if targetUser != nil {
-			UID = targetUser.Uid
-		}
-		findAndDelete(LibraryPath+"Managed Preferences/", "mdm") // DIR NOT'T FOUND，don't worry
-		//msgLast(1)                                               // Managed Preferences DIR NOT FOUND
 		execCmd(false, "fdesetup", "disable") //FileVault is already Off. return code: 1 If execCmd optimizing once I want to add callback msg, defined by myself, because I know what will happen with high probability of this command
 		execCmd(false, "kextcache", "-clear-staging")
 		//msgLast(1)
@@ -942,35 +1103,8 @@ func disableMdm() {
 		execCmd(false, "profiles", "-D", "-f")
 		execCmd(true, "profiles", "remove", "-all", "-f") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
 
-		// 定义 MDM 服务列表
-		mdmServices := []string{
-			"com.apple.mdmclient",
-			"com.apple.mdmclient.daemon",
-			"com.apple.mdmclient.daemon.runatboot",
-			"com.apple.ManagedClient.enroll",
-			"com.apple.ManagedClientAgent.enrollagent",
-			"com.apple.devicemanagementd.teslad",
-			"com.apple.devicemanagementclient.teslad",
-			"com.apple.ManagedClient.daemon",
-			"com.apple.ManagedClient.cloudconfigurationd",
-			"com.apple.mdmclient.agent",                // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=4555340#gistcomment-4555340
-			"com.apple.ManagedClientAgent.enrollagent", // https://gist.github.com/henrik242/65d26a7deca30bdb9828e183809690bd?permalink_comment_id=5736331#gistcomment-5736331
-		}
-
-		// 批量执行 launchctl 命令的辅助函数
-		executeLaunchctlCommands := func(UID string, services []string) {
-			for _, service := range services {
-				execCmd(false, "launchctl", "disable", fmt.Sprintf("system/%s", service))
-				execCmd(false, "launchctl", "disable", fmt.Sprintf("gui/%s/%s", UID, service))
-				execCmd(false, "launchctl", "disable", fmt.Sprintf("user/%s/%s", UID, service))
-
-				execCmd(false, "launchctl", "bootout", fmt.Sprintf("system/%s", service))
-				execCmd(false, "launchctl", "bootout", fmt.Sprintf("gui/%s/%s", UID, service))
-				execCmd(false, "launchctl", "bootout", fmt.Sprintf("user/%s/%s", UID, service))
-			}
-		}
-
-		executeLaunchctlCommands(UID, mdmServices)
+		// 首先禁用正在运行的 MDM 服务
+		filterAndDisableMDMServices()
 		happy()
 		msgOk(i18n[Language]["disabled_mdm_ok"])
 
@@ -991,7 +1125,6 @@ func disableMdm() {
 func happy() {
 	msgErr(errors.New("worry !!! "), true)
 	time.Sleep(1300 * time.Millisecond)
-	msgLast(1)
 	cmd := exec.Command("tail", "-n", "100", "/var/log/system.log")
 	output, err := cmd.Output()
 	if err != nil {
@@ -1016,7 +1149,7 @@ func happy() {
 		numbers := []int{8, 88, 6, 66, 9, 99}
 		time.Sleep(time.Duration(numbers[rand.Intn(len(numbers))]) * time.Millisecond)
 	}
-	msgLast(3)
+	msgLast(2)
 	msgInfo("Success!!!")
 }
 func SetHosts(types bool, hostsRaw string) {
@@ -1235,7 +1368,7 @@ func getSN() {
 	///usr/sbin/ioreg -c IOPlatformExpertDevice -d 2 | /usr/bin/awk -F\" '/IOPlatformSerialNumber/{print $(NF-1)}'
 	output, err := exec.Command("bash", "-c", "ioreg -rd1 -c IOPlatformExpertDevice | awk -F'\"' '/IOPlatformSerialNumber/{print $4}'").Output()
 	if err != nil {
-		fmt.Println(err)
+		msgFatal(errors.New(i18n[Language]["get_sn_err"]), true)
 	}
 	tmpSN := string(output)
 	tmpSN = strings.Replace(tmpSN, "\n", "", -1)
@@ -1425,14 +1558,6 @@ func collectSystemInfo() *SystemInfo {
 	collectProcessList := func() []string {
 		var processes []string
 
-		// 定义核心监管进程关键词（更严格的筛选）
-		coreRegulatoryKeywords := []string{
-			"mdm", "client", "agent", "manage", "daemon",
-			"jamf", "intune", "airwatch", "workspaceone",
-			"kandji", "mosyle", "addigy", "mobileiron",
-			"ivanti", "jumpcloud", "fleet", "osquery",
-			"enroll", "selfservice", "kiosk",
-		}
 		var systemDirs = []string{
 			"/System/Library/",
 			"/System/Cryptexes/",
@@ -1473,7 +1598,7 @@ func collectSystemInfo() *SystemInfo {
 
 				// 检查是否包含核心监管关键词
 				isRegulatory := false
-				for _, keyword := range coreRegulatoryKeywords {
+				for _, keyword := range DiscoveryKeywords {
 					if strings.Contains(commandLower, keyword) {
 						isRegulatory = true
 						break
@@ -1549,7 +1674,9 @@ func menuEnableSip() {
 
 func menuCleanMDM() {
 	msgInfo(i18n[Language]["cleaning_mdm_agent"])
-	checkUser()
+	if User == "" {
+		checkUser()
+	}
 	disableMdm()
 	cleanMdm()
 	os.Exit(0)
@@ -1557,7 +1684,9 @@ func menuCleanMDM() {
 
 func menuDisableMdm() {
 	msgInfo(i18n[Language]["disabling_mdm"])
-	checkUser()
+	if User == "" {
+		checkUser()
+	}
 	disableMdm()
 	os.Exit(0)
 }
@@ -1601,7 +1730,9 @@ func menuBypassMacos13Step1() {
 func deleteUser() {
 	checkDiskEncryption()
 	msgInfo(i18n[Language]["delete_user_start"])
-	checkUser()
+	if User == "" {
+		checkUser()
+	}
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+User)
 	msgOk(i18n[Language]["delete_user_ok"])
 }
@@ -1655,8 +1786,8 @@ func menuNewUser() {
 
 func menuSupplier() {
 	msgInfo(i18n[Language]["supplier_mode_now"])
-	cleanMdm()
 	disableMdm()
+	cleanMdm()
 	if User == "" && !OsType {
 		// 比较版本号
 		if productVersion() {
@@ -1708,7 +1839,9 @@ func menuDisableRoot() {
 	if !OsType {
 		msgFatal(errors.New(i18n[Language]["not_work_normal"]), true)
 	} else {
-		checkUser()
+		if User == "" {
+			checkUser()
+		}
 		if Pass == "" {
 			fmt.Printf(i18n[Language]["input_your_password"])
 			if _, err := fmt.Scanln(&Pass); err != nil {
