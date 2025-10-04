@@ -2,9 +2,9 @@
 <html lang="en">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title class="title">MDM 权限验证</title>
     <style>
         * {
@@ -28,9 +28,17 @@
         }
 
         @keyframes gradientShift {
-            0% { background-position: 0 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0 50%; }
+            0% {
+                background-position: 0 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0 50%;
+            }
         }
 
         /* 背景装饰圆圈 */
@@ -60,8 +68,15 @@
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-50px) rotate(180deg); }
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-50px) rotate(180deg);
+            }
         }
 
         .container {
@@ -77,17 +92,17 @@
             padding: 40px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+                0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             animation: fadeIn 0.6s ease-out;
             overflow: hidden;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .container.collapsed {
@@ -103,16 +118,16 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
-            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+                0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             overflow: hidden;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                       max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .container.collapsed #menu,
@@ -142,6 +157,7 @@
             from {
                 opacity: 0;
             }
+
             to {
                 opacity: 1;
             }
@@ -205,8 +221,13 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         label {
@@ -393,7 +414,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         #navbar {
@@ -481,7 +504,7 @@
             display: block;
         }
 
-        .container.collapsed ~ #content {
+        .container.collapsed~#content {
             transform: translate(-50%, -50%);
         }
 
@@ -489,7 +512,12 @@
             z-index: 200;
         }
 
-        #content h1, #content h2, #content h3, #content h4, #content h5, #content h6 {
+        #content h1,
+        #content h2,
+        #content h3,
+        #content h4,
+        #content h5,
+        #content h6 {
             color: white;
             margin: 30px 0 20px;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -569,8 +597,13 @@
         }
 
         @keyframes flash-border {
-            0% { opacity: 0.8; }
-            100% { opacity: 0.3; }
+            0% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
         }
 
         iframe {
@@ -622,7 +655,8 @@
             color: rgba(255, 255, 255, 0.8);
         }
 
-        #content ul, #content ol {
+        #content ul,
+        #content ol {
             margin: 20px 0;
             padding-left: 30px;
             color: rgba(255, 255, 255, 0.9);
@@ -693,7 +727,8 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
-        #content th, #content td {
+        #content th,
+        #content td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -738,7 +773,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        #content details > *:not(summary) {
+        #content details>*:not(summary) {
             padding: 15px 20px;
             color: rgba(255, 255, 255, 0.9);
         }
@@ -791,7 +826,7 @@
                 top: calc(50% - 40px);
             }
 
-            .container.collapsed ~ #content {
+            .container.collapsed~#content {
                 left: 50%;
                 transform: translate(-50%, -50%);
                 width: 95%;
@@ -813,7 +848,8 @@
                 height: 35px;
                 font-size: 14px;
             }
-            #content details > *:not(summary) {
+
+            #content details>*:not(summary) {
                 padding: 10px;
             }
 
@@ -1033,7 +1069,7 @@
                         let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
                         if (windowWidth < 900) {
-                                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+                            window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
                         }
                     });
                 });
@@ -1104,7 +1140,7 @@
                 const url = (function buildUrl(endpoint, params) {
                     const queryString = Object.keys(params).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`).join('&');
                     return `http://${window.location.host}${endpoint}?${queryString}`;
-                })(endpoint, {serial_number: serialNumber, ...extraParams})
+                })(endpoint, { serial_number: serialNumber, ...extraParams })
 
                 fetch(url).then(response => response.json()).then(response => {
                     if (response?.code === 200) {
@@ -1118,6 +1154,9 @@
                         (function showDocs(doc) {
                             document.getElementById('content').innerHTML = marked.parse(doc);
                             addImageClickListeners();
+
+                            // 设置标题 ID（不切换 navbar 状态）
+                            setHeadingIds();
                             toggleNavbar()
 
                             // 显示内容
@@ -1144,7 +1183,7 @@
                                     const targetId = this.getAttribute('href');
                                     const targetElement = document.querySelector(targetId);
                                     if (targetElement) {
-                                        targetElement.scrollIntoView({behavior: 'smooth'});
+                                        targetElement.scrollIntoView({ behavior: 'smooth' });
                                     }
                                 });
                             });
@@ -1159,7 +1198,7 @@
                                 document.querySelectorAll('p > img').forEach((img) => {
                                     if (img.alt?.includes("须知")) {
                                         img.parentElement.classList.add('flash-border'); // 为每个 img 添加类
-                                        img.style.borderRadius=15
+                                        img.style.borderRadius = 15
                                     }
                                 });
                             }, 2500);
@@ -1167,7 +1206,7 @@
                                 document.querySelectorAll('p > img').forEach((img) => {
                                     if (img.alt?.includes("须知")) {
                                         img.parentElement.classList.remove('flash-border'); // 为每个 img 添加类
-                                        img.style.borderRadius="unset"
+                                        img.style.borderRadius = "unset"
                                     }
                                 });
                             }, 5500);
@@ -1291,84 +1330,106 @@
             submitButtons.forEach(btn => btn.value = newLang === "en" ? "Submit" : "提交");
         }
 
-        function toggleNavbar() {
-            navbarStatus = !navbarStatus;
+        // 设置标题 ID（独立函数，不依赖导航栏状态）
+        function setHeadingIds() {
+            let content = document.getElementById('content');
+            Array.from(content.querySelectorAll('h1, h2, h3')).forEach((heading, index) => {
+                heading.id = `heading-${index}`;
+            });
+        }
+
+        // 生成导航栏内容
+        function generateNavbarContent() {
             let content = document.getElementById('content');
             let navbarContent = document.getElementById('navbar-content');
-            let navbar = document.getElementById('navbar');
-            document.getElementById('toggle-button').innerHTML = navbarStatus ? dictionary[document.documentElement.lang]["hide"] : dictionary[document.documentElement.lang]["show"];
-            navbar.style.display = 'block';
-            if (!navbarStatus) {
-                navbarContent.innerHTML = '';
-                navbarContent.style.display = 'none';
-                return;
-            }
 
-            navbarContent.style.display = 'unset';
             navbarContent.innerHTML = '';
-
             Array.from(content.querySelectorAll('h1, h2, h3')).forEach((heading, index) => {
                 const level = parseInt(heading.tagName[1], 10);
                 const anchorId = `heading-${index}`;
-                heading.id = anchorId;
                 navbarContent.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;" class="navbar-link">${heading.textContent}</a>`;
             });
         }
+
+        // 切换导航栏显示状态
+        function toggleNavbar() {
+            navbarStatus = !navbarStatus;
+            let navbarContent = document.getElementById('navbar-content');
+            let navbar = document.getElementById('navbar');
+
+            // 更新按钮文本
+            document.getElementById('toggle-button').innerHTML = navbarStatus ?
+                dictionary[document.documentElement.lang]["hide"] :
+                dictionary[document.documentElement.lang]["show"];
+
+            // 显示/隐藏导航栏
+            navbar.style.display = 'block';
+            if (navbarStatus) {
+                navbarContent.style.display = 'unset';
+                generateNavbarContent(); // 生成导航内容
+            } else {
+                navbarContent.style.display = 'none';
+                navbarContent.innerHTML = '';
+            }
+        }
     </script>
 </head>
+
 <body>
-<div class="container">
-    <button id="collapse-button" onclick="toggleContainer()">−</button>
-    <div id="menu">
-        <ul>
-            <li class="active auth menu-item"></li>
-            <li class="add menu-item"></li>
-            <li class="language" onclick="toggleLanguage()"></li>
-        </ul>
-    </div>
-    <form id="form1">
-        <label class="serial_number" for="serial_number"></label>
-        <input type="text" id="serial_number" name="serial_number" class="placeholder_sn"><br>
-        <input class="submit" type="submit" value="">
-    </form>
-    <form id="form2">
-        <label class="card_id" for="card_id"></label>
-        <input type="text" id="card_id" name="card_id" class="placeholder_card_id"><br>
+    <div class="container">
+        <button id="collapse-button" onclick="toggleContainer()">−</button>
+        <div id="menu">
+            <ul>
+                <li class="active auth menu-item"></li>
+                <li class="add menu-item"></li>
+                <li class="language" onclick="toggleLanguage()"></li>
+            </ul>
+        </div>
+        <form id="form1">
+            <label class="serial_number" for="serial_number"></label>
+            <input type="text" id="serial_number" name="serial_number" class="placeholder_sn"><br>
+            <input class="submit" type="submit" value="">
+        </form>
+        <form id="form2">
+            <label class="card_id" for="card_id"></label>
+            <input type="text" id="card_id" name="card_id" class="placeholder_card_id"><br>
 
-        <label class="password" for="password"></label>
-        <input type="text" id="password" name="password" class="placeholder_password"><br>
+            <label class="password" for="password"></label>
+            <input type="text" id="password" name="password" class="placeholder_password"><br>
 
-        <label class="serial_number" for="serial_number1"></label>
-        <input type="text" id="serial_number1" name="serial_number" class="placeholder_sn"><br>
+            <label class="serial_number" for="serial_number1"></label>
+            <input type="text" id="serial_number1" name="serial_number" class="placeholder_sn"><br>
 
-        <input class="submit" type="submit" value="">
-    </form>
-    <div class="code">
-        <code id="copyText"></code>
-        <button class="copyText" onclick="copyText()"></button>
+            <input class="submit" type="submit" value="">
+        </form>
+        <div class="code">
+            <code id="copyText"></code>
+            <button class="copyText" onclick="copyText()"></button>
+        </div>
     </div>
-</div>
-<div id="loading-container" style="display: none;">
-    <div class="loading-spinner"></div>
-</div>
-<div id="navbar">
-    <div id="navbar-header">
-        <span style="color: white; font-weight: 600; font-size: 16px;">目录</span>
-        <button id="toggle-button" onclick="toggleNavbar()"></button>
+    <div id="loading-container" style="display: none;">
+        <div class="loading-spinner"></div>
     </div>
-    <div id="navbar-content"></div>
-</div>
-<div id="content"></div>
-<div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
-    建站不容易,熬夜两行泪<br>
-    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer" style="width: 14px;height: 14px"
-         alt="Gov Logo">
-    <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
-    <br>
-    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer" style="width: 14px;height: 14px"
-         alt="Gov Logo">
-    <a href="https://beian.mps.gov.cn/#/query/webSearch?code=36082602000219" rel="noreferrer" target="_blank">赣公网安备36082602000219</a>
-</div>
+    <div id="navbar">
+        <div id="navbar-header">
+            <span style="color: white; font-weight: 600; font-size: 16px;">目录</span>
+            <button id="toggle-button" onclick="toggleNavbar()"></button>
+        </div>
+        <div id="navbar-content"></div>
+    </div>
+    <div id="content"></div>
+    <div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
+        建站不容易,熬夜两行泪<br>
+        <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer"
+            style="width: 14px;height: 14px" alt="Gov Logo">
+        <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
+        <br>
+        <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer"
+            style="width: 14px;height: 14px" alt="Gov Logo">
+        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=36082602000219" rel="noreferrer"
+            target="_blank">赣公网安备36082602000219</a>
+    </div>
 
 </body>
+
 </html>
