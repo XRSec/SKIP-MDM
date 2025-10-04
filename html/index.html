@@ -7,78 +7,367 @@
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title class="title">MDM 权限验证</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            display: flex;
             justify-content: center;
             align-items: center;
-            height: 90vh;
-            /*margin: 30px;*/
-            padding: 0;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0 50%; }
+        }
+
+        /* 背景装饰圆圈 */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        body::before {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            left: -150px;
+        }
+
+        body::after {
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            right: -200px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-50px) rotate(180deg); }
         }
 
         .container {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
+            max-width: 480px;
             transform: translate(-50%, -50%);
-            height: auto;
-            background: #e3e3e3;
-            width: 380px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+            animation: fadeIn 0.6s ease-out;
+            overflow: hidden;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        form {
-            margin: 10px;
-            text-align: center;
-            display: none;
+        .container.collapsed {
+            left: 20px;
+            transform: translate(0, -50%);
+            width: 50px;
+            height: 50px;
+            max-width: 50px;
+            max-height: 50px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+            overflow: hidden;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                       max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        label {
-            display: inline-block; /* 设置为内联块元素 */
-            text-align: right; /* 右对齐文本 */
-            width: 45%; /* 根据实际情况设置宽度 */
+        .container.collapsed #menu,
+        .container.collapsed form,
+        .container.collapsed .code {
+            display: none !important;
         }
 
-        input[type="text"],
-        input[type="password"] {
-            width: 45%;
-            padding: 5px;
-            margin-bottom: 10px;
+        .container.collapsed #collapse-button {
+            position: static !important;
+            margin: 0 !important;
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 20px !important;
+            background: rgba(255, 255, 255, 0.3) !important;
+            backdrop-filter: blur(15px) !important;
+            top: auto !important;
+            right: auto !important;
         }
 
-        input[type="submit"] {
-            padding: 5px 20px;
-            background-color: #4CAF50;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        .container.collapsed #collapse-button:hover {
+            background: rgba(255, 255, 255, 0.4) !important;
+            transform: scale(1.05) !important;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
 
         #menu {
-            top: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            background-color: #f2f2f2;
-            padding: 5px 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         #menu ul {
             list-style: none;
-            margin: 0;
-            padding: 0;
+            display: flex;
+            gap: 8px;
         }
 
         #menu li {
-            width: 25%;
-            display: inline-block;
-            padding: 5px 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            flex: 1;
+            padding: 12px 20px;
+            text-align: center;
+            border-radius: 14px;
             cursor: pointer;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #menu li::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #menu li:hover::before {
+            opacity: 1;
         }
 
         #menu li.active {
-            background-color: #ccc;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
         }
+
+        form {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        label {
+            display: block;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        input[type="submit"]::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        input[type="submit"]:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        input[type="submit"]:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        input[type="submit"]:active {
+            transform: translateY(-1px);
+        }
+
+        .code {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 16px;
+            border-radius: 14px;
+            margin-top: 25px;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: white;
+            font-size: 13px;
+            line-height: 1.6;
+            display: block;
+            word-break: break-all;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        button {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        #toggle-button {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        #toggle-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        #collapse-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        #collapse-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
 
         #loading-container {
             position: fixed;
@@ -89,211 +378,451 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
             z-index: 9999;
         }
 
         .loading-spinner {
-            width: 40px;
-            height: 40px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            animation: spin 2s linear infinite;
+            border: 5px solid rgba(255, 255, 255, 0.2);
+            border-top: 5px solid white;
+            animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        img {
-            max-width: 95%;
+            to { transform: rotate(360deg); }
         }
 
         #navbar {
+            display: none;
             position: fixed;
-            top: 0;
-            right: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: #fff;
-            z-index: 4;
+            top: 20px;
+            right: 20px;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 0;
+            border-radius: 20px;
+            max-width: 300px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            z-index: 999;
         }
 
-        .navbar-link {
-            transition: background-color 0.3s ease;
+        #navbar-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        #content {
-            position: absolute;
-            top: 75%;
-            left: 50%;
-            transform: translate(-50%, 0);
-            height: auto;
-            width: 90%;
-            z-index: 3;
+        #navbar-content {
+            padding: 20px;
+            max-height: calc(70vh - 60px);
+            overflow-y: auto;
         }
 
-        a {
-            color: #1ea0ff;
-            padding: 2px 5px;
-            text-decoration: none;
+        #navbar::-webkit-scrollbar {
+            width: 6px;
         }
 
-        a:hover {
-            color: #ff6600; /* 悬停时文本颜色 */
-            text-decoration: underline; /* 添加下划线 */
+        #navbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
         }
 
-        a:visited {
-            text-decoration: none;
-            color: #1ea0ff;
+        #navbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
         }
 
-        #navbar a {
+        #navbar-content a {
             display: block;
-            color: #fff;
+            color: white;
             text-decoration: none;
-            margin-bottom: 5px;
-        }
-
-        iframe {
-            width: 50vw;
-            height: 30vw;
-        }
-
-        .code {
-            background-color: #f4f4f4;
-            border: 1px solid #ddd;
-            padding: 10px;
-            position: relative;
-            /*background-color: #f5f5f5;*/
-            font-size: 20px;
-        }
-
-        code {
-            font-family: Consolas, monospace;
-            color: #555;
-            text-align: left; /* 右对齐文本 */
-            white-space: pre-wrap;
-            line-height: 1.5;
-            tab-size: 4;
-            border-radius: 5px;
-            overflow: auto;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 10px;
+            transition: all 0.3s ease;
             font-size: 14px;
         }
 
-        button {
-            position: absolute;
-            right: 5px;
-            font-size: 15px;
-            background-color: #008CBA;
-            color: #fff;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            transition: opacity 0.3s ease;
+        #navbar-content a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
         }
 
-        button:hover {
-            opacity: 0.8;
-        }
-
-        #toggle-button {
+        #content {
             position: fixed;
-            top: 0;
-            right: 0;
-            color: #fff;
-            z-index: 4;
+            top: calc(50% - 40px);
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            max-width: 1200px;
+            width: 90%;
+            max-height: calc(100vh - 150px);
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            color: white;
+            display: none;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #content.show {
+            display: block;
+        }
+
+        .container.collapsed ~ #content {
+            transform: translate(-50%, -50%);
+        }
+
+        .container.collapsed {
+            z-index: 200;
+        }
+
+        #content h1, #content h2, #content h3, #content h4, #content h5, #content h6 {
+            color: white;
+            margin: 30px 0 20px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+            position: relative;
+        }
+
+        #content h1 {
+            font-size: 2.2em;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        #content h2 {
+            font-size: 1.8em;
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+            padding-left: 15px;
+        }
+
+        #content h3 {
+            font-size: 1.4em;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #content p {
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+        }
+
+        #content img {
+            max-width: 100%;
+            /*width: 90%;*/
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        #content img:hover {
+            transform: scale(1.02);
         }
 
         .footer {
             position: fixed;
             bottom: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
             text-align: center;
-            background-color: rgba(248, 248, 248, 0.5);
-            padding: 10px;
-            border-top: 1px solid #ccc;
-            font-size: 14px;
-            color: #cb6b60;
-            z-index: 3;
+            /* background: rgba(0, 0, 0, 0.3); */
+            /* backdrop-filter: blur(10px); */
+            padding: 15px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            z-index: 100;
+            /* border-top: 1px solid rgba(255, 255, 255, 0.1); */
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: white;
+            text-decoration: underline;
         }
 
         .flash-border {
-            animation: flash-border 0.5s infinite alternate; /* 边框闪烁动画 */
-            pointer-events: none; /* 使蒙版不干扰页面交互 */
-            background: linear-gradient(90deg, gold, orange); /* 渐变色 */
-            margin: 0 0 15px 10px;
-            border-radius: 10px;
+            animation: flash-border 0.5s infinite alternate;
+            background: linear-gradient(90deg, gold, orange);
+            padding: 3px;
+            border-radius: 15px;
+            margin: 15px 0;
         }
 
         @keyframes flash-border {
-            0% {
-                opacity: 0.8; /* 从半透明开始 */
-            }
-            100% {
-                opacity: 0.3; /* 渐变到透明 */
-            }
+            0% { opacity: 0.8; }
+            100% { opacity: 0.3; }
         }
 
-        @media screen and (orientation: portrait) and (max-device-width: 900px) and (max-device-height: 1200px), screen and (orientation: landscape) and (max-device-width: 1200px) and (max-device-height: 900px) {
-            * {
-                font-size: 15px;
-            }
+        iframe {
+            width: 100%;
+            height: 400px;
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
 
-            body {
-                height: 90vh;
-                font-size: 35px;
-                touch-action: manipulation;
-                -webkit-user-select: none; /* Chrome, Safari, Opera */
-                -moz-user-select: none; /* Firefox */
-                -ms-user-select: none; /* IE/Edge */
-                user-select: none; /* Non-prefixed version, currently supported by most modern browsers */
-                padding: 0;
-                margin: 0;
-            }
+        /* Marked 内容美化 */
+        #content pre {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
 
+        #content code {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f8f8f2;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #content pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+            color: #f8f8f2;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #content blockquote {
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+            margin: 20px 0;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        #content ul, #content ol {
+            margin: 20px 0;
+            padding-left: 30px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #content li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        #content ul li {
+            list-style-type: none;
+            position: relative;
+        }
+
+        #content ul li::before {
+            content: "•";
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: bold;
+            position: absolute;
+            left: -20px;
+        }
+
+        #content ol li {
+            list-style-type: decimal;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #content a {
+            color: #4facfe;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        #content a:hover {
+            color: #00f2fe;
+            background: rgba(79, 172, 254, 0.1);
+            border-bottom-color: #4facfe;
+        }
+
+        #content strong {
+            color: white;
+            font-weight: 700;
+        }
+
+        #content em {
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+        }
+
+        #content hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            margin: 30px 0;
+        }
+
+        #content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #content th, #content td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #content th {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 600;
+        }
+
+        #content td {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #content tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #content details {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        #content summary {
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        #content summary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        #content details[open] summary {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #content details > *:not(summary) {
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        @media screen and (max-width: 768px) {
             .container {
-                width: 98%;
+                padding: 35px;
+                border-radius: 35px;
+                max-height: 485px;
             }
 
-            label {
-                font-size: 16px;
-            }
-
-            input[type="text"] {
-                font-size: 15px;
-                width: 33%;
-            }
-
-            input[type="submit"] {
-                padding: 5px 15px;
-                font-size: 16px;
+            .container.collapsed {
+                left: 10px;
+                width: 45px;
+                height: 45px;
+                max-width: 45px;
+                max-height: 45px;
+                padding: 0;
             }
 
             #menu li {
-                font-size: 16px;
+                padding: 10px;
+                font-size: 13px;
+            }
+
+            #navbar {
+                max-width: 200px;
+                right: 10px;
+                top: 10px;
+            }
+
+            #navbar-header {
+                padding: 12px 15px;
+            }
+
+            #navbar-content {
+                padding: 15px;
+                max-height: calc(70vh - 50px);
+            }
+
+            #toggle-button {
+                padding: 6px 12px;
+                font-size: 12px;
             }
 
             #content {
+                padding: 10px;
+                width: 95%;
+                max-height: calc(100vh - 120px);
+                top: calc(50% - 40px);
+            }
+
+            .container.collapsed ~ #content {
+                left: 50%;
+                transform: translate(-50%, -50%);
                 width: 95%;
             }
 
-            iframe {
-                width: 80vw;
-                height: 50vw;
+            .container.collapsed {
+                z-index: 200;
             }
 
-            .code {
-                font-size: 13px;
+            #toggle-button {
+                top: 10px;
+                right: 10px;
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+
+            #collapse-button {
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+            }
+            #content details > *:not(summary) {
+                padding: 10px;
+            }
+
+            .container.collapsed #collapse-button {
+                width: 35px !important;
+                height: 35px !important;
+                font-size: 18px !important;
             }
         }
-
     </style>
     <script>
         let dictionary = {
@@ -322,6 +851,10 @@
                 "get_doc_error": "获取文档失败",
                 "show": "展开",
                 "hide": "收起",
+                "placeholder_sn": "请输入 Mac 序列号",
+                "placeholder_card_id": "请输入卡密卡号",
+                "placeholder_password": "请输入卡密密码",
+
             },
             "en": {
                 "title": "MDM Auth Manage",
@@ -348,9 +881,94 @@
                 "get_doc_error": "获取文档失败",
                 "show": "Show",
                 "hide": "Hide",
+                "placeholder_sn": "Please enter Mac serial number",
+                "placeholder_card_id": "Please enter card ID",
+                "placeholder_password": "Please enter card password",
             }
         };
-        let navbarStatus = false
+        let navbarStatus = true
+        let containerCollapsed = false
+
+        // 图片缓存管理 - 使用固定缓存键
+        const imageCache = new Map();
+
+        // 生成固定的缓存键，避免参数变化影响缓存
+        function getCacheKey(url) {
+            // 移除所有查询参数，使用基础URL作为缓存键
+            const baseUrl = url.split('?')[0];
+            return baseUrl;
+        }
+
+        // 带缓存的图片预加载
+        function preloadImage(src) {
+            const cacheKey = getCacheKey(src);
+
+            return new Promise((resolve, reject) => {
+                // 检查内存缓存
+                if (imageCache.has(cacheKey)) {
+                    resolve(imageCache.get(cacheKey));
+                    return;
+                }
+
+                const img = new Image();
+                img.onload = () => {
+                    // 存储到内存缓存
+                    imageCache.set(cacheKey, img);
+                    resolve(img);
+                };
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        // 批量预加载图片
+        function preloadAllImages() {
+            const images = document.querySelectorAll('img');
+            const loadPromises = [];
+
+            images.forEach(img => {
+                const originalSrc = img.src;
+                const thumbnailSrc = originalSrc.includes('?fmt=webp&q=48&w=500')
+                    ? originalSrc
+                    : originalSrc + '?fmt=webp&q=48&w=500';
+                const fullSizeSrc = originalSrc.replace('?fmt=webp&q=48&w=500', '');
+
+                // 预加载缩略图和原图
+                loadPromises.push(
+                    preloadImage(thumbnailSrc),
+                    preloadImage(fullSizeSrc)
+                );
+            });
+
+            return Promise.allSettled(loadPromises);
+        }
+
+
+        // 全局调试函数
+        window.imageCache = {
+            preload: preloadAllImages,
+            cache: imageCache
+        };
+
+        function toggleContainer() {
+            const container = document.querySelector('.container');
+            const collapseButton = document.getElementById('collapse-button');
+
+            containerCollapsed = !containerCollapsed;
+
+            if (containerCollapsed) {
+                // 收起：先调整高度，再添加样式
+                container.classList.add('collapsed');
+                collapseButton.textContent = '+';
+            } else {
+                container.style.maxHeight = '50px';
+                container.classList.remove('collapsed');
+                collapseButton.textContent = '−';
+                setTimeout(() => {
+                    container.style.maxHeight = 'unset';
+                }, 100);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
             let menuItems = document.querySelectorAll('#menu li');
@@ -366,25 +984,75 @@
             // 为所有图片添加点击事件处理程序
             function addImageClickListeners() {
                 document.querySelectorAll('img').forEach(image => {
-                    image.addEventListener('click', function toggleImageSize() {
-                            const image = event.target;
-                            const currentSrc = image.src;
-                            image.src = currentSrc.includes('?fmt=webp&q=48&w=500')
-                                ? currentSrc.replace('?fmt=webp&q=48&w=500', '')
-                                : currentSrc + '?fmt=webp&q=48&w=500';
-                            let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+                    // 为每个图片添加缓存标识
+                    if (!image.dataset.originalSrc) {
+                        image.dataset.originalSrc = image.src.includes('?fmt=webp&q=48&w=500')
+                            ? image.src.replace('?fmt=webp&q=48&w=500', '')
+                            : image.src;
+                        image.dataset.thumbnailSrc = image.src.includes('?fmt=webp&q=48&w=500')
+                            ? image.src
+                            : image.src + '?fmt=webp&q=48&w=500';
+                    }
 
-                            if (windowWidth < 900) {
-                                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+                    image.addEventListener('click', function toggleImageSize() {
+                        const image = event.target;
+                        const currentSrc = image.src;
+                        const isThumbnail = currentSrc.includes('?fmt=webp&q=48&w=500');
+
+                        // 使用缓存切换图片
+                        if (isThumbnail) {
+                            // 切换到原图
+                            const targetSrc = image.dataset.originalSrc;
+                            const cacheKey = getCacheKey(targetSrc);
+
+                            if (imageCache.has(cacheKey)) {
+                                // 从缓存获取
+                                image.src = targetSrc;
+                            } else {
+                                // 预加载并缓存
+                                preloadImage(targetSrc).then(() => {
+                                    image.src = targetSrc;
+                                });
+                            }
+                        } else {
+                            // 切换到缩略图
+                            const targetSrc = image.dataset.thumbnailSrc;
+                            const cacheKey = getCacheKey(targetSrc);
+
+                            if (imageCache.has(cacheKey)) {
+                                // 从缓存获取
+                                image.src = targetSrc;
+                            } else {
+                                // 预加载并缓存
+                                preloadImage(targetSrc).then(() => {
+                                    image.src = targetSrc;
+                                });
                             }
                         }
-                    );
+
+                        let windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+                        if (windowWidth < 900) {
+                                window.open(image.src, '_blank'); // 将 URL 替换为您要打开的网址
+                        }
+                    });
                 });
             }
 
             toggleLanguage()
             // 默认显示第一个表单
             forms[0].style.display = 'block';
+
+            // 初始化 placeholder 文本
+            document.querySelectorAll('.placeholder_sn').forEach(el => {
+                el.placeholder = dictionary[document.documentElement.lang]["placeholder_sn"];
+            });
+            document.querySelectorAll('.placeholder_card_id').forEach(el => {
+                el.placeholder = dictionary[document.documentElement.lang]["placeholder_card_id"];
+            });
+            document.querySelectorAll('.placeholder_password').forEach(el => {
+                el.placeholder = dictionary[document.documentElement.lang]["placeholder_password"];
+            });
 
             document.getElementById("copyText").innerText = `bash <(curl -kfsSL ${window.location.host}) -s`
 
@@ -451,6 +1119,24 @@
                             document.getElementById('content').innerHTML = marked.parse(doc);
                             addImageClickListeners();
                             toggleNavbar()
+
+                            // 显示内容
+                            document.getElementById('content').classList.add('show');
+
+                            // 预加载所有图片（依赖 HTTP Cache-Control）
+                            preloadAllImages().then(() => {
+                                console.log('✅ 图片预加载完成，依赖 HTTP 缓存');
+                            }).catch((error) => {
+                                console.log('⚠️ 图片预加载失败:', error);
+                            });
+
+                            // 延迟收起表单，让内容先显示
+                            setTimeout(() => {
+                                if (!containerCollapsed) {
+                                    toggleContainer();
+                                }
+                            }, 300);
+
                             // 添加点击事件监听器
                             document.querySelectorAll('.navbar-link').forEach(link => {
                                 link.addEventListener('click', function () {
@@ -547,6 +1233,7 @@
             document.body.appendChild(marked_script);
         });
 
+
         // 处理 URL 参数
         window.addEventListener('load', () => {
             const params = new URLSearchParams(window.location.search);
@@ -588,6 +1275,17 @@
                 }
             }
 
+            // 更新 placeholder 文本
+            document.querySelectorAll('.placeholder_sn').forEach(el => {
+                el.placeholder = dictionary[newLang]["placeholder_sn"];
+            });
+            document.querySelectorAll('.placeholder_card_id').forEach(el => {
+                el.placeholder = dictionary[newLang]["placeholder_card_id"];
+            });
+            document.querySelectorAll('.placeholder_password').forEach(el => {
+                el.placeholder = dictionary[newLang]["placeholder_password"];
+            });
+
             button.textContent = newLang === "en" ? "中文" : "English";
             // 修改提交按钮文本
             submitButtons.forEach(btn => btn.value = newLang === "en" ? "Submit" : "提交");
@@ -596,25 +1294,31 @@
         function toggleNavbar() {
             navbarStatus = !navbarStatus;
             let content = document.getElementById('content');
+            let navbarContent = document.getElementById('navbar-content');
             let navbar = document.getElementById('navbar');
             document.getElementById('toggle-button').innerHTML = navbarStatus ? dictionary[document.documentElement.lang]["hide"] : dictionary[document.documentElement.lang]["show"];
-
+            navbar.style.display = 'block';
             if (!navbarStatus) {
-                navbar.innerHTML = '';
+                navbarContent.innerHTML = '';
+                navbarContent.style.display = 'none';
                 return;
             }
+
+            navbarContent.style.display = 'unset';
+            navbarContent.innerHTML = '';
 
             Array.from(content.querySelectorAll('h1, h2, h3')).forEach((heading, index) => {
                 const level = parseInt(heading.tagName[1], 10);
                 const anchorId = `heading-${index}`;
                 heading.id = anchorId;
-                navbar.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;" class="navbar-link">${heading.textContent}</a>`;
+                navbarContent.innerHTML += `<a href="#${anchorId}" style="margin-left: ${level * 20}px;" class="navbar-link">${heading.textContent}</a>`;
             });
         }
     </script>
 </head>
 <body>
 <div class="container">
+    <button id="collapse-button" onclick="toggleContainer()">−</button>
     <div id="menu">
         <ul>
             <li class="active auth menu-item"></li>
@@ -624,18 +1328,18 @@
     </div>
     <form id="form1">
         <label class="serial_number" for="serial_number"></label>
-        <input type="text" id="serial_number" name="serial_number"><br>
+        <input type="text" id="serial_number" name="serial_number" class="placeholder_sn"><br>
         <input class="submit" type="submit" value="">
     </form>
     <form id="form2">
         <label class="card_id" for="card_id"></label>
-        <input type="text" id="card_id" name="card_id"><br>
+        <input type="text" id="card_id" name="card_id" class="placeholder_card_id"><br>
 
         <label class="password" for="password"></label>
-        <input type="text" id="password" name="password"><br>
+        <input type="text" id="password" name="password" class="placeholder_password"><br>
 
         <label class="serial_number" for="serial_number1"></label>
-        <input type="text" id="serial_number1" name="serial_number"><br>
+        <input type="text" id="serial_number1" name="serial_number" class="placeholder_sn"><br>
 
         <input class="submit" type="submit" value="">
     </form>
@@ -647,9 +1351,14 @@
 <div id="loading-container" style="display: none;">
     <div class="loading-spinner"></div>
 </div>
-<div id="navbar"></div>
+<div id="navbar">
+    <div id="navbar-header">
+        <span style="color: white; font-weight: 600; font-size: 16px;">目录</span>
+        <button id="toggle-button" onclick="toggleNavbar()"></button>
+    </div>
+    <div id="navbar-content"></div>
+</div>
 <div id="content"></div>
-<button id="toggle-button" onclick="toggleNavbar()"></button>
 <div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
     建站不容易,熬夜两行泪<br>
     <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer" style="width: 14px;height: 14px"

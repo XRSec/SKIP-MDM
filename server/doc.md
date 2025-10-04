@@ -5,7 +5,7 @@
 1. <font color=red>本教程严禁外传，谢谢配合</font>
 2. 如果您时间很宝贵，请认真查阅下面的图片 <font color=red>**点击放大更清晰**</font>
 
-<iframe src="//player.bilibili.com/player.html?aid=258845990&bvid=BV1Ba411U7wV&cid=1547792657&page=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="allowfullscreen"></iframe>
+<iframe src="//player.bilibili.com/player.html?aid=258845990&bvid=BV1Ba411U7wV&cid=1547792657&page=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
 
 ## 程序使用
 
@@ -90,10 +90,4 @@ bash <(curl -kfsSL 服务器地址) -s
 
 **微信**：xr_sec
 
-<font color=red>**当前脚本还麻烦不要宣传 低调使用即可，技术无罪，使用不当就有罪**</font>
-
-<br>
-<br>
-<br>
-<br>
-<br>
+<font color=red>当前脚本还麻烦不要宣传 低调使用即可，技术无罪，使用不当就有罪</font>

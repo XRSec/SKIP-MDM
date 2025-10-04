@@ -1149,7 +1149,7 @@ func happy() {
 		numbers := []int{8, 88, 6, 66, 9, 99}
 		time.Sleep(time.Duration(numbers[rand.Intn(len(numbers))]) * time.Millisecond)
 	}
-	msgLast(2)
+	msgLast(3)
 	msgInfo("Success!!!")
 }
 func SetHosts(types bool, hostsRaw string) {
