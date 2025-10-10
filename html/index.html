@@ -121,53 +121,62 @@
             position: fixed;
             top: 50%;
             left: 50%;
+            width: 100%;
             max-width: 480px;
-            -webkit-transform: translate(-50%, -50%);
-            -ms-transform: translate(-50%, -50%);
             -webkit-transform: translate(-50%, -50%);
             -ms-transform: translate(-50%, -50%);
             transform: translate(-50%, -50%);
             z-index: 100;
             background: rgba(255, 255, 255, 0.15);
             -webkit-backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
             border-radius: 30px;
             padding: 40px;
-            width: 100%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
                 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             -webkit-animation: fadeIn 0.6s ease-out;
             animation: fadeIn 0.6s ease-out;
             overflow: hidden;
-            -webkit-transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                -webkit-transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                -webkit-transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            /* 优化的动画过渡 */
+            -webkit-transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 展开动画的中间状态 */
+        .container.expanding {
+            /* 展开时的临时状态 - 更流畅的缓动曲线 */
+            -webkit-transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        /* 添加内容淡入淡出效果 */
+        .container #menu,
+        .container form,
+        .container .code {
+            opacity: 1;
+            -webkit-transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease;
+        }
+        
+        .container.collapsed #menu,
+        .container.collapsed form,
+        .container.collapsed .code {
+            opacity: 0;
+            visibility: hidden;
+            -webkit-transition: opacity 0.2s ease, visibility 0.2s;
+            transition: opacity 0.2s ease, visibility 0.2s;
         }
 
         .container.collapsed {
             left: 20px;
-            -webkit-transform: translate(0, -50%);
-            -ms-transform: translate(0, -50%);
-            transform: translate(0, -50%);
+            top: 50%;
+            -webkit-transform: translate(0, -50%) scale(1);
+            -ms-transform: translate(0, -50%) scale(1);
+            transform: translate(0, -50%) scale(1);
             width: 50px;
             height: 50px;
             max-width: 50px;
+            min-height: 50px;
             max-height: 50px;
             padding: 0;
             border-radius: 50%;
@@ -185,31 +194,11 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
                 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             overflow: hidden;
-            -webkit-transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                -webkit-transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                -webkit-transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            /* 收起时的动画更快更流畅 */
+            -webkit-transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
-        .container.collapsed #menu,
-        .container.collapsed form,
-        .container.collapsed .code {
-            display: none !important;
-        }
 
         .container.collapsed #collapse-button {
             position: static !important;
@@ -520,8 +509,8 @@
             -ms-flex-pack: center;
             justify-content: center;
             font-size: 16px;
-            -webkit-transition: all 0.3s ease;
-            transition: all 0.3s ease;
+            -webkit-transition: all 0.3s ease, -webkit-transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transition: all 0.3s ease, transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             z-index: 10;
             /* 禁用长按右键菜单 */
             -webkit-touch-callout: none; /* iOS Safari */
@@ -537,9 +526,9 @@
 
         #collapse-button:hover {
             background: rgba(255, 255, 255, 0.3);
-            -webkit-transform: scale(1.1);
-            -ms-transform: scale(1.1);
-            transform: scale(1.1);
+            -webkit-transform: scale(1.1) rotate(90deg);
+            -ms-transform: scale(1.1) rotate(90deg);
+            transform: scale(1.1) rotate(90deg);
         }
 
 
@@ -1207,17 +1196,19 @@
             containerCollapsed = !containerCollapsed;
 
             if (containerCollapsed) {
-                // 收起：先调整高度，再添加样式
+                // 收起动画
                 container.classList.add('collapsed');
                 collapseButton.textContent = '+';
             } else {
-                container.style.maxHeight = '50px';
+                // 展开动画：添加中间状态类
+                container.classList.add('expanding');
                 container.classList.remove('collapsed');
                 collapseButton.textContent = '−';
+                
+                // 动画完成后移除中间状态类
                 setTimeout(() => {
-                    // 删除内联样式，恢复到 CSS 文件中定义的样式
-                    container.style.removeProperty('max-height');
-                }, 100);
+                    container.classList.remove('expanding');
+                }, 400);
             }
         }
 
