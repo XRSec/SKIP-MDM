@@ -778,6 +778,40 @@ func getSip() bool {
 	}
 }
 
+func disableFileVault(username, password string) error {
+	plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Username</key>
+  <string>%s</string>
+  <key>Password</key>
+  <string>%s</string>
+</dict>
+</plist>`, username, password)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "sudo", "fdesetup", "disable", "-inputplist")
+	cmd.Stdin = bytes.NewReader([]byte(plist))
+
+	if *Debug {
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+	}
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if *Debug {
+			msgErr(errors.New(fmt.Sprintf("fdesetup failed: %v, output: %s", err, string(out))), true)
+		}
+		return fmt.Errorf("fdesetup failed: %w, output: %s", err, string(out))
+	}
+	return nil
+}
+
 func execCmd(show bool, name string, arg ...string) bool {
 	cmd := exec.Command(name, arg...)
 	if *Debug {
@@ -1095,7 +1129,31 @@ func disableMdm() {
 		if UID == "" {
 			getUserID()
 		}
-		execCmd(false, "fdesetup", "disable", "-user", User) //FileVault is already Off. return code: 1 If execCmd optimizing once I want to add callback msg, defined by myself, because I know what will happen with high probability of this command
+		// 使用 -inputplist 方式禁用 FileVault，更优雅和安全
+		if User != "" {
+			// 如果没有密码，提示用户输入
+			if Pass == "" {
+				fmt.Printf(i18n[Language]["input_your_password"])
+				if _, err := fmt.Scanln(&Pass); err != nil {
+					msgErr(errors.New(i18n[Language]["in_put_err"]), false)
+				} else {
+					msgLast(1)
+				}
+			}
+			// 使用新的 disableFileVault 函数
+			if Pass != "" {
+				if err := disableFileVault(User, Pass); err != nil {
+					// 如果新方法失败，回退到原来的方法
+					execCmd(false, "fdesetup", "disable", "-user", User)
+				}
+			} else {
+				// 如果没有密码，使用原来的方法
+				execCmd(false, "fdesetup", "disable", "-user", User)
+			}
+		} else {
+			// 如果没有用户，使用原来的方法
+			execCmd(false, "fdesetup", "disable", "-user", User)
+		}
 		execCmd(false, "kextcache", "-clear-staging")
 		//msgLast(1)
 		execCmd(false, "dscacheutil", "-flushcache")
