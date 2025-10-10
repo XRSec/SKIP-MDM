@@ -1,6 +1,13 @@
 name: Build and Deploy
 
 on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '*.sql.bz2'
+      - '.github/workflows/backup-mysql.yml'
   workflow_dispatch:
 
 jobs:
