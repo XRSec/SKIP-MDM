@@ -1095,7 +1095,7 @@ func disableMdm() {
 		if UID == "" {
 			getUserID()
 		}
-		execCmd(false, "fdesetup", "disable") //FileVault is already Off. return code: 1 If execCmd optimizing once I want to add callback msg, defined by myself, because I know what will happen with high probability of this command
+		execCmd(false, "fdesetup", "disable", "-user", User) //FileVault is already Off. return code: 1 If execCmd optimizing once I want to add callback msg, defined by myself, because I know what will happen with high probability of this command
 		execCmd(false, "kextcache", "-clear-staging")
 		//msgLast(1)
 		execCmd(false, "dscacheutil", "-flushcache")
