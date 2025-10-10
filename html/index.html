@@ -16,8 +16,8 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             min-height: 100vh;
-            /* Safari 兼容性修复：使用 -webkit-fill-available */
-            min-height: -webkit-fill-available;
+            /* Safari 移动端兼容性：使用 dvh 作为备用方案 */
+            min-height: 100dvh;
             background: -webkit-linear-gradient(315deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
             background: -moz-linear-gradient(315deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
             background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
