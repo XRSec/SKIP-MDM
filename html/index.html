@@ -500,7 +500,7 @@
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        #content.show {
+        #content.showDoc {
             display: block;
         }
 
@@ -1160,7 +1160,7 @@
                             toggleNavbar()
 
                             // 显示内容
-                            document.getElementById('content').classList.add('show');
+                            document.getElementById('content').classList.add('showDoc');
 
                             // 预加载所有图片（依赖 HTTP Cache-Control）
                             preloadAllImages().then(() => {
