@@ -95,14 +95,7 @@
                 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             animation: fadeIn 0.6s ease-out;
             overflow: hidden;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .container.collapsed {
@@ -120,14 +113,6 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
                 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             overflow: hidden;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .container.collapsed #menu,
@@ -993,16 +978,13 @@
             containerCollapsed = !containerCollapsed;
 
             if (containerCollapsed) {
-                // 收起：先调整高度，再添加样式
+                // 收起动画
                 container.classList.add('collapsed');
                 collapseButton.textContent = '+';
             } else {
-                container.style.maxHeight = '50px';
+                // 展开动画
                 container.classList.remove('collapsed');
                 collapseButton.textContent = '−';
-                setTimeout(() => {
-                    container.style.maxHeight = 'unset';
-                }, 100);
             }
         }
 
