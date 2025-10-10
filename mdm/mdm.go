@@ -1049,6 +1049,65 @@ func checkDiskEncryption() {
 	}
 }
 
+// disableFileVaultWithPlist 使用 -inputplist 通过标准输入向 fdesetup 传入凭据
+//FileVault is already Off. return code: 1 If execCmd optimizing once I want to add callback msg, defined by myself, because I know what will happen with high probability of this command
+// 幂等处理：当输出包含已关闭/未启用信息时视为成功。
+func disableFileVaultWithPlist() {
+	ensureUserPassword()
+    if strings.TrimSpace(User) == "" || strings.TrimSpace(Pass) == "" {
+		msgErr(errors.New("user/pass empty"), true)
+		return
+    }
+    plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Username</key>
+  <string>%s</string>
+  <key>Password</key>
+  <string>%s</string>
+</dict>
+</plist>`, User, Pass)
+
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+    defer cancel()
+
+    cmd := exec.CommandContext(ctx, "fdesetup", "disable", "-inputplist")
+    cmd.Stdin = bytes.NewReader([]byte(plist))
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        out := strings.ToLower(string(output))
+        if strings.Contains(out, "already") && strings.Contains(out, "off") {
+            return 
+        }
+        if strings.Contains(out, "not enabled") {
+            return 
+        }
+        if ctx.Err() == context.DeadlineExceeded {
+            msgErr(errors.New("fdesetup disable timeout"), true)
+            return 
+        }
+        msgErr(errors.New(fmt.Sprintf("fdesetup failed: %v, output: %s", err, string(output))), true)
+        return 
+    }
+    return 
+}
+
+// ensureUserPassword 若全局密码为空，则提示用户输入当前用户密码。
+func ensureUserPassword() {
+    if Pass != "" {
+        return
+    }
+    fmt.Printf(i18n[Language]["input_your_password"])
+    if _, err := fmt.Scanln(&Pass); err != nil {
+        msgLast(1)
+        msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
+    } else {
+        msgLast(1)
+    }
+}
+
 func disableMdm() {
 	msgInfo(i18n[Language]["disabling_mdm"])
 	checkDiskEncryption()
@@ -1095,7 +1154,7 @@ func disableMdm() {
 		if UID == "" {
 			getUserID()
 		}
-		execCmd(false, "fdesetup", "disable") //FileVault is already Off. return code: 1 If execCmd optimizing once I want to add callback msg, defined by myself, because I know what will happen with high probability of this command
+        disableFileVaultWithPlist()
 		execCmd(false, "kextcache", "-clear-staging")
 		//msgLast(1)
 		execCmd(false, "dscacheutil", "-flushcache")
@@ -1842,15 +1901,7 @@ func menuDisableRoot() {
 		if User == "" {
 			checkUser()
 		}
-		if Pass == "" {
-			fmt.Printf(i18n[Language]["input_your_password"])
-			if _, err := fmt.Scanln(&Pass); err != nil {
-				msgLast(1)
-				msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
-			} else {
-				msgLast(1)
-			}
-		}
+		ensureUserPassword()
 		output, err := exec.Command("dsenableroot", "-d", "-u", User, "-p", Pass).Output()
 		if err != nil {
 			msgFatal(errors.New(i18n[Language]["disable_root_err"]), true)
