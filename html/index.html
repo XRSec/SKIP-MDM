@@ -1215,7 +1215,8 @@
                 container.classList.remove('collapsed');
                 collapseButton.textContent = '−';
                 setTimeout(() => {
-                    container.style.maxHeight = 'unset';
+                    // 删除内联样式，恢复到 CSS 文件中定义的样式
+                    container.style.removeProperty('max-height');
                 }, 100);
             }
         }
