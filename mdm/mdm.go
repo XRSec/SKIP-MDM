@@ -43,9 +43,13 @@ var (
 	Pass                = ""
 	UID                 = ""
 	NewMachine          = false
+	macOSVersion      = "" // 完整的系统版本号，例如 "13.5.1"
+	macOSMajorVersion = 0  // 主版本号，例如 13
+	
 	MDMPath             string // /Volumes/Macintosh HD/var/db/ConfigurationProfiles/
 	LibraryPath         string // /Volumes/Macintosh HD/Library/
 	UserLibraryPath     string // /Volumes/Macintosh HD/Users/admin/Library/
+	
 	SN                  = flag.String("sn", "", "Serial Number")
 	menuAll             = flag.Bool("a", false, "All Menu Model")
 	Debug               = flag.Bool("d", false, "Debug Model")
@@ -303,10 +307,10 @@ var i18n = map[int]map[string]string{
 		// menuSupplier
 		"supplier_mode_now": "Currently In Special Supplier Mode.",
 		"creating_user":     "Creating Usr",
-		"password":          "Pwd: No Passwd",
+		"password":          "Pwd: %v",
 		"supplier_mode_ok":  "Supplier, Regulatory Process Complete!",
 
-		// productVersion
+		// fetchMacOSMajorVersion fetchMacOSVersion
 		"get_os_version_err": "Get Sys Version Fail",
 		"parse_version_err":  "Parsing Sys Version Fail",
 		// menuByPassMacos13Step2
@@ -505,10 +509,10 @@ var i18n = map[int]map[string]string{
 		// menuSupplier
 		"supplier_mode_now": "当前是供应商特供模式",
 		"creating_user":     "正在创建用户",
-		"password":          "密码: 没有密码",
+		"password":          "密码: %v",
 		"supplier_mode_ok":  "亲爱的供应商, 监管程序运行完成!",
 
-		// productVersion
+		// fetchMacOSMajorVersion fetchMacOSVersion
 		"get_os_version_err": "获取系统版本失败",
 		"parse_version_err":  "解析系统版本失败",
 
@@ -1572,10 +1576,8 @@ func collectSystemInfo() *SystemInfo {
 		MDMDomains: serverURL,
 	}
 
-	// 收集基本信息
-	if output, err := exec.Command("sw_vers", "-productVersion").Output(); err == nil {
-		info.OSVersion = strings.TrimSpace(string(output))
-	}
+	// 收集系统版本信息
+	info.OSVersion = getMacOSVersion()
 
 	// 收集各个目录的文件列表
 	collectDirList := func(path string) []string {
@@ -1804,8 +1806,15 @@ func menuNewUser() {
 	//newid=$((maxid+1))
 	userName := "mac" + uid
 	userPass := ""
+	passTips := "by(vx): xr_sec & no passwd"
+
+	if getMacOSMajorVersion() >= 13 {
+		userPass = "123456"
+		passTips = "by(vx): xr_sec & passwd: 123456"
+	}
+	
 	msgOk(i18n[Language]["user_name"] + userName)
-	msgOk(i18n[Language]["password"] + userPass)
+	msgOk(fmt.Sprintf(i18n[Language]["password"], userPass))
 	// 生成介于 1000 和 2000 之间的随机数
 
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
@@ -1813,7 +1822,7 @@ func menuNewUser() {
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", i18n[Language]["temp_user_name"]) // i18n[Language]["temp_user_name"]
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", uid)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", "by(vx): xr_sec & no passwd") // TODO 没有密码
+	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", passTips)
 	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "Picture", "/Library/User Pictures/Flowers/Lotus.heic")
 	execCmd(false, "ditto", "-rsrc", OsPath+"System/Library/User Template/zh_CN.lproj", OsPath+"Users/"+userName)
 	execCmd(false, "ditto", "-rsrc", OsPath+"System/Library/User Template/Non_localized", OsPath+"Users/"+userName)
@@ -1849,36 +1858,83 @@ func menuSupplier() {
 	cleanMdm()
 	if User == "" && !OsType {
 		// 比较版本号
-		if productVersion() {
+		if getMacOSMajorVersion() >= 13 {
 			menuNewUser()
 		}
 	}
 	msgOk(i18n[Language]["supplier_mode_ok"])
 }
 
-func productVersion() bool {
-	sysVersionBytes, err := exec.Command("sw_vers", "-productVersion").Output()
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["get_os_version_err"]), true)
-		return false
+// fetchMacOSVersion 执行 sw_vers 命令获取完整系统版本号并更新全局变量
+// 如果全局变量已有值则跳过获取，避免重复执行命令
+func fetchMacOSVersion() error {
+	// 如果已经获取过版本信息，直接返回
+	if macOSVersion != "" {
+		return nil
 	}
 
-	// 去除空白字符并转换为字符串
-	sysVersion := strings.TrimSpace(string(sysVersionBytes))
-	// 解析版本号
-	parts := strings.Split(sysVersion, ".")
+	// 执行 sw_vers 命令获取系统版本
+	sysVersionBytes, err := exec.Command("sw_vers", "-productVersion").Output()
+	if err != nil {
+		return errors.New(i18n[Language]["get_os_version_err"])
+	}
+
+	// 去除空白字符并保存完整版本号
+	macOSVersion = strings.TrimSpace(string(sysVersionBytes))
+	return nil
+}
+
+// fetchMacOSMajorVersion 解析并获取 macOS 主版本号
+// 如果尚未获取完整版本，会先调用 fetchMacOSVersion
+func fetchMacOSMajorVersion() error {
+	// 如果已经获取过主版本号，直接返回
+	if macOSMajorVersion != 0 {
+		return nil
+	}
+
+	// 确保已经获取了完整版本号
+	if err := fetchMacOSVersion(); err != nil {
+		return err
+	}
+
+	// 解析主版本号
+	parts := strings.Split(macOSVersion, ".")
 	if len(parts) == 0 {
-		msgErr(errors.New(i18n[Language]["parse_version_err"]), true)
-		return false
+		return errors.New(i18n[Language]["parse_version_err"])
 	}
 
 	major, err := strconv.Atoi(parts[0])
 	if err != nil {
-		msgErr(errors.New(i18n[Language]["parse_version_err"]), true)
-		return false
+		return errors.New(i18n[Language]["parse_version_err"])
 	}
-	return major >= 13
+
+	macOSMajorVersion = major
+	return nil
 }
+
+
+// getMacOSVersion 获取 macOS 完整版本号
+// 如果尚未获取版本信息，会先调用 fetchMacOSVersion
+// 返回完整版本号，例如 "13.5.1"
+func getMacOSVersion() string {
+	if err := fetchMacOSVersion(); err != nil {
+		msgErr(err, true)
+		return ""
+	}
+	return macOSVersion
+}
+
+// getMacOSMajorVersion 获取 macOS 主版本号
+// 如果尚未获取版本信息，会先调用 fetchMacOSMajorVersion
+// 返回主版本号，例如 macOS 13.5.1 返回 13
+func getMacOSMajorVersion() int {
+	if err := fetchMacOSMajorVersion(); err != nil {
+		msgErr(err, true)
+		return 0
+	}
+	return macOSMajorVersion
+}
+
 
 func menuBypassMacos13Step2() {
 	msgInfo(i18n[Language]["bypassing_macos_13_step_2"])
