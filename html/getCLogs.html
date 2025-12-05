@@ -10,47 +10,131 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
-            -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
-            -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
+            -webkit-overflow-scrolling: touch;
+            -webkit-tap-highlight-color: transparent;
         }
-
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
-
         .header {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
             padding: 30px;
             text-align: center;
         }
-
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
             font-weight: 300;
         }
-
         .header p {
             font-size: 1.1em;
             opacity: 0.9;
         }
+        .search-controls {
+            padding: 30px;
+            background: #ffffff;
+            border-bottom: 2px solid #4facfe;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .search-controls-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex: 1;
+            min-width: 0;
+        }
+        .search-controls-group {
+            min-width: 0;
+            max-width: none;
+        }
+        .search-controls-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+            letter-spacing: 0.3px;
+        }
 
+        .search-controls-group input,
+        .search-controls-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background-color: #ffffff;
+            color: #495057;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .search-controls-group input:hover,
+        .search-controls-group select:hover {
+            border-color: #4facfe;
+            box-shadow: 0 2px 8px rgba(79, 172, 254, 0.15);
+        }
+        .search-controls-group input:focus,
+        .search-controls-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.15), 0 2px 8px rgba(79, 172, 254, 0.2);
+            transform: translateY(-1px);
+        }
+        .search-controls-group input::placeholder {
+            color: #adb5bd;
+            font-style: italic;
+        }
+        .search-controls-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23495057' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+
+        .search-controls-group-serial {
+            flex: 3;
+        }
+
+        .search-controls-group-limit {
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .search-controls-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            flex: 0 0 auto;
+            padding-top: 28px;
+        }
+        .search-controls-buttons .btn {
+            flex: 0 0 auto;
+            box-sizing: border-box;
+            padding: 10px 16px;
+            font-size: 14px;
+        }
         .filters {
             padding: 30px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
         }
-
         .filter-row {
             display: flex;
             gap: 20px;
@@ -58,32 +142,37 @@
             flex-wrap: wrap;
             align-items: end;
         }
-
-        .filter-row .filter-group:nth-child(1) {
-            flex: 3;
-        }
-
-        .filter-row .filter-group:nth-child(2) {
-            flex: 2;
-        }
-
-        .filter-row .filter-group:nth-child(3) {
-            flex: 3;
-        }
-
         .filter-group {
             flex: 1;
-            min-width: 200px;
+            min-width: 0;
+        }
+        .filters .filter-group {
+            max-width: none;
+            flex: 0 0 auto;
+            min-width: 0;
         }
 
+        .filters .filter-group .btn {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 27vw;
+            box-sizing: border-box;
+            padding: 10px 16px;
+            margin: 2px;
+        }
         .filter-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #495057;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-
-        .filter-group input, .filter-group select {
+        .filter-group input,
+        .filter-group select {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e9ecef;
@@ -91,13 +180,12 @@
             font-size: 14px;
             transition: border-color 0.3s ease;
         }
-
-        .filter-group input:focus, .filter-group select:focus {
+        .filter-group input:focus,
+        .filter-group select:focus {
             outline: none;
             border-color: #4facfe;
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
-
         .btn {
             padding: 12px 25px;
             border: none;
@@ -109,68 +197,56 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation; /* 优化触摸响应 */
+            touch-action: manipulation;
         }
-
         .btn-primary {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
         }
-
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
         }
-
         .btn-secondary {
             background: #6c757d;
             color: white;
         }
-
         .btn-secondary:hover {
             background: #5a6268;
         }
-
         .stats {
             padding: 20px 30px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
         }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
         }
-
         .stat-card {
             background: white;
             padding: 20px;
             border-radius: 10px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
         }
-
         .stat-number {
             font-size: 2em;
             font-weight: bold;
             color: #4facfe;
             margin-bottom: 5px;
         }
-
         .stat-label {
             color: #6c757d;
             font-size: 0.9em;
         }
-
         .content {
             padding: 30px;
         }
-
         .search-box {
             margin-bottom: 30px;
         }
-
         .search-box input {
             width: 100%;
             padding: 15px 20px;
@@ -179,13 +255,11 @@
             font-size: 16px;
             transition: border-color 0.3s ease;
         }
-
         .search-box input:focus {
             outline: none;
             border-color: #4facfe;
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
-
         .logs-container {
             max-height: 600px;
             overflow-y: auto;
@@ -194,25 +268,20 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* 自定义滚动条样式 */
         .logs-container::-webkit-scrollbar {
             width: 6px;
         }
-
         .logs-container::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 3px;
         }
-
         .logs-container::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 3px;
         }
-
         .logs-container::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
-
         .log-item {
             border-bottom: 1px solid #f1f3f4;
             padding: 20px;
@@ -220,20 +289,16 @@
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
-
         .log-item:hover {
             background-color: #f8f9fa;
         }
-
         .log-item:active {
             background-color: #e9ecef;
             transform: scale(0.98);
         }
-
         .log-item:last-child {
             border-bottom: none;
         }
-
         .log-header {
             display: flex;
             justify-content: space-between;
@@ -242,30 +307,25 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-
         .log-serial {
             font-weight: bold;
             color: #4facfe;
             font-size: 1.1em;
         }
-
         .log-timestamp {
             color: #6c757d;
             font-size: 0.9em;
         }
-
         .log-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
         }
-
         .detail-section {
             background: #f8f9fa;
             padding: 12px;
             border-radius: 8px;
         }
-
         .detail-title {
             font-weight: 600;
             color: #495057;
@@ -274,34 +334,28 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .detail-content {
             font-size: 0.8em;
             color: #6c757d;
             line-height: 1.3;
         }
-
         .detail-list {
             list-style: none;
             max-height: 100px;
             overflow-y: auto;
         }
-
         .detail-list li {
             padding: 2px 0;
             border-bottom: 1px solid #e9ecef;
         }
-
         .detail-list li:last-child {
             border-bottom: none;
         }
-
         .loading {
             text-align: center;
             padding: 40px;
             color: #6c757d;
         }
-
         .loading::after {
             content: '';
             display: inline-block;
@@ -313,11 +367,11 @@
             animation: spin 1s ease-in-out infinite;
             margin-left: 10px;
         }
-
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-
         .error {
             background: #f8d7da;
             color: #721c24;
@@ -326,20 +380,17 @@
             margin: 20px 0;
             border: 1px solid #f5c6cb;
         }
-
         .no-data {
             text-align: center;
             padding: 60px 20px;
             color: #6c757d;
         }
-
         .no-data i {
             font-size: 3em;
             margin-bottom: 20px;
             opacity: 0.5;
         }
 
-        /* 模态窗口样式 */
         .modal {
             display: none;
             position: fixed;
@@ -348,20 +399,18 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
             animation: fadeIn 0.3s ease;
         }
-
         .modal.show {
             display: flex;
             align-items: center;
             justify-content: center;
         }
-
         .modal-content {
             background: white;
             border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             max-width: 90%;
             max-height: 90%;
             width: 1200px;
@@ -369,7 +418,6 @@
             animation: slideIn 0.3s ease;
             -webkit-overflow-scrolling: touch;
         }
-
         .modal-header {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
@@ -378,13 +426,11 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .modal-header h2 {
             margin: 0;
             font-size: 1.5em;
             font-weight: 300;
         }
-
         .modal-close {
             background: none;
             border: none;
@@ -400,30 +446,139 @@
             border-radius: 50%;
             transition: background-color 0.3s ease;
         }
-
         .modal-close:hover {
-            background-color: rgba(255,255,255,0.2);
+            background-color: rgba(255, 255, 255, 0.2);
         }
-
         .modal-body {
             padding: 30px;
-            max-height: 70vh;
+            max-height: 85vh;
             overflow-y: auto;
         }
-
+        #modalContent {
+            display: flex;
+            flex-direction: column;
+        }
         .modal-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: nowrap;
+            width: 100%;
+        }
+        .modal-details-column {
+            flex: 1;
+            min-width: 350px;
+            display: flex;
+            flex-direction: column;
             gap: 20px;
         }
+        .modal-detail-section {
+            width: 100%;
+        }
 
+        .cloud-config-section {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .cloud-config-container {
+            width: 100%;
+            margin-top: 20px;
+            flex-shrink: 0;
+        }
+
+        #cloudConfigContent {
+            font-family: monospace;
+        }
+        /* 云配置信息内容样式优化 */
+        .cloud-config-section .modal-detail-content {
+            font-size: 0.95em;
+            color: #495057;
+            line-height: 1.8;
+            padding: 0;
+            overflow-x: hidden;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        /* 云配置信息容器 */
+        .cloud-config-info {
+            margin-bottom: 20px;
+            overflow-x: hidden;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        /* 云配置信息组（用于分组显示） */
+        .cloud-config-group {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+        .cloud-config-group:first-of-type {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+        .cloud-config-group-title {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+        }
+        /* 云配置信息项 */
+        .cloud-config-item {
+            line-height: 1.6;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            overflow-x: hidden;
+        }
+        .cloud-config-section .modal-detail-content strong {
+            color: #343a40;
+            font-weight: 600;
+            min-width: 130px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        a {
+            color: #4facfe;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .cloud-config-section .modal-detail-content code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+            color: #495057;
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .modal-details {
+                gap: 15px;
+            }
+            .modal-details-column {
+                gap: 15px;
+                min-width: 300px;
+            }
+        }
         .modal-detail-section {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 10px;
             border-left: 4px solid #4facfe;
+            height: auto;
+            min-height: auto;
+            max-height: none;
+            margin-bottom: 15px;
+            overflow-y: visible;
+            display: flex;
+            flex-direction: column;
         }
-
         .modal-detail-title {
             font-weight: 600;
             color: #495057;
@@ -432,32 +587,28 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .modal-detail-content {
             font-size: 0.9em;
             color: #6c757d;
             line-height: 1.6;
         }
-
         .modal-detail-list {
             list-style: none;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             border: 1px solid #e9ecef;
             border-radius: 5px;
             padding: 10px;
+            margin: 0;
         }
-
         .modal-detail-list li {
             padding: 5px 0;
             border-bottom: 1px solid #f1f3f4;
             word-break: break-all;
         }
-
         .modal-detail-list li:last-child {
             border-bottom: none;
         }
-
         .os-mode-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -467,22 +618,22 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .os-mode-desktop {
             background: #d4edda;
             color: #155724;
         }
-
         .os-mode-recovery {
             background: #f8d7da;
             color: #721c24;
         }
-
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
-
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -498,53 +649,87 @@
             .container {
                 border-radius: 10px;
             }
-
             .header {
                 padding: 20px;
             }
-
             .header h1 {
                 font-size: 1.8em;
                 margin-bottom: 8px;
             }
-
             .header p {
                 font-size: 1em;
             }
-
+            .search-controls {
+                padding: 20px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-controls-row {
+                flex-wrap: wrap;
+                margin-bottom: 12px;
+                flex: 1 1 100%;
+            }
+            .search-controls-group {
+                flex: 0 0 auto;
+                min-width: 0;
+                max-width: 100%;
+            }
+            .search-controls-group-limit {
+                max-width: 100%;
+            }
+            .search-controls-buttons {
+                gap: 8px;
+                flex: 1 1 100%;
+                align-items: stretch;
+                padding-top: 0;
+            }
+            .search-controls-buttons .btn {
+                flex: 1;
+                min-width: 0;
+                height: auto;
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .search-controls-group-serial {
+                flex: 2;
+            }
             .filters {
                 padding: 20px;
             }
-
             .filter-row {
-                gap: 15px;
+                gap: 8px;
             }
 
-            .filter-row .filter-group:nth-child(1),
-            .filter-row .filter-group:nth-child(2),
-            .filter-row .filter-group:nth-child(3) {
-                width: 100%;
-                flex: unset;
+            .filters .filter-group {
+                flex: 0 0 auto;
+                min-width: 0;
             }
-
             .content {
                 padding: unset;
             }
-
             .filter-group {
                 min-width: unset;
             }
-
             .filter-group label {
                 font-size: 14px;
                 margin-bottom: 6px;
             }
-
-            .filter-group input, .filter-group select {
+            .filter-group input,
+            .filter-group select {
                 padding: 10px 12px;
-                font-size: 16px; /* 防止iOS缩放 */
+                font-size: 16px;
             }
 
+            .search-controls-group label {
+                font-size: 0.85em;
+                margin-bottom: 6px;
+            }
+            .search-controls-group input,
+            .search-controls-group select {
+                padding: 10px 14px;
+                font-size: 16px;
+                border-radius: 8px;
+            }
             .btn {
                 padding: 10px 20px;
                 font-size: 14px;
@@ -552,6 +737,37 @@
                 margin: 5px 0;
             }
 
+            .filters .filter-group .btn {
+                width: auto;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: clip;
+                padding: 8px 12px;
+                font-size: 13px;
+                margin: 2px;
+            }
+
+            #cloudConfigContent {
+                overflow-x: hidden !important;
+                overflow-y: visible !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+            }
+            /* 只有查看完整配置的 pre 标签才允许横向滚动 */
+            #cloudConfigContent pre {
+                overflow-x: auto !important;
+                white-space: pre;
+                word-break: keep-all;
+            }
+            .cloud-config-section {
+                overflow-x: hidden;
+            }
+            .cloud-config-section .modal-detail-content {
+                overflow-x: hidden;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
             .filter-group:last-child {
                 display: flex;
                 flex-direction: row;
@@ -559,79 +775,66 @@
                 justify-content: center;
                 flex-wrap: wrap;
             }
-
             .filter-group:last-child .btn {
                 width: auto;
                 flex: 1;
-                max-width: 100px;
                 font-size: 12px;
                 padding: 8px 12px;
             }
-
             .stats {
                 padding: 15px 20px;
             }
-
             .stats-grid {
                 grid-template-columns: 1fr 1fr;
                 gap: 15px;
             }
-
             .stat-card {
                 padding: 15px;
             }
-
             .stat-number {
                 font-size: 1.5em;
             }
-
             .stat-label {
                 font-size: 0.8em;
             }
-
             .search-box {
                 margin-bottom: 20px;
             }
-
             .search-box input {
                 padding: 12px 15px;
-                font-size: 16px; /* 防止iOS缩放 */
+                font-size: 16px;
                 border-radius: 20px;
             }
-
             .logs-container {
                 max-height: 500px;
             }
-
             .log-item {
                 padding: 15px;
                 margin-bottom: 10px;
             }
-
             .log-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 8px;
             }
-
             .log-title {
                 font-size: 1.1em;
             }
-
             .log-meta {
                 font-size: 0.85em;
             }
-
             .log-details {
                 grid-template-columns: 1fr;
                 gap: 8px;
                 margin-top: 10px;
             }
-
+            /* 手机端只显示基本信息，隐藏其他详情 */
+            .log-details .detail-section:not(:first-child) {
+                display: none;
+            }
             .log-detail {
                 font-size: 0.9em;
             }
-
             .modal-content {
                 width: 95%;
                 max-width: 95%;
@@ -639,56 +842,59 @@
                 max-height: 90vh;
                 overflow-y: auto;
             }
-
             .modal-header {
                 padding: 15px 20px;
             }
-
             .modal-header h2 {
                 font-size: 1.3em;
             }
-
             .modal-body {
-                padding: 15px 20px;
+                overflow-y: unset;
+                padding: 10px 15px;
             }
 
+            #modalContent {
+                gap: 0;
+            }
             .modal-details {
                 display: flex;
                 flex-direction: column;
-                gap: 15px;
+                gap: 10px;
+            }
+            .modal-details-column {
+                gap: 10px;
+                min-width: 0;
             }
 
             .modal-detail-section {
-                margin-bottom: 15px;
+                width: 100%;
+                padding: 12px 15px;
+                margin-bottom: 10px;
             }
-
             .modal-detail-title {
                 font-size: 1em;
                 margin-bottom: 8px;
             }
-
             .modal-detail-content {
                 font-size: 0.9em;
             }
-
             .modal-detail-list {
                 max-height: 200px;
                 overflow-y: auto;
             }
-
             .modal-detail-list li {
                 padding: 4px 0;
                 font-size: 0.85em;
                 word-break: break-all;
             }
-
             .close {
                 font-size: 24px;
                 top: 10px;
                 right: 15px;
             }
-
-            .no-data, .error, .loading {
+            .no-data,
+            .error,
+            .loading {
                 padding: 20px;
                 font-size: 1em;
             }
@@ -698,514 +904,1853 @@
             .header h1 {
                 font-size: 1.5em;
             }
-
-            .stats-grid {
-                /* grid-template-columns: 1fr; */
-            }
-
-            .filter-group input, .filter-group select {
-                font-size: 16px;
-            }
-
-            .search-box input {
-                font-size: 16px;
-            }
-
             .modal-content {
                 width: 98%;
                 height: 98%;
                 margin: 5px;
             }
-
             .modal-detail-list {
                 max-height: 150px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            .modal-details {
+                gap: 12px;
+            }
+            .modal-details-column {
+                gap: 12px;
+                width: 100%;
+            }
+            .search-controls-group-serial {
+                flex: 3.5;
+            }
+            .search-controls-buttons {
+                padding-top: 0;
+            }
+            .search-controls-buttons .btn {
+                padding: 8px 14px;
+                font-size: 13px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>客户端日志数据分析</h1>
-            <p>实时监控和分析客户端系统信息</p>
-        </div>
-
-        <div class="filters">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="serialNumber">序列号</label>
-                    <input type="text" id="serialNumber" placeholder="输入序列号进行筛选">
-                </div>
-                <div class="filter-group">
-                    <label for="limit">数量限制</label>
-                    <select id="limit">
-                        <option value="10">10条</option>
-                        <option value="20" selected>20条</option>
-                        <option value="50">50条</option>
-                        <option value="100">100条</option>
-                        <option value="200">200条</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <button class="btn btn-primary" onclick="loadLogs()">远端查询</button>
-                    <button class="btn btn-secondary" onclick="clearFilters()" style="margin-left: 10px;">清空筛选</button>
-                    <button class="btn btn-secondary" onclick="refreshData()" style="margin-left: 10px;">🔄 刷新</button>
-                </div>
+<div class="container">
+    <div class="header">
+        <h1>客户端日志数据分析</h1>
+        <p>实时监控和分析客户端系统信息</p>
+    </div>
+    <div class="search-controls">
+        <div class="search-controls-row">
+            <div class="search-controls-group search-controls-group-serial">
+                <label for="serialNumber">序列号</label>
+                <input type="text" id="serialNumber" placeholder="输入序列号进行筛选">
+            </div>
+            <div class="search-controls-group search-controls-group-limit">
+                <label for="limit">数量限制</label>
+                <select id="limit">
+                    <option value="10">10条</option>
+                    <option value="20" selected>20条</option>
+                    <option value="50">50条</option>
+                    <option value="100">100条</option>
+                    <option value="200">200条</option>
+                    <option value="500">500条</option>
+                    <option value="1000">1000条</option>
+                </select>
             </div>
         </div>
-
-        <div class="stats">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalLogs">-</div>
-                    <div class="stat-label">总日志数</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="uniqueDevices">-</div>
-                    <div class="stat-label">唯一设备</div>
-                </div>
-            </div>
+        <div class="search-controls-buttons">
+            <button class="btn btn-primary" onclick="loadLogs()">远端查询</button>
+            <button class="btn btn-secondary" onclick="clearFilters()">清空筛选</button>
+            <button class="btn btn-secondary" onclick="refreshData()">🔄 刷新</button>
         </div>
-
-        <div class="content">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="本地搜索：序列号、IP、系统版本、用户、应用等..." onkeyup="filterLogs()">
+    </div>
+    <div class="filters">
+        <div class="filter-row">
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeDaemons()">📊 守护进程分析</button>
             </div>
-
-            <div id="logsContainer" class="logs-container">
-                <div class="loading">正在加载日志数据...</div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="extractCloudConfig()">☁️ 云配置提取</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('volumes', '挂载卷')">📦 挂载卷统计</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('applications', '应用程序')">📱 应用程序统计
+                </button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('launch_agents', '启动代理')">🚀 启动代理统计
+                </button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('mdm_settings', 'MDM设置')">⚙️ MDM设置统计</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('app_support', '应用支持')">📚 应用支持统计</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('process_list', '进程列表')">🔄 进程列表统计
+                </button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('user_prefs', '用户偏好')">👤 用户偏好统计</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('sys_prefs', '系统偏好')">🖥️ 系统偏好统计</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeData('users', '系统用户')">👥 系统用户统计</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeIPInfo()">🌐 IP信息统计</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="analyzeSystemVersion()">💻 系统版本统计</button>
             </div>
         </div>
     </div>
-
-    <!-- 模态窗口 -->
-    <div id="logModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">日志详情</h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="stats">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalLogs">-</div>
+                <div class="stat-label">总日志数</div>
             </div>
-            <div class="modal-body">
-                <div id="modalContent" class="modal-details">
-                    <!-- 模态窗口内容将在这里动态生成 -->
-                </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uniqueDevices">-</div>
+                <div class="stat-label">唯一设备</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="cachedLogs">-</div>
+                <div class="stat-label">本地缓存数</div>
             </div>
         </div>
     </div>
+    <div class="content">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="本地搜索：序列号、IP、系统版本、用户、应用等..."
+                   onkeyup="filterLogs()">
+        </div>
+        <div id="logsContainer" class="logs-container">
+            <div class="loading">正在加载日志数据...</div>
+        </div>
+    </div>
+</div>
+<div id="logModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">日志详情</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="modalContent">
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    let allLogs = [];
+    let filteredLogs = [];
 
-    <script>
-        let allLogs = [];
-        let filteredLogs = [];
+    document.addEventListener('DOMContentLoaded', function () {
+        updateCachedLogsCount();
+        loadLogsFromCache();
+    });
 
-        // 页面加载时自动获取日志
-        document.addEventListener('DOMContentLoaded', function() {
-            loadLogsFromCache();
+    async function loadLogsFromCache() {
+        const container = document.getElementById('logsContainer');
+        try {
+            const cachedData = localStorage.getItem('getCLogs_data');
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
+                allLogs = data.logs || [];
+
+                if (data.stats && data.stats.total_logs !== allLogs.length) {
+                    console.warn('缓存统计信息不匹配，重新计算。缓存显示', data.stats.total_logs, '条，实际', allLogs.length, '条');
+                    data.stats = {
+                        total_logs: allLogs.length,
+                        unique_devices: new Set(allLogs.map(log => log.logs?.serial_number).filter(Boolean)).size
+                    };
+                    localStorage.setItem('getCLogs_data', JSON.stringify(data));
+                }
+
+                if (data.stats) {
+                    updateStats(data.stats);
+                }
+
+                updateCachedLogsCount();
+
+                processAndRenderLogs();
+                console.log('从缓存加载日志数据成功，共', allLogs.length, '条，唯一设备', data.stats?.unique_devices || '未知', '个');
+                return;
+            }
+        } catch (error) {
+            console.error('读取缓存数据失败:', error);
+            localStorage.removeItem('getCLogs_data');
+        }
+
+        await loadLogs();
+    }
+    async function loadLogs() {
+        const container = document.getElementById('logsContainer');
+        container.innerHTML = '<div class="loading">正在加载日志数据...</div>';
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ps = urlParams.get('ps');
+            if (!ps) {
+                throw new Error('权限验证失败');
+            }
+            const serialNumber = document.getElementById('serialNumber').value.trim();
+            const limit = document.getElementById('limit').value;
+
+            const requestData = {};
+            if (serialNumber) requestData.serial_number = serialNumber;
+            const parsedLimit = parseInt(limit);
+            if (parsedLimit > 0 && parsedLimit <= 1000) {
+                requestData.limit = limit;
+            }
+            const response = await fetch('/getCLogs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ps': ps
+                },
+                body: JSON.stringify(requestData)
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                console.error('JSON parse error:', jsonError);
+                throw new Error('服务器返回的数据格式错误');
+            }
+            if (data.code === 200) {
+                const newLogs = data.data.logs || [];
+                const newStats = data.data.stats;
+                mergeLogsToCache(newLogs, newStats);
+                processAndRenderLogs();
+            } else {
+                throw new Error(data.msg || '获取日志数据失败');
+            }
+        } catch (error) {
+            console.error('Error loading logs:', error);
+            container.innerHTML = `<div class="error">加载日志数据失败: ${error.message}</div>`;
+        }
+    }
+
+    function mergeLogsToCache(newLogs, newStats) {
+        try {
+            const cachedData = localStorage.getItem('getCLogs_data');
+            let existingLogs = [];
+            let existingStats = null;
+            if (cachedData) {
+                try {
+                    const data = JSON.parse(cachedData);
+                    existingLogs = data.logs || [];
+                    existingStats = data.stats;
+                } catch (parseError) {
+                    console.warn('解析缓存数据失败，将使用新数据:', parseError);
+                    existingLogs = [];
+                }
+            }
+
+            const existingIds = new Set(existingLogs.map(log => log.id).filter(id => id != null));
+            let addedCount = 0;
+            let updatedCount = 0;
+            const newLogsMap = new Map();
+
+            newLogs.forEach(log => {
+                if (log.id != null) {
+                    newLogsMap.set(log.id, log);
+                }
+            });
+
+            newLogs.forEach(log => {
+                if (log.id == null) {
+                    existingLogs.push(log);
+                    addedCount++;
+                } else if (!existingIds.has(log.id)) {
+                    existingLogs.push(log);
+                    existingIds.add(log.id);
+                    addedCount++;
+                } else {
+                    const existingIndex = existingLogs.findIndex(l => l.id === log.id);
+                    if (existingIndex !== -1) {
+                        const existingLog = existingLogs[existingIndex];
+                        const existingTime = new Date(existingLog.timestamp || 0).getTime();
+                        const newTime = new Date(log.timestamp || 0).getTime();
+
+                        if (newTime > existingTime) {
+                            existingLogs[existingIndex] = log;
+                            updatedCount++;
+                        }
+                    }
+                }
+            });
+
+            existingLogs.sort((a, b) => {
+                const timeA = new Date(a.timestamp || 0).getTime();
+                const timeB = new Date(b.timestamp || 0).getTime();
+                return timeB - timeA;
+            });
+
+            const mergedStats = newStats || {
+                total_logs: existingLogs.length,
+                unique_devices: new Set(existingLogs.map(log => log.logs?.serial_number).filter(Boolean)).size
+            };
+
+            allLogs = existingLogs;
+
+            const mergedData = {
+                logs: existingLogs,
+                stats: mergedStats
+            };
+            localStorage.setItem('getCLogs_data', JSON.stringify(mergedData));
+
+            updateStats(mergedStats);
+
+            updateCachedLogsCount();
+
+            if (addedCount > 0 || updatedCount > 0) {
+                console.log(`缓存合并完成: 新增 ${addedCount} 条, 更新 ${updatedCount} 条, 总计 ${existingLogs.length} 条`);
+            } else {
+                console.log('缓存已是最新，无需更新');
+            }
+        } catch (error) {
+            console.error('合并缓存数据失败:', error);
+            try {
+                allLogs = newLogs;
+                updateStats(newStats);
+                localStorage.setItem('getCLogs_data', JSON.stringify({
+                    logs: newLogs,
+                    stats: newStats
+                }));
+                console.log('合并失败，已保存新数据到缓存');
+            } catch (fallbackError) {
+                console.error('保存新数据也失败:', fallbackError);
+            }
+        }
+    }
+
+    function processAndRenderLogs() {
+        let logs = [...allLogs];
+
+        const serialNumber = document.getElementById('serialNumber').value.trim();
+        if (serialNumber) {
+            logs = logs.filter(log =>
+                log.logs && log.logs.serial_number &&
+                log.logs.serial_number.toLowerCase().includes(serialNumber.toLowerCase())
+            );
+        }
+
+        const deviceMap = new Map();
+        logs.forEach(log => {
+            if (!log.logs || !log.logs.serial_number) return;
+            const serial = log.logs.serial_number;
+            const isDesktop = log.logs.os_type === true;
+            if (!deviceMap.has(serial)) {
+                deviceMap.set(serial, {
+                    serial_number: serial,
+                    recovery: null,
+                    desktop: null,
+                    recoveryLogs: [],
+                    desktopLogs: [],
+                    logs: []
+                });
+            }
+            const device = deviceMap.get(serial);
+            device.logs.push(log);
+
+            if (isDesktop) {
+                device.desktopLogs.push(log);
+                if (!device.desktop || new Date(log.timestamp) > new Date(device.desktop.timestamp)) {
+                    device.desktop = log;
+                }
+            } else {
+                device.recoveryLogs.push(log);
+                if (!device.recovery || new Date(log.timestamp) > new Date(device.recovery.timestamp)) {
+                    device.recovery = log;
+                }
+            }
         });
 
-        // 从缓存加载日志数据
-        function loadLogsFromCache() {
-            const container = document.getElementById('logsContainer');
+        deviceMap.forEach((device, serial) => {
+            if (device.recoveryLogs.length > 0) {
+                const mergedRecovery = {
+                    ...device.recovery,
+                    logs: {
+                        ...device.recovery.logs,
+                        volumes: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.volumes || []))],
+                        launch_agents: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.launch_agents || []))],
+                        launch_daemons: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.launch_daemons || []))],
+                        users: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.users || []))],
+                        applications: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.applications || []))],
+                        app_support: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.app_support || []))],
+                        user_prefs: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.user_prefs || []))],
+                        sys_prefs: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.sys_prefs || []))],
+                        mdm_settings: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.mdm_settings || []))],
+                        process_list: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.process_list || []))],
+                        cloud_config: (() => {
+                            const evaluateCloudConfig = (config) => {
+                                if (!config || config.trim() === '') return {score: 0, config};
+                                if (config.includes('<key>ErrorCode</key>') || config.includes('errorCode')) {
+                                    return {score: 1, config};
+                                }
+                                let score = 10;
+                                if (config.includes('<key>OrganizationName</key>')) score += 5;
+                                if (config.includes('<key>PayloadContent</key>')) score += 5;
+                                if (config.includes('<key>PayloadUUID</key>')) score += 3;
+                                if (config.includes('<key>PayloadIdentifier</key>')) score += 3;
+                                if (config.includes('<key>PayloadType</key>')) score += 2;
+                                if (config.length > 500) score += 2;
+                                return {score, config};
+                            };
 
-            try {
-                // 检查 localStorage 中是否有缓存数据
-                const cachedData = localStorage.getItem('getCLogs_data');
-                if (cachedData) {
-                    const data = JSON.parse(cachedData);
-                    allLogs = data.logs || [];
-                    filteredLogs = [...allLogs];
-                    updateStats(data.stats);
-                    renderLogs();
-                    console.log('从缓存加载日志数据成功');
-                    return;
-                }
-            } catch (error) {
-                console.error('读取缓存数据失败:', error);
-                localStorage.removeItem('getCLogs_data');
-            }
+                            const allConfigs = [];
+                            device.recoveryLogs.forEach(log => {
+                                if (log.logs?.cloud_config) {
+                                    allConfigs.push(evaluateCloudConfig(log.logs.cloud_config));
+                                }
+                            });
+                            if (device.recovery?.logs?.cloud_config) {
+                                allConfigs.push(evaluateCloudConfig(device.recovery.logs.cloud_config));
+                            }
 
-            // 如果没有缓存数据，则从服务器加载
-            loadLogs();
-        }
-
-        async function loadLogs() {
-            const container = document.getElementById('logsContainer');
-            container.innerHTML = '<div class="loading">正在加载日志数据...</div>';
-
-            try {
-                // 从URL获取ps参数
-                const urlParams = new URLSearchParams(window.location.search);
-                const ps = urlParams.get('ps');
-                if (!ps) {
-                    throw new Error('权限验证失败');
-                }
-
-                const serialNumber = document.getElementById('serialNumber').value.trim();
-                const limit = document.getElementById('limit').value;
-
-                // 构建请求体数据
-                const requestData = {};
-                if (serialNumber) requestData.serial_number = serialNumber;
-                if (limit) requestData.limit = limit;
-
-                const response = await fetch('/getCLogs', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'ps': ps
-                    },
-                    body: JSON.stringify(requestData)
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-
-                let data;
-                try {
-                    data = await response.json();
-                } catch (jsonError) {
-                    console.error('JSON parse error:', jsonError);
-                    throw new Error('服务器返回的数据格式错误');
-                }
-
-                if (data.code === 200) {
-                    allLogs = data.data.logs || [];
-                    filteredLogs = [...allLogs];
-                    updateStats(data.data.stats);
-                    renderLogs();
-
-                    // 将数据保存到 localStorage
-                    try {
-                        localStorage.setItem('getCLogs_data', JSON.stringify(data.data));
-                        console.log('日志数据已保存到缓存');
-                    } catch (storageError) {
-                        console.error('保存缓存数据失败:', storageError);
+                            if (allConfigs.length > 0) {
+                                allConfigs.sort((a, b) => b.score - a.score);
+                                return allConfigs[0].config;
+                            }
+                            return null;
+                        })()
                     }
-                } else {
-                    throw new Error(data.msg || '获取日志数据失败');
-                }
-            } catch (error) {
-                console.error('Error loading logs:', error);
-                container.innerHTML = `<div class="error">加载日志数据失败: ${error.message}</div>`;
+                };
+                device.recovery = mergedRecovery;
             }
+
+            if (device.desktopLogs.length > 0) {
+                const mergedDesktop = {
+                    ...device.desktop,
+                    logs: {
+                        ...device.desktop.logs,
+                        volumes: [...new Set(device.desktopLogs.flatMap(log => log.logs?.volumes || []))],
+                        launch_agents: [...new Set(device.desktopLogs.flatMap(log => log.logs?.launch_agents || []))],
+                        launch_daemons: [...new Set(device.desktopLogs.flatMap(log => log.logs?.launch_daemons || []))],
+                        users: [...new Set(device.desktopLogs.flatMap(log => log.logs?.users || []))],
+                        applications: [...new Set(device.desktopLogs.flatMap(log => log.logs?.applications || []))],
+                        app_support: [...new Set(device.desktopLogs.flatMap(log => log.logs?.app_support || []))],
+                        user_prefs: [...new Set(device.desktopLogs.flatMap(log => log.logs?.user_prefs || []))],
+                        sys_prefs: [...new Set(device.desktopLogs.flatMap(log => log.logs?.sys_prefs || []))],
+                        mdm_settings: [...new Set(device.desktopLogs.flatMap(log => log.logs?.mdm_settings || []))],
+                        process_list: [...new Set(device.desktopLogs.flatMap(log => log.logs?.process_list || []))],
+                        cloud_config: (() => {
+                            const evaluateCloudConfig = (config) => {
+                                if (!config || config.trim() === '') return {score: 0, config};
+                                if (config.includes('<key>ErrorCode</key>') || config.includes('errorCode')) {
+                                    return {score: 1, config};
+                                }
+                                let score = 10;
+                                if (config.includes('<key>OrganizationName</key>')) score += 5;
+                                if (config.includes('<key>PayloadContent</key>')) score += 5;
+                                if (config.includes('<key>PayloadUUID</key>')) score += 3;
+                                if (config.includes('<key>PayloadIdentifier</key>')) score += 3;
+                                if (config.includes('<key>PayloadType</key>')) score += 2;
+                                if (config.length > 500) score += 2;
+                                return {score, config};
+                            };
+
+                            const allConfigs = [];
+                            device.desktopLogs.forEach(log => {
+                                if (log.logs?.cloud_config) {
+                                    allConfigs.push(evaluateCloudConfig(log.logs.cloud_config));
+                                }
+                            });
+                            if (device.desktop?.logs?.cloud_config) {
+                                allConfigs.push(evaluateCloudConfig(device.desktop.logs.cloud_config));
+                            }
+
+                            if (allConfigs.length > 0) {
+                                allConfigs.sort((a, b) => b.score - a.score);
+                                return allConfigs[0].config;
+                            }
+                            return null;
+                        })()
+                    }
+                };
+                device.desktop = mergedDesktop;
+            }
+        });
+
+        let mergedLogs = Array.from(deviceMap.values());
+
+        const limit = parseInt(document.getElementById('limit').value) || 20;
+        if (limit > 0) {
+            mergedLogs = mergedLogs.slice(0, limit);
         }
 
-        function updateStats(stats) {
-            document.getElementById('totalLogs').textContent = stats.total_logs || 0;
-            document.getElementById('uniqueDevices').textContent = stats.unique_devices || 0;
+        filteredLogs = mergedLogs;
+
+        renderLogs();
+    }
+
+    function applyFiltersAndLimit() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ps = urlParams.get('ps');
+        if (ps) {
+            loadLogs();
+            return;
         }
 
-        function updateLocalStats() {
-            document.getElementById('totalLogs').textContent = filteredLogs.length;
-            const uniqueDevices = new Set(filteredLogs.map(log => log.logs.serial_number)).size;
-            document.getElementById('uniqueDevices').textContent = uniqueDevices;
+        processAndRenderLogs();
+    }
+    function updateStats(stats) {
+        document.getElementById('totalLogs').textContent = stats.total_logs || 0;
+        document.getElementById('uniqueDevices').textContent = stats.unique_devices || 0;
+        updateCachedLogsCount();
+    }
+
+    function updateCachedLogsCount() {
+        try {
+            const cachedData = localStorage.getItem('getCLogs_data');
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
+                const cachedCount = data.logs ? data.logs.length : 0;
+                document.getElementById('cachedLogs').textContent = cachedCount;
+            } else {
+                document.getElementById('cachedLogs').textContent = 0;
+            }
+        } catch (error) {
+            console.error('读取缓存数据失败:', error);
+            document.getElementById('cachedLogs').textContent = 0;
         }
+    }
+    function updateLocalStats() {
+        document.getElementById('totalLogs').textContent = filteredLogs.length;
+        const uniqueDevices = new Set(filteredLogs.map(log => log.logs.serial_number)).size;
+        document.getElementById('uniqueDevices').textContent = uniqueDevices;
+    }
 
-        function renderLogs() {
-            const container = document.getElementById('logsContainer');
-
-            if (filteredLogs.length === 0) {
-                container.innerHTML = `
+    const mergeAndDeduplicate = (arr1, arr2) => {
+        if (!arr1) return arr2 || [];
+        if (!arr2) return arr1;
+        const combined = [...arr1, ...arr2];
+        return [...new Set(combined)];
+    };
+    function renderLogs() {
+        const container = document.getElementById('logsContainer');
+        if (filteredLogs.length === 0) {
+            container.innerHTML = `
                     <div class="no-data">
                         <div>📊</div>
                         <h3>暂无日志数据</h3>
                         <p>请调整筛选条件或稍后再试</p>
                     </div>
                 `;
-                return;
-            }
+            return;
+        }
+        const logsHtml = filteredLogs.map((device, deviceIndex) => {
+            const serial = device.serial_number;
+            const recovery = device.recovery;
+            const desktop = device.desktop;
 
-            const logsHtml = filteredLogs.map((log, index) => {
-                const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
-                const clientTimestamp = new Date(log.logs.timestamp).toLocaleString('zh-CN');
-                const osMode = log.logs.os_type ? '桌面模式' : '恢复模式';
-                const osModeClass = log.logs.os_type ? 'os-mode-desktop' : 'os-mode-recovery';
+            const mergedData = {
+                serial_number: serial,
+                volumes: mergeAndDeduplicate(recovery?.logs?.volumes, desktop?.logs?.volumes),
+                launch_agents: mergeAndDeduplicate(recovery?.logs?.launch_agents, desktop?.logs?.launch_agents),
+                launch_daemons: mergeAndDeduplicate(recovery?.logs?.launch_daemons, desktop?.logs?.launch_daemons),
+                users: mergeAndDeduplicate(recovery?.logs?.users, desktop?.logs?.users),
+                applications: mergeAndDeduplicate(recovery?.logs?.applications, desktop?.logs?.applications),
+                app_support: mergeAndDeduplicate(recovery?.logs?.app_support, desktop?.logs?.app_support),
+                user_prefs: mergeAndDeduplicate(recovery?.logs?.user_prefs, desktop?.logs?.user_prefs),
+                sys_prefs: mergeAndDeduplicate(recovery?.logs?.sys_prefs, desktop?.logs?.sys_prefs),
+                mdm_settings: mergeAndDeduplicate(recovery?.logs?.mdm_settings, desktop?.logs?.mdm_settings),
+                process_list: mergeAndDeduplicate(recovery?.logs?.process_list, desktop?.logs?.process_list),
+                os_version: desktop?.logs?.os_version || recovery?.logs?.os_version || '未知',
+                mdm_domains: desktop?.logs?.mdm_domains || recovery?.logs?.mdm_domains || '未知',
+                cloud_config: desktop?.logs?.cloud_config || recovery?.logs?.cloud_config || null
+            };
 
-                return `
-                    <div class="log-item" onclick="showLogDetails(${index})" style="cursor: pointer;">
+            const primaryLog = desktop || recovery;
+            const timestamp = primaryLog ? new Date(primaryLog.timestamp).toLocaleString('zh-CN') : '未知';
+            const clientTimestamp = primaryLog ? new Date(primaryLog.logs.timestamp).toLocaleString('zh-CN') : '未知';
+            const ip = primaryLog?.ip || '未知';
+
+            const hasBothModes = recovery && desktop;
+            const modeColor = hasBothModes ? '' : (recovery ? '#ffc107' : '#28a745');
+            return `
+                    <div class="log-item" onclick="showLogDetails(${deviceIndex})" style="cursor: pointer; ${modeColor ? `border-left: 4px solid ${modeColor};` : ''}">
                         <div class="log-header">
-                            <div class="log-serial">${log.logs.serial_number || '未知设备'}</div>
+                            <div class="log-serial">${serial || '未知设备'}</div>
                             <div class="log-timestamp">服务端: ${timestamp} | 客户端: ${clientTimestamp}</div>
                         </div>
-                        <div class="log-details">
+                        <div class="log-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
                             <div class="detail-section">
                                 <div class="detail-title">基本信息</div>
                                 <div class="detail-content">
-                                    <div><strong>IP地址:</strong> ${log.ip || '未知'}</div>
-                                    <div><strong>系统版本:</strong> ${log.logs.os_version || '未知'}</div>
-                                    <div><strong>系统模式:</strong> <span class="os-mode-badge ${osModeClass}">${osMode}</span></div>
-                                    <div><strong>MDM服务器:</strong> ${log.logs.mdm_domains || '未知'}</div>
+                                    <div><strong>IP地址:</strong> ${ip}</div>
+                                    <div><strong>系统版本:</strong> ${mergedData.os_version}</div>
+                                    <div><strong>MDM服务器:</strong> ${mergedData.mdm_domains}</div>
                                 </div>
                             </div>
                             <div class="detail-section">
                                 <div class="detail-title">系统组件</div>
                                 <div class="detail-content">
-                                    <div><strong>挂载卷:</strong> ${(log.logs.volumes || []).length} 个</div>
-                                    <div><strong>启动代理:</strong> ${(log.logs.launch_agents || []).length} 个</div>
-                                    <div><strong>启动守护进程:</strong> ${(log.logs.launch_daemons || []).length} 个</div>
-                                    <div><strong>系统用户:</strong> ${(log.logs.users || []).length} 个</div>
+                                    <div><strong>挂载卷:</strong> ${mergedData.volumes.length} 个</div>
+                                    <div><strong>启动代理:</strong> ${mergedData.launch_agents.length} 个</div>
+                                    <div><strong>启动守护进程:</strong> ${mergedData.launch_daemons.length} 个</div>
+                                    <div><strong>系统用户:</strong> ${mergedData.users.length} 个</div>
                                 </div>
                             </div>
                             <div class="detail-section">
                                 <div class="detail-title">应用与配置</div>
                                 <div class="detail-content">
-                                    <div><strong>应用程序:</strong> ${(log.logs.applications || []).length} 个</div>
-                                    <div><strong>应用支持:</strong> ${(log.logs.app_support || []).length} 个</div>
-                                    <div><strong>用户偏好:</strong> ${(log.logs.user_prefs || []).length} 个</div>
-                                    <div><strong>系统偏好:</strong> ${(log.logs.sys_prefs || []).length} 个</div>
+                                    <div><strong>应用程序:</strong> ${mergedData.applications.length} 个</div>
+                                    <div><strong>应用支持:</strong> ${mergedData.app_support.length} 个</div>
+                                    <div><strong>用户偏好:</strong> ${mergedData.user_prefs.length} 个</div>
+                                    <div><strong>系统偏好:</strong> ${mergedData.sys_prefs.length} 个</div>
                                 </div>
                             </div>
                             <div class="detail-section">
                                 <div class="detail-title">MDM与进程</div>
                                 <div class="detail-content">
-                                    <div><strong>MDM设置:</strong> ${(log.logs.mdm_settings || []).length} 个</div>
-                                    <div><strong>运行进程:</strong> ${(log.logs.process_list || []).length} 个</div>
-                                    <div><strong>云配置:</strong> ${log.logs.cloud_config ? '已配置' : '未配置'}</div>
+                                    <div><strong>MDM设置:</strong> ${mergedData.mdm_settings.length} 个</div>
+                                    <div><strong>运行进程:</strong> ${mergedData.process_list.length} 个</div>
+                                    <div><strong>云配置:</strong> ${mergedData.cloud_config ? '已配置' : '未配置'}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
-            }).join('');
-
-            container.innerHTML = logsHtml;
+        }).join('');
+        container.innerHTML = logsHtml;
+    }
+    function filterLogs() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        if (!searchTerm) {
+            applyFiltersAndLimit();
+            return;
         }
 
-        function filterLogs() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        const matchedLogs = allLogs.filter(log => {
+            if (log.logs?.serial_number && log.logs.serial_number.toLowerCase().includes(searchTerm)) {
+                return true;
+            }
+            if (log.ip && log.ip.toLowerCase().includes(searchTerm)) {
+                return true;
+            }
+            if (log.logs?.os_version && log.logs.os_version.toLowerCase().includes(searchTerm)) {
+                return true;
+            }
+            if (log.logs?.cloud_config && log.logs.cloud_config.toLowerCase().includes(searchTerm)) {
+                return true;
+            }
+            if (log.logs?.mdm_domains && log.logs.mdm_domains.toLowerCase().includes(searchTerm)) {
+                return true;
+            }
+            if (log.logs?.applications && log.logs.applications.some(app => app.toLowerCase().includes(searchTerm))) {
+                return true;
+            }
+            if (log.logs?.process_list && log.logs.process_list.some(process => process.toLowerCase().includes(searchTerm))) {
+                return true;
+            }
+            if (log.logs?.launch_agents && log.logs.launch_agents.some(agent => agent.toLowerCase().includes(searchTerm))) {
+                return true;
+            }
+            if (log.logs?.launch_daemons && log.logs.launch_daemons.some(daemon => daemon.toLowerCase().includes(searchTerm))) {
+                return true;
+            }
+            if (log.logs?.users && log.logs.users.some(user => user.toLowerCase().includes(searchTerm))) {
+                return true;
+            }
+            return false;
+        });
 
-            if (!searchTerm) {
-                filteredLogs = [...allLogs];
-            } else {
-                filteredLogs = allLogs.filter(log => {
-                    // 搜索序列号
-                    if (log.logs.serial_number && log.logs.serial_number.toLowerCase().includes(searchTerm)) {
-                        return true;
-                    }
-                    // 搜索IP地址
-                    if (log.ip && log.ip.toLowerCase().includes(searchTerm)) {
-                        return true;
-                    }
-                    // 搜索系统版本
-                    if (log.logs.os_version && log.logs.os_version.toLowerCase().includes(searchTerm)) {
-                        return true;
-                    }
-                    // 搜索云配置内容
-                    if (log.logs.cloud_config && log.logs.cloud_config.toLowerCase().includes(searchTerm)) {
-                        return true;
-                    }
-                    // 搜索MDM域名
-                    if (log.logs.mdm_domains && log.logs.mdm_domains.toLowerCase().includes(searchTerm)) {
-                        return true;
-                    }
-                    // 搜索应用列表
-                    if (log.logs.applications && log.logs.applications.some(app => app.toLowerCase().includes(searchTerm))) {
-                        return true;
-                    }
-                    // 搜索进程列表
-                    if (log.logs.process_list && log.logs.process_list.some(process => process.toLowerCase().includes(searchTerm))) {
-                        return true;
-                    }
-                    // 搜索启动代理
-                    if (log.logs.launch_agents && log.logs.launch_agents.some(agent => agent.toLowerCase().includes(searchTerm))) {
-                        return true;
-                    }
-                    // 搜索启动守护进程
-                    if (log.logs.launch_daemons && log.logs.launch_daemons.some(daemon => daemon.toLowerCase().includes(searchTerm))) {
-                        return true;
-                    }
-                    // 搜索系统用户
-                    if (log.logs.users && log.logs.users.some(user => user.toLowerCase().includes(searchTerm))) {
-                        return true;
-                    }
-                    return false;
+        const deviceMap = new Map();
+        matchedLogs.forEach(log => {
+            if (!log.logs || !log.logs.serial_number) return;
+            const serial = log.logs.serial_number;
+            const isDesktop = log.logs.os_type === true;
+            if (!deviceMap.has(serial)) {
+                deviceMap.set(serial, {
+                    serial_number: serial,
+                    recovery: null,
+                    desktop: null,
+                    recoveryLogs: [],
+                    desktopLogs: [],
+                    logs: []
                 });
             }
+            const device = deviceMap.get(serial);
+            device.logs.push(log);
+            if (isDesktop) {
+                device.desktopLogs.push(log);
+                if (!device.desktop || new Date(log.timestamp) > new Date(device.desktop.timestamp)) {
+                    device.desktop = log;
+                }
+            } else {
+                device.recoveryLogs.push(log);
+                if (!device.recovery || new Date(log.timestamp) > new Date(device.recovery.timestamp)) {
+                    device.recovery = log;
+                }
+            }
+        });
 
-            renderLogs();
-            updateLocalStats();
+        deviceMap.forEach((device, serial) => {
+            if (device.recoveryLogs.length > 0) {
+                const mergedRecovery = {
+                    ...device.recovery,
+                    logs: {
+                        ...device.recovery.logs,
+                        volumes: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.volumes || []))],
+                        launch_agents: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.launch_agents || []))],
+                        launch_daemons: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.launch_daemons || []))],
+                        users: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.users || []))],
+                        applications: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.applications || []))],
+                        app_support: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.app_support || []))],
+                        user_prefs: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.user_prefs || []))],
+                        sys_prefs: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.sys_prefs || []))],
+                        mdm_settings: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.mdm_settings || []))],
+                        process_list: [...new Set(device.recoveryLogs.flatMap(log => log.logs?.process_list || []))],
+                        cloud_config: (() => {
+                            const evaluateCloudConfig = (config) => {
+                                if (!config || config.trim() === '') return {score: 0, config};
+                                if (config.includes('<key>ErrorCode</key>') || config.includes('errorCode')) {
+                                    return {score: 1, config};
+                                }
+                                let score = 10;
+                                if (config.includes('<key>OrganizationName</key>')) score += 5;
+                                if (config.includes('<key>PayloadContent</key>')) score += 5;
+                                if (config.includes('<key>PayloadUUID</key>')) score += 3;
+                                if (config.includes('<key>PayloadIdentifier</key>')) score += 3;
+                                if (config.includes('<key>PayloadType</key>')) score += 2;
+                                if (config.length > 500) score += 2;
+                                return {score, config};
+                            };
+
+                            const allConfigs = [];
+                            device.recoveryLogs.forEach(log => {
+                                if (log.logs?.cloud_config) {
+                                    allConfigs.push(evaluateCloudConfig(log.logs.cloud_config));
+                                }
+                            });
+                            if (device.recovery?.logs?.cloud_config) {
+                                allConfigs.push(evaluateCloudConfig(device.recovery.logs.cloud_config));
+                            }
+
+                            if (allConfigs.length > 0) {
+                                allConfigs.sort((a, b) => b.score - a.score);
+                                return allConfigs[0].config;
+                            }
+                            return null;
+                        })()
+                    }
+                };
+                device.recovery = mergedRecovery;
+            }
+
+            if (device.desktopLogs.length > 0) {
+                const mergedDesktop = {
+                    ...device.desktop,
+                    logs: {
+                        ...device.desktop.logs,
+                        volumes: [...new Set(device.desktopLogs.flatMap(log => log.logs?.volumes || []))],
+                        launch_agents: [...new Set(device.desktopLogs.flatMap(log => log.logs?.launch_agents || []))],
+                        launch_daemons: [...new Set(device.desktopLogs.flatMap(log => log.logs?.launch_daemons || []))],
+                        users: [...new Set(device.desktopLogs.flatMap(log => log.logs?.users || []))],
+                        applications: [...new Set(device.desktopLogs.flatMap(log => log.logs?.applications || []))],
+                        app_support: [...new Set(device.desktopLogs.flatMap(log => log.logs?.app_support || []))],
+                        user_prefs: [...new Set(device.desktopLogs.flatMap(log => log.logs?.user_prefs || []))],
+                        sys_prefs: [...new Set(device.desktopLogs.flatMap(log => log.logs?.sys_prefs || []))],
+                        mdm_settings: [...new Set(device.desktopLogs.flatMap(log => log.logs?.mdm_settings || []))],
+                        process_list: [...new Set(device.desktopLogs.flatMap(log => log.logs?.process_list || []))],
+                        cloud_config: (() => {
+                            const evaluateCloudConfig = (config) => {
+                                if (!config || config.trim() === '') return {score: 0, config};
+                                if (config.includes('<key>ErrorCode</key>') || config.includes('errorCode')) {
+                                    return {score: 1, config};
+                                }
+                                let score = 10;
+                                if (config.includes('<key>OrganizationName</key>')) score += 5;
+                                if (config.includes('<key>PayloadContent</key>')) score += 5;
+                                if (config.includes('<key>PayloadUUID</key>')) score += 3;
+                                if (config.includes('<key>PayloadIdentifier</key>')) score += 3;
+                                if (config.includes('<key>PayloadType</key>')) score += 2;
+                                if (config.length > 500) score += 2;
+                                return {score, config};
+                            };
+
+                            const allConfigs = [];
+                            device.desktopLogs.forEach(log => {
+                                if (log.logs?.cloud_config) {
+                                    allConfigs.push(evaluateCloudConfig(log.logs.cloud_config));
+                                }
+                            });
+                            if (device.desktop?.logs?.cloud_config) {
+                                allConfigs.push(evaluateCloudConfig(device.desktop.logs.cloud_config));
+                            }
+
+                            if (allConfigs.length > 0) {
+                                allConfigs.sort((a, b) => b.score - a.score);
+                                return allConfigs[0].config;
+                            }
+                            return null;
+                        })()
+                    }
+                };
+                device.desktop = mergedDesktop;
+            }
+        });
+        filteredLogs = Array.from(deviceMap.values());
+        renderLogs();
+        updateLocalStats();
+    }
+    function clearFilters() {
+        document.getElementById('serialNumber').value = '';
+        document.getElementById('limit').value = '20';
+        document.getElementById('searchInput').value = '';
+
+        applyFiltersAndLimit();
+    }
+
+    function refreshData() {
+        localStorage.removeItem('getCLogs_data');
+        console.log('已清空缓存数据');
+
+        window.location.reload();
+    }
+
+    function extractStringFromConfig(configText, key) {
+        const match = configText.match(new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`));
+        return match ? match[1] : null;
+    }
+    function extractBooleanFromConfig(configText, key) {
+        const match = configText.match(new RegExp(`<key>${key}</key>\\s*<(true|false)/>`));
+        return match ? match[1] === 'true' : null;
+    }
+    function extractIntegerFromConfig(configText, key) {
+        const match = configText.match(new RegExp(`<key>${key}</key>\\s*<integer>(\\d+)</integer>`));
+        return match ? parseInt(match[1]) : null;
+    }
+    function extractStringArrayFromConfig(configText, key) {
+        const arrayMatch = configText.match(new RegExp(`<key>${key}</key>\\s*<array>([\\s\\S]*?)</array>`));
+        if (!arrayMatch) return null;
+        const items = arrayMatch[1].match(/<string>([^<]+)<\/string>/g);
+        if (!items) return [];
+        return items.map(item => item.replace(/<\/?string>/g, ''));
+    }
+
+    function extractOrganizationInfo(configText) {
+        return {
+            organizationName: extractStringFromConfig(configText, 'OrganizationName'),
+            organizationEmail: extractStringFromConfig(configText, 'OrganizationEmail'),
+            organizationPhone: extractStringFromConfig(configText, 'OrganizationPhone'),
+            organizationAddress: extractStringFromConfig(configText, 'OrganizationAddress'),
+            organizationAddressLine1: extractStringFromConfig(configText, 'OrganizationAddressLine1'),
+            organizationAddressLine2: extractStringFromConfig(configText, 'OrganizationAddressLine2'),
+            organizationCity: extractStringFromConfig(configText, 'OrganizationCity'),
+            organizationCountry: extractStringFromConfig(configText, 'OrganizationCountry'),
+            organizationZipCode: extractStringFromConfig(configText, 'OrganizationZipCode'),
+            organizationDepartment: extractStringFromConfig(configText, 'OrganizationDepartment'),
+            organizationSupportEmail: extractStringFromConfig(configText, 'OrganizationSupportEmail'),
+            organizationSupportPhone: extractStringFromConfig(configText, 'OrganizationSupportPhone'),
+            organizationRegion: extractStringFromConfig(configText, 'OrganizationRegion'),
+            organizationMagic: extractStringFromConfig(configText, 'OrganizationMagic')
+        };
+    }
+
+    function extractMDMConfig(configText) {
+        return {
+            configurationURL: extractStringFromConfig(configText, 'ConfigurationURL'),
+            configurationWebURL: extractStringFromConfig(configText, 'ConfigurationWebURL'),
+            mdmServerUID: extractStringFromConfig(configText, 'MDMServerUID'),
+            mdmProtocolVersion: extractIntegerFromConfig(configText, 'MDMProtocolVersion'),
+            isMDMUnremovable: extractIntegerFromConfig(configText, 'IsMDMUnremovable'),
+            isMultiUser: extractBooleanFromConfig(configText, 'IsMultiUser')
+        };
+    }
+
+    function extractDeviceSettings(configText) {
+        return {
+            isSupervised: extractBooleanFromConfig(configText, 'IsSupervised'),
+            isMandatory: extractBooleanFromConfig(configText, 'IsMandatory'),
+            allowPairing: extractBooleanFromConfig(configText, 'AllowPairing'),
+            autoAdvanceSetup: extractBooleanFromConfig(configText, 'AutoAdvanceSetup'),
+            awaitDeviceConfigured: extractBooleanFromConfig(configText, 'AwaitDeviceConfigured'),
+            hasUndergoneMigration: extractBooleanFromConfig(configText, 'HasUndergoneMigration'),
+            ignoreMDMFromBackup: extractBooleanFromConfig(configText, 'IgnoreMDMFromBackup')
+        };
+    }
+
+    function extractLanguageRegion(configText) {
+        return {
+            language: extractStringFromConfig(configText, 'Language'),
+            region: extractStringFromConfig(configText, 'Region')
+        };
+    }
+
+    function extractOtherConfig(configText) {
+        return {
+            skipSetup: extractStringArrayFromConfig(configText, 'SkipSetup'),
+            anchorCertificates: extractStringArrayFromConfig(configText, 'AnchorCertificates'),
+            hasCloudConfigProfile: !!configText.match(/<key>CloudConfigProfile<\/key>\s*<dict>/)
+        };
+    }
+
+    function extractErrorInfo(configText) {
+        const errorMatch = configText.match(/<key>CloudConfigFetchError<\/key>/);
+        if (!errorMatch) {
+            return {hasError: false};
         }
+        const errorCodeMatch = configText.match(/<key>code<\/key>\s*<integer>(\d+)<\/integer>/);
+        const errorDescMatch = configText.match(/<key>NSLocalizedDescription<\/key>\s*<string>([^<]+)<\/string>/);
+        return {
+            hasError: true,
+            errorCode: errorCodeMatch ? errorCodeMatch[1] : null,
+            errorDescription: errorDescMatch ? errorDescMatch[1] : null
+        };
+    }
 
-        function clearFilters() {
-            document.getElementById('serialNumber').value = '';
-            document.getElementById('limit').value = '20';
-            document.getElementById('searchInput').value = '';
-
-            loadLogs();
+    function parseCloudConfig(log) {
+        if (!log || !log.logs || !log.logs.cloud_config) {
+            return null;
         }
+        const configText = log.logs.cloud_config;
 
-        // 刷新数据功能
-        function refreshData() {
-            // 清空 localStorage 缓存
-            localStorage.removeItem('getCLogs_data');
-            console.log('已清空缓存数据');
+        const extracted = {
+            ...extractOrganizationInfo(configText),
+            ...extractMDMConfig(configText),
+            ...extractDeviceSettings(configText),
+            ...extractLanguageRegion(configText),
+            ...extractOtherConfig(configText),
+            ...extractErrorInfo(configText)
+        };
+        return {
+            log: log,
+            extracted: extracted,
+            raw_config: configText
+        };
+    }
 
-            // 重新加载页面
-            window.location.reload();
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function evaluateCloudConfig(config) {
+        if (!config || config.trim() === '') return {score: 0, config};
+        if (config.includes('<key>ErrorCode</key>') || config.includes('errorCode')) {
+            return {score: 1, config};
         }
+        let score = 10;
+        if (config.includes('<key>OrganizationName</key>')) score += 5;
+        if (config.includes('<key>PayloadContent</key>')) score += 5;
+        if (config.includes('<key>PayloadUUID</key>')) score += 3;
+        if (config.includes('<key>PayloadIdentifier</key>')) score += 3;
+        if (config.includes('<key>PayloadType</key>')) score += 2;
+        if (config.length > 500) score += 2;
+        return {score, config};
+    }
 
-        // 显示日志详情模态窗口
-        function showLogDetails(index) {
-            const log = filteredLogs[index];
-            if (!log) return;
+    function renderCloudConfigInfo(detail, showTitle = true, allConfigsCount = 1) {
+        if (!detail || !detail.extracted) return '';
+        const escapedConfig = escapeHtml(detail.raw_config);
+        return `
+                ${detail.extracted.hasError ? `
+                    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #856404;">
+                            ⚠️ 云配置获取失败
+                    </div>
+                        <div style="color: #856404;">
+                            ${detail.extracted.errorCode ? `<div><strong>错误代码:</strong> ${detail.extracted.errorCode}</div>` : ''}
+                            ${detail.extracted.errorDescription ? `<div><strong>错误描述:</strong> ${detail.extracted.errorDescription}</div>` : ''}
+                </div>
+                    </div>
+                ` : ''}
+                ${Object.keys(detail.extracted).filter(key => key !== 'hasError' && key !== 'errorCode' && key !== 'errorDescription' && detail.extracted[key] !== null && detail.extracted[key] !== undefined && detail.extracted[key] !== '' && !(Array.isArray(detail.extracted[key]) && detail.extracted[key].length === 0)).length > 0 ? `
+                    ${showTitle ? `<div class="modal-detail-title" style="margin-top: 0; margin-bottom: 15px; font-size: 1em;">提取的关键信息</div>` : ''}
+                    <div class="cloud-config-info">
+                        <!-- 组织信息 -->
+                        ${detail.extracted.organizationName ? `<div class="cloud-config-item"><strong>组织名称:</strong> ${detail.extracted.organizationName}</div>` : ''}
+                        ${detail.extracted.organizationDepartment ? `<div class="cloud-config-item"><strong>组织部门:</strong> ${detail.extracted.organizationDepartment}</div>` : ''}
+                        ${detail.extracted.organizationEmail ? `<div class="cloud-config-item"><strong>组织邮箱:</strong> ${detail.extracted.organizationEmail}</div>` : ''}
+                        ${detail.extracted.organizationSupportEmail ? `<div class="cloud-config-item"><strong>支持邮箱:</strong> ${detail.extracted.organizationSupportEmail}</div>` : ''}
+                        ${detail.extracted.organizationPhone ? `<div class="cloud-config-item"><strong>组织电话:</strong> ${detail.extracted.organizationPhone}</div>` : ''}
+                        ${detail.extracted.organizationSupportPhone ? `<div class="cloud-config-item"><strong>支持电话:</strong> ${detail.extracted.organizationSupportPhone}</div>` : ''}
+                        ${detail.extracted.organizationAddress ? `<div class="cloud-config-item"><strong>组织地址:</strong> ${detail.extracted.organizationAddress}</div>` : ''}
+                        ${detail.extracted.organizationAddressLine1 ? `<div class="cloud-config-item"><strong>地址行1:</strong> ${detail.extracted.organizationAddressLine1}</div>` : ''}
+                        ${detail.extracted.organizationAddressLine2 ? `<div class="cloud-config-item"><strong>地址行2:</strong> ${detail.extracted.organizationAddressLine2}</div>` : ''}
+                        ${detail.extracted.organizationCity ? `<div class="cloud-config-item"><strong>城市:</strong> ${detail.extracted.organizationCity}</div>` : ''}
+                        ${detail.extracted.organizationCountry ? `<div class="cloud-config-item"><strong>国家:</strong> ${detail.extracted.organizationCountry}</div>` : ''}
+                        ${detail.extracted.organizationRegion ? `<div class="cloud-config-item"><strong>地区:</strong> ${detail.extracted.organizationRegion}</div>` : ''}
+                        ${detail.extracted.organizationZipCode ? `<div class="cloud-config-item"><strong>邮编:</strong> ${detail.extracted.organizationZipCode}</div>` : ''}
+                        ${detail.extracted.organizationMagic ? `<div class="cloud-config-item"><strong>组织Magic:</strong> ${detail.extracted.organizationMagic}</div>` : ''}
+                        <!-- MDM配置 -->
+                        ${detail.extracted.configurationURL || detail.extracted.configurationWebURL || detail.extracted.mdmServerUID || detail.extracted.mdmProtocolVersion !== null ? `<div class="cloud-config-group"><div class="cloud-config-group-title">MDM配置</div>` : ''}
+                        ${detail.extracted.configurationURL ? `<div class="cloud-config-item"><strong>配置URL:</strong> <a href="${detail.extracted.configurationURL}" target="_blank">${detail.extracted.configurationURL}</a></div>` : ''}
+                        ${detail.extracted.configurationWebURL ? `<div class="cloud-config-item"><strong>配置Web URL:</strong> <a href="${detail.extracted.configurationWebURL}" target="_blank">${detail.extracted.configurationWebURL}</a></div>` : ''}
+                        ${detail.extracted.mdmServerUID ? `<div class="cloud-config-item"><strong>MDM服务器UID:</strong> <code>${detail.extracted.mdmServerUID}</code></div>` : ''}
+                        ${detail.extracted.mdmProtocolVersion !== null ? `<div class="cloud-config-item"><strong>MDM协议版本:</strong> ${detail.extracted.mdmProtocolVersion}</div>` : ''}
+                        ${detail.extracted.configurationURL || detail.extracted.configurationWebURL || detail.extracted.mdmServerUID || detail.extracted.mdmProtocolVersion !== null ? `</div>` : ''}
+                        <!-- 设备设置 -->
+                        ${detail.extracted.isSupervised !== null || detail.extracted.isMandatory !== null || detail.extracted.isMDMUnremovable !== null || detail.extracted.isMultiUser !== null || detail.extracted.allowPairing !== null || detail.extracted.autoAdvanceSetup !== null || detail.extracted.awaitDeviceConfigured !== null || detail.extracted.hasUndergoneMigration !== null || detail.extracted.ignoreMDMFromBackup !== null ? `<div class="cloud-config-group"><div class="cloud-config-group-title">设备设置</div>` : ''}
+                        ${detail.extracted.isSupervised !== null ? `<div class="cloud-config-item"><strong>是否监管:</strong> ${detail.extracted.isSupervised ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.isMandatory !== null ? `<div class="cloud-config-item"><strong>是否强制:</strong> ${detail.extracted.isMandatory ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.isMDMUnremovable !== null ? `<div class="cloud-config-item"><strong>MDM不可移除:</strong> ${detail.extracted.isMDMUnremovable === 1 ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.isMultiUser !== null ? `<div class="cloud-config-item"><strong>多用户:</strong> ${detail.extracted.isMultiUser ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.allowPairing !== null ? `<div class="cloud-config-item"><strong>允许配对:</strong> ${detail.extracted.allowPairing ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.autoAdvanceSetup !== null ? `<div class="cloud-config-item"><strong>自动推进设置:</strong> ${detail.extracted.autoAdvanceSetup ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.awaitDeviceConfigured !== null ? `<div class="cloud-config-item"><strong>等待设备配置:</strong> ${detail.extracted.awaitDeviceConfigured ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.hasUndergoneMigration !== null ? `<div class="cloud-config-item"><strong>已迁移:</strong> ${detail.extracted.hasUndergoneMigration ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.ignoreMDMFromBackup !== null ? `<div class="cloud-config-item"><strong>从备份忽略MDM:</strong> ${detail.extracted.ignoreMDMFromBackup ? '✅ 是' : '❌ 否'}</div>` : ''}
+                        ${detail.extracted.isSupervised !== null || detail.extracted.isMandatory !== null || detail.extracted.isMDMUnremovable !== null || detail.extracted.isMultiUser !== null || detail.extracted.allowPairing !== null || detail.extracted.autoAdvanceSetup !== null || detail.extracted.awaitDeviceConfigured !== null || detail.extracted.hasUndergoneMigration !== null || detail.extracted.ignoreMDMFromBackup !== null ? `</div>` : ''}
+                        <!-- 语言和地区 -->
+                        ${detail.extracted.language || detail.extracted.region ? `<div class="cloud-config-group"><div class="cloud-config-group-title">语言和地区</div>` : ''}
+                        ${detail.extracted.language ? `<div class="cloud-config-item"><strong>语言:</strong> ${detail.extracted.language}</div>` : ''}
+                        ${detail.extracted.region ? `<div class="cloud-config-item"><strong>地区:</strong> ${detail.extracted.region}</div>` : ''}
+                        ${detail.extracted.language || detail.extracted.region ? `</div>` : ''}
+                        <!-- 其他配置 -->
+                        ${detail.extracted.anchorCertificates && detail.extracted.anchorCertificates.length > 0 || detail.extracted.hasCloudConfigProfile || detail.extracted.skipSetup && detail.extracted.skipSetup.length > 0 ? `<div class="cloud-config-group"><div class="cloud-config-group-title">其他配置</div>` : ''}
+                        ${detail.extracted.anchorCertificates && detail.extracted.anchorCertificates.length > 0 ? `<div class="cloud-config-item"><strong>锚证书数量:</strong> ${detail.extracted.anchorCertificates.length} 个</div>` : ''}
+                        ${detail.extracted.hasCloudConfigProfile ? `<div class="cloud-config-item"><strong>云配置配置文件:</strong> <span style="background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 4px; font-size: 0.9em;">已配置</span></div>` : ''}
+                        ${detail.extracted.skipSetup && detail.extracted.skipSetup.length > 0 ? `<div class="cloud-config-item"><strong>跳过设置项:</strong> <span style="background: #e9ecef; padding: 2px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block; margin: 2px;">${detail.extracted.skipSetup.join('</span> <span style="background: #e9ecef; padding: 2px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block; margin: 2px;">')}</span></div>` : ''}
+                        ${detail.extracted.anchorCertificates && detail.extracted.anchorCertificates.length > 0 || detail.extracted.hasCloudConfigProfile || detail.extracted.skipSetup && detail.extracted.skipSetup.length > 0 ? `</div>` : ''}
+                    </div>
+                ` : !detail.extracted.hasError ? '<div style="color: #6c757d; padding: 10px;">无法解析配置信息</div>' : ''}
+                <details style="margin-top: 15px;">
+                    <summary style="cursor: pointer; font-weight: bold; color: #4facfe;">查看完整配置 (点击展开)</summary>
+                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto; margin-top: 10px; font-size: 0.85em; word-break: keep-all; font-family: 'Courier New', monospace; -webkit-overflow-scrolling: touch;">${escapedConfig}</pre>
+                </details>
+            `;
+    }
 
-            const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
-            const clientTimestamp = new Date(log.logs.timestamp).toLocaleString('zh-CN');
-            const osMode = log.logs.os_type ? '桌面模式' : '恢复模式';
-            const osModeClass = log.logs.os_type ? 'os-mode-desktop' : 'os-mode-recovery';
+    function showLogDetails(index) {
+        const device = filteredLogs[index];
+        if (!device) return;
+        const recovery = device.recovery;
+        const desktop = device.desktop;
+        const serial = device.serial_number || '未知设备';
 
-            // 设置模态窗口标题
-            document.getElementById('modalTitle').textContent = `设备详情 - ${log.logs.serial_number || '未知设备'}`;
+        document.getElementById('modalTitle').textContent = `设备详情 - ${serial}`;
 
-            // 生成模态窗口内容
-            const modalContent = `
+        const getTotalCount = (recoveryData, desktopData) => {
+            const recoveryCount = recoveryData ? recoveryData.length : 0;
+            const desktopCount = desktopData ? desktopData.length : 0;
+            return recoveryCount + desktopCount;
+        };
+        const totalCounts = {
+            volumes: getTotalCount(recovery?.logs?.volumes, desktop?.logs?.volumes),
+            launch_agents: getTotalCount(recovery?.logs?.launch_agents, desktop?.logs?.launch_agents),
+            launch_daemons: getTotalCount(recovery?.logs?.launch_daemons, desktop?.logs?.launch_daemons),
+            users: getTotalCount(recovery?.logs?.users, desktop?.logs?.users),
+            applications: getTotalCount(recovery?.logs?.applications, desktop?.logs?.applications),
+            app_support: getTotalCount(recovery?.logs?.app_support, desktop?.logs?.app_support),
+            user_prefs: getTotalCount(recovery?.logs?.user_prefs, desktop?.logs?.user_prefs),
+            sys_prefs: getTotalCount(recovery?.logs?.sys_prefs, desktop?.logs?.sys_prefs),
+            mdm_settings: getTotalCount(recovery?.logs?.mdm_settings, desktop?.logs?.mdm_settings),
+            process_list: getTotalCount(recovery?.logs?.process_list, desktop?.logs?.process_list)
+        };
+
+        const hasBothModes = recovery && desktop;
+        const primaryLog = desktop || recovery;
+        const timestamp = primaryLog ? new Date(primaryLog.timestamp).toLocaleString('zh-CN') : '未知';
+        const clientTimestamp = primaryLog ? new Date(primaryLog.logs.timestamp).toLocaleString('zh-CN') : '未知';
+        const renderDataItem = (title, recoveryData, desktopData, key) => {
+            const hasRecovery = recovery && recoveryData && recoveryData.length > 0;
+            const hasDesktop = desktop && desktopData && desktopData.length > 0;
+            if (!hasRecovery && !hasDesktop) return '';
+
+            const totalCount = totalCounts[key];
+            return `
                 <div class="modal-detail-section">
+                        <div class="modal-detail-title">${title} (${totalCount})</div>
+                        <div class="modal-detail-content" style="flex: 1; min-height: 0;">
+                            ${hasRecovery ? `
+                                <div style="border-bottom: 2px solid #ffc107; padding-bottom: 10px; ${hasDesktop ? 'margin-bottom: 10px;' : ''}">
+                        <ul class="modal-detail-list">
+                                        ${recoveryData.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                            ` : ''}
+                            ${hasDesktop ? `
+                                <div style="border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+                        <ul class="modal-detail-list">
+                                        ${desktopData.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                            ` : ''}
+                </div>
+                    </div>
+                `;
+        };
+
+        const allIPs = new Set();
+        if (recovery?.ip) allIPs.add(recovery.ip);
+        if (desktop?.ip) allIPs.add(desktop.ip);
+        const uniqueIPs = Array.from(allIPs).filter(ip => ip && ip.trim() !== '');
+        const allVersions = new Set();
+        if (recovery?.logs?.os_version) allVersions.add(recovery.logs.os_version);
+        if (desktop?.logs?.os_version) allVersions.add(desktop.logs.os_version);
+        const uniqueVersions = Array.from(allVersions).filter(v => v && v.trim() !== '');
+
+        const modalContent = `
+                <div class="modal-detail-section short-section">
                     <div class="modal-detail-title">基本信息</div>
                     <div class="modal-detail-content">
-                        <div><strong>序列号:</strong> ${log.logs.serial_number || '未知'}</div>
-                        <div><strong>IP地址:</strong> ${log.ip || '未知'}</div>
-                        <div><strong>系统版本:</strong> ${log.logs.os_version || '未知'}</div>
-                        <div><strong>系统模式:</strong> <span class="os-mode-badge ${osModeClass}">${osMode}</span></div>
+                        <div><strong>序列号:</strong> ${serial}</div>
                         <div><strong>服务端时间:</strong> ${timestamp}</div>
                         <div><strong>客户端时间:</strong> ${clientTimestamp}</div>
+                        <div><strong>MDM域名:</strong> ${primaryLog?.logs?.mdm_domains || '未知'}</div>
+                        ${uniqueIPs.length > 0 ? `
+                            <div><strong>IP地址:</strong> ${uniqueIPs.join(', ')}</div>
+                        ` : `
+                            <div><strong>IP地址:</strong> 未知</div>
+                        `}
+                        ${uniqueVersions.length > 0 ? `
+                            <div><strong>系统版本:</strong> ${uniqueVersions.join(', ')}</div>
+                        ` : `
+                            <div><strong>系统版本:</strong> 未知</div>
+                        `}
                     </div>
                 </div>
+                ${renderDataItem('挂载卷', recovery?.logs?.volumes, desktop?.logs?.volumes, 'volumes')}
+                ${renderDataItem('应用程序', recovery?.logs?.applications, desktop?.logs?.applications, 'applications')}
+                ${renderDataItem('启动代理', recovery?.logs?.launch_agents, desktop?.logs?.launch_agents, 'launch_agents')}
+                ${renderDataItem('启动守护进程', recovery?.logs?.launch_daemons, desktop?.logs?.launch_daemons, 'launch_daemons')}
+                ${renderDataItem('MDM设置', recovery?.logs?.mdm_settings, desktop?.logs?.mdm_settings, 'mdm_settings')}
+                ${renderDataItem('应用支持', recovery?.logs?.app_support, desktop?.logs?.app_support, 'app_support')}
+                ${renderDataItem('用户偏好', recovery?.logs?.user_prefs, desktop?.logs?.user_prefs, 'user_prefs')}
+                ${renderDataItem('系统偏好', recovery?.logs?.sys_prefs, desktop?.logs?.sys_prefs, 'sys_prefs')}
+                ${renderDataItem('系统用户', recovery?.logs?.users, desktop?.logs?.users, 'users')}
+                ${renderDataItem('进程列表', recovery?.logs?.process_list, desktop?.logs?.process_list, 'process_list')}
+            `;
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">挂载卷 (${(log.logs.volumes || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.volumes || []).map(vol => `<li>${vol}</li>`).join('')}
-                        </ul>
+        let cloudConfigHtml = '';
+        const allConfigs = [];
+        if (desktop?.logs?.cloud_config) {
+            allConfigs.push({...evaluateCloudConfig(desktop.logs.cloud_config), parsed: parseCloudConfig(desktop)});
+        }
+        if (recovery?.logs?.cloud_config) {
+            allConfigs.push({...evaluateCloudConfig(recovery.logs.cloud_config), parsed: parseCloudConfig(recovery)});
+        }
+        if (allConfigs.length > 0) {
+            allConfigs.sort((a, b) => b.score - a.score);
+            const bestConfig = allConfigs[0];
+            const parsed = bestConfig.parsed;
+            if (parsed && parsed.extracted) {
+                cloudConfigHtml = `
+                        <div class="modal-detail-section cloud-config-section">
+                            <div class="modal-detail-title">云配置信息${allConfigs.length > 1 ? ` (已选择最优配置，共${allConfigs.length}个)` : ''}</div>
+                            <div class="modal-detail-content" id="cloudConfigContent">
+                                ${renderCloudConfigInfo(parsed, true, allConfigs.length)}
                     </div>
                 </div>
-
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">应用程序 (${(log.logs.applications || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.applications || []).map(app => `<li>${app}</li>`).join('')}
-                        </ul>
+                    `;
+            } else {
+                cloudConfigHtml = `
+                        <div class="modal-detail-section cloud-config-section">
+                            <div class="modal-detail-title">云配置信息${allConfigs.length > 1 ? ` (已选择最优配置，共${allConfigs.length}个)` : ''}</div>
+                            <div class="modal-detail-content" id="cloudConfigContent" style="font-family: monospace;">
+                                ${bestConfig.config}
                     </div>
                 </div>
+                    `;
+            }
+        }
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">启动代理 (${(log.logs.launch_agents || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.launch_agents || []).map(agent => `<li>${agent}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+        const modalContentElement = document.getElementById('modalContent');
+        modalContentElement.innerHTML = '';
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">启动守护进程 (${(log.logs.launch_daemons || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.launch_daemons || []).map(daemon => `<li>${daemon}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+        const minColumnWidth = 350;
+        const gap = 20;
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">MDM设置 (${(log.logs.mdm_settings || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.mdm_settings || []).map(setting => `<li>${setting}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+        const screenWidth = window.innerWidth;
+        let columnCount = 1;
+        if (screenWidth <= 768) {
+            columnCount = 1;
+        } else {
+            const widthFor3Columns = minColumnWidth * 3 + gap * 2;
+            const widthFor2Columns = minColumnWidth * 2 + gap * 1;
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">应用支持 (${(log.logs.app_support || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.app_support || []).map(support => `<li>${support}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+            let estimatedWidth = 1200 - 60;
+            if (screenWidth < 1200) {
+                estimatedWidth = screenWidth - 220;
+            }
+            if (estimatedWidth >= widthFor3Columns) {
+                columnCount = 3;
+            } else if (estimatedWidth >= widthFor2Columns) {
+                columnCount = 2;
+            } else {
+                columnCount = 1;
+            }
+        }
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">用户偏好 (${(log.logs.user_prefs || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.user_prefs || []).map(pref => `<li>${pref}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+        const columns = [];
+        const columnsContainer = document.createElement('div');
+        columnsContainer.className = 'modal-details';
+        for (let i = 0; i < columnCount; i++) {
+            const column = document.createElement('div');
+            column.className = 'modal-details-column';
+            columnsContainer.appendChild(column);
+            columns.push({element: column, height: 0});
+        }
+        modalContentElement.appendChild(columnsContainer);
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">系统偏好 (${(log.logs.sys_prefs || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.sys_prefs || []).map(pref => `<li>${pref}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.visibility = 'hidden';
+        tempContainer.style.top = '-9999px';
+        tempContainer.style.left = '-9999px';
+        document.body.appendChild(tempContainer);
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">系统用户 (${(log.logs.users || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.users || []).map(user => `<li>${user}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+        requestAnimationFrame(() => {
+            const modalWidth = modalContentElement.offsetWidth;
+            if (modalWidth) {
+                const minColumnWidth = 350;
+                const gap = 20;
+                const widthFor3Columns = minColumnWidth * 3 + gap * 2;
+                const widthFor2Columns = minColumnWidth * 2 + gap * 1;
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">MDM域名</div>
-                    <div class="modal-detail-content">
-                        <div>${log.logs.mdm_domains || '未知'}</div>
-                    </div>
-                </div>
+                let actualColumnCount = columnCount;
+                if (modalWidth >= widthFor3Columns && columnCount < 3) {
+                    actualColumnCount = 3;
+                } else if (modalWidth >= widthFor2Columns && columnCount < 2) {
+                    actualColumnCount = 2;
+                } else if (modalWidth < widthFor2Columns) {
+                    actualColumnCount = 1;
+                }
 
-                <div class="modal-detail-section">
-                    <div class="modal-detail-title">进程列表 (${(log.logs.process_list || []).length})</div>
-                    <div class="modal-detail-content">
-                        <ul class="modal-detail-list">
-                            ${(log.logs.process_list || []).map(process => `<li>${process}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
+                if (actualColumnCount !== columnCount) {
+                    columnCount = actualColumnCount;
+                    columnsContainer.innerHTML = '';
+                    columns.length = 0;
+                    for (let i = 0; i < columnCount; i++) {
+                        const column = document.createElement('div');
+                        column.className = 'modal-details-column';
+                        columnsContainer.appendChild(column);
+                        columns.push({element: column, height: 0});
+                    }
+                }
+            }
 
+            const gap = 20;
+            const modalWidthFinal = modalContentElement.offsetWidth || window.innerWidth - 220;
+            const columnWidth = (modalWidthFinal - (gap * (columnCount - 1))) / columnCount;
+            tempContainer.style.width = columnWidth + 'px';
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = modalContent;
+            const allSections = Array.from(tempDiv.children);
+
+            const validSections = allSections.filter(section => {
+                return section &&
+                    section.classList &&
+                    section.classList.contains('modal-detail-section') &&
+                    !section.classList.contains('cloud-config-section') &&
+                    section.textContent.trim() !== '';
+            });
+
+            const seenTitles = new Set();
+            const uniqueSections = [];
+            validSections.forEach(section => {
+                const titleElement = section.querySelector('.modal-detail-title');
+                if (!titleElement) {
+                    const content = section.textContent.trim();
+                    const contentKey = 'no-title-' + content.substring(0, 50);
+                    if (!seenTitles.has(contentKey)) {
+                        seenTitles.add(contentKey);
+                        uniqueSections.push(section);
+                    }
+                    return;
+                }
+                const title = titleElement.textContent.trim();
+                const baseTitle = title.replace(/\s*\(\d+\)\s*$/, '').trim();
+                if (!seenTitles.has(baseTitle)) {
+                    seenTitles.add(baseTitle);
+                    uniqueSections.push(section);
+                }
+            });
+
+            const sectionsWithHeight = uniqueSections.map(section => {
+                const clone = section.cloneNode(true);
+                tempContainer.appendChild(clone);
+                const height = clone.offsetHeight;
+                tempContainer.removeChild(clone);
+                return {section, height: height + gap};
+            });
+
+            sectionsWithHeight.sort((a, b) => b.height - a.height);
+
+            columns.forEach(col => col.height = 0);
+
+            sectionsWithHeight.forEach(({section, height}) => {
+                let minHeightColumn = columns[0];
+                let minHeight = columns[0].height;
+                columns.forEach(col => {
+                    if (col.height < minHeight) {
+                        minHeight = col.height;
+                        minHeightColumn = col;
+                    }
+                });
+
+                const sectionClone = section.cloneNode(true);
+                minHeightColumn.element.appendChild(sectionClone);
+                minHeightColumn.height += height;
+            });
+
+            const columnHeights = columns.map(col => col.height);
+            const maxHeight = Math.max(...columnHeights);
+            const minHeight = Math.min(...columnHeights);
+            const heightDiff = maxHeight - minHeight;
+            console.log('列高度统计:', columnHeights, '最大高度差:', heightDiff.toFixed(0) + 'px');
+
+            document.body.removeChild(tempContainer);
+        });
+
+        if (cloudConfigHtml && cloudConfigHtml.trim() !== '') {
+            setTimeout(() => {
+                let cloudConfigContainer = modalContentElement.querySelector('.cloud-config-container');
+                if (!cloudConfigContainer) {
+                    cloudConfigContainer = document.createElement('div');
+                    cloudConfigContainer.className = 'cloud-config-container';
+                    cloudConfigContainer.style.width = '100%';
+                    cloudConfigContainer.style.marginTop = '20px';
+                    modalContentElement.appendChild(cloudConfigContainer);
+                }
+                cloudConfigContainer.innerHTML = cloudConfigHtml;
+            }, 150);
+        }
+        document.getElementById('logModal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('logModal').classList.remove('show');
+    }
+
+    document.getElementById('logModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    function analyzeDaemons() {
+        if (allLogs.length === 0) {
+            alert('请先加载日志数据');
+            return;
+        }
+
+        const deviceMap = new Map();
+        allLogs.forEach(log => {
+            if (!log.logs || !log.logs.serial_number) return;
+            const serial = log.logs.serial_number;
+            const isDesktop = log.logs.os_type === true;
+            const mode = isDesktop ? 'desktop' : 'recovery';
+            if (!deviceMap.has(serial)) {
+                deviceMap.set(serial, {desktop: null, recovery: null});
+            }
+            const device = deviceMap.get(serial);
+
+            if (!device[mode] || new Date(log.timestamp) > new Date(device[mode].timestamp)) {
+                device[mode] = log;
+            }
+        });
+
+        const daemonCounts = {};
+        let devicesWithDaemons = 0;
+        let totalUniqueDevices = deviceMap.size;
+        deviceMap.forEach((device, serial) => {
+            const allDaemons = new Set();
+
+            if (device.desktop && device.desktop.logs && device.desktop.logs.launch_daemons) {
+                const daemons = device.desktop.logs.launch_daemons;
+                if (Array.isArray(daemons) && daemons.length > 0) {
+                    daemons.forEach(daemon => {
+                        if (daemon) allDaemons.add(daemon);
+                    });
+                }
+            }
+
+            if (device.recovery && device.recovery.logs && device.recovery.logs.launch_daemons) {
+                const daemons = device.recovery.logs.launch_daemons;
+                if (Array.isArray(daemons) && daemons.length > 0) {
+                    daemons.forEach(daemon => {
+                        if (daemon) allDaemons.add(daemon);
+                    });
+                }
+            }
+
+            if (allDaemons.size > 0) {
+                devicesWithDaemons++;
+                allDaemons.forEach(daemon => {
+                    daemonCounts[daemon] = (daemonCounts[daemon] || 0) + 1;
+                });
+            }
+        });
+
+        const sortedDaemons = Object.entries(daemonCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({name, count}));
+        if (sortedDaemons.length === 0) {
+            alert('没有找到包含守护进程的数据');
+            return;
+        }
+        const analysisHtml = `
                 <div class="modal-detail-section" style="grid-column: 1 / -1;">
-                    <div class="modal-detail-title">云配置</div>
-                    <div class="modal-detail-content" id="cloudConfigContent" style="white-space: pre-wrap; font-family: monospace;">
-                        ${log.logs.cloud_config || '无云配置信息'}
+                    <div class="modal-detail-title">守护进程分析总结</div>
+                    <div class="modal-detail-content">
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div><strong>唯一设备数（去重后）:</strong> ${totalUniqueDevices}</div>
+                            <div><strong>总日志记录数:</strong> ${allLogs.length}</div>
+                            <div><strong>包含守护进程的设备:</strong> ${devicesWithDaemons}</div>
+                            <div><strong>唯一守护进程总数:</strong> ${sortedDaemons.length}</div>
+                    </div>
+                        <div style="max-height: 75vh; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #4facfe;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #4facfe;">守护进程名称</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">出现次数</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">占比</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${sortedDaemons.map(daemon => {
+            const percentage = devicesWithDaemons > 0 ? ((daemon.count / devicesWithDaemons) * 100).toFixed(2) : '0.00';
+            return `
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="padding: 10px; word-break: break-all;">${daemon.name}</td>
+                                                <td style="padding: 10px; text-align: center; font-weight: bold; color: #4facfe;">${daemon.count}</td>
+                                                <td style="padding: 10px; text-align: center;">${percentage}%</td>
+                                            </tr>
+                                        `;
+        }).join('')}
+                                </tbody>
+                            </table>
+                </div>
                     </div>
                 </div>
             `;
 
-            document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('modalTitle').textContent = '守护进程分析总结（已去重）';
+        document.getElementById('modalContent').innerHTML = analysisHtml;
+        document.getElementById('logModal').classList.add('show');
+    }
 
-            // 单独设置cloud_config内容，避免HTML编码
-            const cloudConfigElement = document.getElementById('cloudConfigContent');
-            if (cloudConfigElement && log.logs.cloud_config) {
-                cloudConfigElement.textContent = log.logs.cloud_config;
+    function extractCloudConfig() {
+        if (allLogs.length === 0) {
+            alert('请先加载日志数据');
+            return;
+        }
+
+        const deviceMap = new Map();
+        allLogs.forEach(log => {
+            if (!log.logs || !log.logs.serial_number) return;
+            if (!log.logs.cloud_config || log.logs.cloud_config.trim() === '') return;
+            const serial = log.logs.serial_number;
+            const isDesktop = log.logs.os_type === true;
+            const mode = isDesktop ? 'desktop' : 'recovery';
+            if (!deviceMap.has(serial)) {
+                deviceMap.set(serial, {desktop: null, recovery: null});
             }
+            const device = deviceMap.get(serial);
 
-            document.getElementById('logModal').classList.add('show');
+            if (!device[mode] || new Date(log.timestamp) > new Date(device[mode].timestamp)) {
+                device[mode] = log;
+            }
+        });
+        if (deviceMap.size === 0) {
+            alert('没有找到包含云配置的数据');
+            return;
         }
 
-        // 关闭模态窗口
-        function closeModal() {
-            document.getElementById('logModal').classList.remove('show');
+        const deviceConfigs = [];
+        let desktopCount = 0;
+        let recoveryCount = 0;
+        deviceMap.forEach((device, serial) => {
+            const config = {
+                serial_number: serial,
+                desktop: null,
+                recovery: null
+            };
+            if (device.desktop) {
+                config.desktop = parseCloudConfig(device.desktop);
+                desktopCount++;
+            }
+            if (device.recovery) {
+                config.recovery = parseCloudConfig(device.recovery);
+                recoveryCount++;
+            }
+            deviceConfigs.push(config);
+        });
+
+        const renderConfigDetail = (detail, mode, serialNumber, deviceIndex) => {
+            if (!detail) return '';
+            const modeColor = mode === 'desktop' ? '#28a745' : '#ffc107';
+            const timestamp = new Date(detail.log.timestamp).toLocaleString('zh-CN');
+            return `
+                    <div class="modal-detail-section" style="grid-column: 1 / -1; border-left: 4px solid ${modeColor};">
+                        <div class="modal-detail-title">设备 ${deviceIndex}: ${serialNumber}</div>
+                    <div class="modal-detail-content">
+                            <div style="margin-bottom: 15px; color: #6c757d; font-size: 0.9em;">
+                                <div><strong>IP地址:</strong> ${detail.log.ip || '未知'}</div>
+                                <div><strong>时间:</strong> ${timestamp}</div>
+                    </div>
+                            ${renderCloudConfigInfo(detail, true, 1)}
+                </div>
+                    </div>
+                `;
+        };
+        const extractionHtml = `
+                <div class="modal-detail-section" style="grid-column: 1 / -1;">
+                    <div class="modal-detail-title">云配置提取总结</div>
+                    <div class="modal-detail-content">
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div><strong>唯一设备数（去重后）:</strong> ${deviceMap.size}</div>
+                            <div><strong>总日志记录数:</strong> ${allLogs.length}</div>
+                            <div><strong>桌面模式有配置的设备:</strong> ${desktopCount}</div>
+                            <div><strong>恢复模式有配置的设备:</strong> ${recoveryCount}</div>
+                    </div>
+                </div>
+                </div>
+                ${deviceConfigs.map((config, index) => {
+            if (!config.desktop && !config.recovery) {
+                return `
+                            <div class="modal-detail-section" style="grid-column: 1 / -1;">
+                                <div class="modal-detail-title">设备 ${index + 1}: ${config.serial_number}</div>
+                    <div class="modal-detail-content">
+                                    <div style="color: #6c757d; padding: 20px; text-align: center;">该设备暂无云配置数据</div>
+                    </div>
+                </div>
+                        `;
+            }
+            let result = '';
+            if (config.desktop) {
+                result += renderConfigDetail(config.desktop, 'desktop', config.serial_number, index + 1);
+            }
+            if (config.recovery) {
+                result += renderConfigDetail(config.recovery, 'recovery', config.serial_number, index + 1);
+            }
+            return result;
+        }).join('')}
+            `;
+
+        document.getElementById('modalTitle').textContent = `云配置提取结果（已去重，${deviceMap.size}个设备）`;
+        document.getElementById('modalContent').innerHTML = extractionHtml;
+        document.getElementById('logModal').classList.add('show');
+    }
+
+    function analyzeData(dataKey, displayName) {
+        if (allLogs.length === 0) {
+            alert('请先加载日志数据');
+            return;
         }
 
-        // 点击模态窗口背景关闭
-        document.getElementById('logModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
+        const deviceMap = new Map();
+        allLogs.forEach(log => {
+            if (!log.logs || !log.logs.serial_number) return;
+            const serial = log.logs.serial_number;
+            const isDesktop = log.logs.os_type === true;
+            const mode = isDesktop ? 'desktop' : 'recovery';
+            if (!deviceMap.has(serial)) {
+                deviceMap.set(serial, {desktop: null, recovery: null});
+            }
+            const device = deviceMap.get(serial);
+
+            if (!device[mode] || new Date(log.timestamp) > new Date(device[mode].timestamp)) {
+                device[mode] = log;
             }
         });
 
-        // ESC键关闭模态窗口
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
+        const itemCounts = {};
+        let devicesWithData = 0;
+        let totalUniqueDevices = deviceMap.size;
+        deviceMap.forEach((device, serial) => {
+            const allItems = new Set();
+
+            if (device.desktop && device.desktop.logs && device.desktop.logs[dataKey]) {
+                const items = device.desktop.logs[dataKey];
+                if (Array.isArray(items) && items.length > 0) {
+                    items.forEach(item => {
+                        if (item) allItems.add(item);
+                    });
+                }
+            }
+
+            if (device.recovery && device.recovery.logs && device.recovery.logs[dataKey]) {
+                const items = device.recovery.logs[dataKey];
+                if (Array.isArray(items) && items.length > 0) {
+                    items.forEach(item => {
+                        if (item) allItems.add(item);
+                    });
+                }
+            }
+
+            if (allItems.size > 0) {
+                devicesWithData++;
+                allItems.forEach(item => {
+                    itemCounts[item] = (itemCounts[item] || 0) + 1;
+                });
             }
         });
-    </script>
+
+        const sortedItems = Object.entries(itemCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({name, count}));
+
+        if (sortedItems.length === 0) {
+            alert(`没有找到包含${displayName}的数据`);
+            return;
+        }
+        const analysisHtml = `
+                <div class="modal-detail-section" style="grid-column: 1 / -1;">
+                    <div class="modal-detail-title">${displayName}分析总结</div>
+                    <div class="modal-detail-content">
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div><strong>唯一设备数（去重后）:</strong> ${totalUniqueDevices}</div>
+                            <div><strong>总日志记录数:</strong> ${allLogs.length}</div>
+                            <div><strong>包含${displayName}的设备:</strong> ${devicesWithData}</div>
+                            <div><strong>唯一${displayName}总数:</strong> ${sortedItems.length}</div>
+                        </div>
+                        <div style="max-height: 75vh; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #4facfe;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #4facfe;">${displayName}名称</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">出现次数</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">占比</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${sortedItems.map(item => {
+            const percentage = devicesWithData > 0 ? ((item.count / devicesWithData) * 100).toFixed(2) : '0.00';
+            return `
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="padding: 10px; word-break: break-all;">${item.name}</td>
+                                                <td style="padding: 10px; text-align: center; font-weight: bold; color: #4facfe;">${item.count}</td>
+                                                <td style="padding: 10px; text-align: center;">${percentage}%</td>
+                                            </tr>
+                                        `;
+        }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        document.getElementById('modalTitle').textContent = `${displayName}分析总结（已去重）`;
+        document.getElementById('modalContent').innerHTML = analysisHtml;
+        document.getElementById('logModal').classList.add('show');
+    }
+
+    function analyzeIPInfo() {
+        if (allLogs.length === 0) {
+            alert('请先加载日志数据');
+            return;
+        }
+
+        const deviceMap = new Map();
+        allLogs.forEach(log => {
+            if (!log.logs || !log.logs.serial_number) return;
+            const serial = log.logs.serial_number;
+            const isDesktop = log.logs.os_type === true;
+            const mode = isDesktop ? 'desktop' : 'recovery';
+            if (!deviceMap.has(serial)) {
+                deviceMap.set(serial, {desktop: null, recovery: null});
+            }
+            const device = deviceMap.get(serial);
+
+            if (!device[mode] || new Date(log.timestamp) > new Date(device[mode].timestamp)) {
+                device[mode] = log;
+            }
+        });
+
+        const ipCounts = {};
+        let devicesWithIP = 0;
+        let totalUniqueDevices = deviceMap.size;
+        const allIPs = new Set();
+        deviceMap.forEach((device, serial) => {
+            const deviceIPs = new Set();
+
+            if (device.desktop && device.desktop.ip) {
+                deviceIPs.add(device.desktop.ip);
+                allIPs.add(device.desktop.ip);
+            }
+
+            if (device.recovery && device.recovery.ip) {
+                deviceIPs.add(device.recovery.ip);
+                allIPs.add(device.recovery.ip);
+            }
+
+            if (deviceIPs.size > 0) {
+                devicesWithIP++;
+                deviceIPs.forEach(ip => {
+                    ipCounts[ip] = (ipCounts[ip] || 0) + 1;
+                });
+            }
+        });
+
+        const sortedIPs = Object.entries(ipCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([ip, count]) => ({ip, count}));
+        if (sortedIPs.length === 0) {
+            alert('没有找到包含IP信息的数据');
+            return;
+        }
+        const analysisHtml = `
+                <div class="modal-detail-section" style="grid-column: 1 / -1;">
+                    <div class="modal-detail-title">IP信息分析总结</div>
+                    <div class="modal-detail-content">
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div><strong>唯一设备数（去重后）:</strong> ${totalUniqueDevices}</div>
+                            <div><strong>总日志记录数:</strong> ${allLogs.length}</div>
+                            <div><strong>包含IP信息的设备:</strong> ${devicesWithIP}</div>
+                            <div><strong>唯一IP地址总数:</strong> ${allIPs.size}</div>
+                        </div>
+                        <div style="max-height: 75vh; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #4facfe;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #4facfe;">IP地址</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">出现次数</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">占比</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${sortedIPs.map(item => {
+            const percentage = devicesWithIP > 0 ? ((item.count / devicesWithIP) * 100).toFixed(2) : '0.00';
+            return `
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="padding: 10px; word-break: break-all;">${item.ip}</td>
+                                                <td style="padding: 10px; text-align: center; font-weight: bold; color: #4facfe;">${item.count}</td>
+                                                <td style="padding: 10px; text-align: center;">${percentage}%</td>
+                                            </tr>
+                                        `;
+        }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        document.getElementById('modalTitle').textContent = 'IP信息分析总结（已去重）';
+        document.getElementById('modalContent').innerHTML = analysisHtml;
+        document.getElementById('logModal').classList.add('show');
+    }
+
+    function analyzeSystemVersion() {
+        if (allLogs.length === 0) {
+            alert('请先加载日志数据');
+            return;
+        }
+
+        const deviceMap = new Map();
+        allLogs.forEach(log => {
+            if (!log.logs || !log.logs.serial_number) return;
+            const serial = log.logs.serial_number;
+            const isDesktop = log.logs.os_type === true;
+            const mode = isDesktop ? 'desktop' : 'recovery';
+            if (!deviceMap.has(serial)) {
+                deviceMap.set(serial, {desktop: null, recovery: null});
+            }
+            const device = deviceMap.get(serial);
+
+            if (!device[mode] || new Date(log.timestamp) > new Date(device[mode].timestamp)) {
+                device[mode] = log;
+            }
+        });
+
+        const versionCounts = {};
+        let devicesWithVersion = 0;
+        let totalUniqueDevices = deviceMap.size;
+        const allVersions = new Set();
+        deviceMap.forEach((device, serial) => {
+            const deviceVersions = new Set();
+
+            if (device.desktop && device.desktop.logs && device.desktop.logs.os_version) {
+                const version = device.desktop.logs.os_version;
+                deviceVersions.add(version);
+                allVersions.add(version);
+            }
+
+            if (device.recovery && device.recovery.logs && device.recovery.logs.os_version) {
+                const version = device.recovery.logs.os_version;
+                deviceVersions.add(version);
+                allVersions.add(version);
+            }
+
+            if (deviceVersions.size > 0) {
+                devicesWithVersion++;
+                deviceVersions.forEach(version => {
+                    versionCounts[version] = (versionCounts[version] || 0) + 1;
+                });
+            }
+        });
+
+        const sortedVersions = Object.entries(versionCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([version, count]) => ({version, count}));
+        if (sortedVersions.length === 0) {
+            alert('没有找到包含系统版本信息的数据');
+            return;
+        }
+        const analysisHtml = `
+                <div class="modal-detail-section" style="grid-column: 1 / -1;">
+                    <div class="modal-detail-title">系统版本分析总结</div>
+                    <div class="modal-detail-content">
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div><strong>唯一设备数（去重后）:</strong> ${totalUniqueDevices}</div>
+                            <div><strong>总日志记录数:</strong> ${allLogs.length}</div>
+                            <div><strong>包含系统版本的设备:</strong> ${devicesWithVersion}</div>
+                            <div><strong>唯一系统版本总数:</strong> ${allVersions.size}</div>
+                        </div>
+                        <div style="max-height: 75vh; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #4facfe;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #4facfe;">系统版本</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">出现次数</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4facfe;">占比</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${sortedVersions.map(item => {
+            const percentage = devicesWithVersion > 0 ? ((item.count / devicesWithVersion) * 100).toFixed(2) : '0.00';
+            return `
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="padding: 10px; word-break: break-all;">${item.version}</td>
+                                                <td style="padding: 10px; text-align: center; font-weight: bold; color: #4facfe;">${item.count}</td>
+                                                <td style="padding: 10px; text-align: center;">${percentage}%</td>
+                                            </tr>
+                                        `;
+        }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        document.getElementById('modalTitle').textContent = '系统版本分析总结（已去重）';
+        document.getElementById('modalContent').innerHTML = analysisHtml;
+        document.getElementById('logModal').classList.add('show');
+    }
+</script>
 </body>
 </html>
