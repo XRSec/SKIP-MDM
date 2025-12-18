@@ -1,25 +1,61 @@
 package custom
 
 import (
+	"errors"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
+// Users 新结构：移除 card_id，card_type 改为 Rule
+// Rule: 0=未授权, 1=临时, 2=永久
 type Users struct {
 	gorm.Model
 	SerialNumber string `gorm:"column:serial_number;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 	IPAddress    string `gorm:"column:ip_address;size:60" sql:"type:VARCHAR(60) CHARACTER SET utf8 COLLATE utf8_bin"`
-	CardID       string `gorm:"column:card_id;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
-	CardType     int    `gorm:"column:card_type;size:3" sql:"type:VARCHAR(3) CHARACTER SET utf8 COLLATE utf8_bin"` // 0 tmp 1 all
+	Rule         int8   `gorm:"column:rule;type:integer;default:0"` // 0=未授权, 1=临时, 2=永久
 }
 
+// OldUsers 旧结构：用于从云端读取旧数据
+type OldUsers struct {
+	gorm.Model
+	SerialNumber string `gorm:"column:serial_number;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	IPAddress    string `gorm:"column:ip_address;size:60" sql:"type:VARCHAR(60) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardID       string `gorm:"column:card_id;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+	CardType     int    `gorm:"column:card_type;size:3" sql:"type:VARCHAR(3) CHARACTER SET utf8 COLLATE utf8_bin"` // 旧: 0=临时, 1=永久
+}
+
+func (OldUsers) TableName() string {
+	return "users"
+}
+
+// Cards 旧表结构（已废弃，仅用于迁移时读取）
 type Cards struct {
 	gorm.Model
 	CardID       string `gorm:"column:card_id;size:20;unique" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 	PassWord     string `gorm:"column:password;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
 	SerialNumber string `gorm:"column:serial_number;size:20" sql:"type:VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_bin"`
+}
+
+// ConvertOldUserToNew 将旧用户数据转换为新格式
+// 旧: card_type 0=临时, 1=永久 -> 新: Rule 1=临时, 2=永久, 0=未授权
+func ConvertOldUserToNew(old OldUsers) Users {
+	var rule int8
+	switch old.CardType {
+	case 0:
+		rule = 1 // 旧临时 -> 新临时
+	case 1:
+		rule = 2 // 旧永久 -> 新永久
+	default:
+		rule = 0 // 未知 -> 未授权
+	}
+	return Users{
+		Model:        old.Model,
+		SerialNumber: old.SerialNumber,
+		IPAddress:    old.IPAddress,
+		Rule:         rule,
+	}
 }
 
 type ServerLogs struct {
@@ -86,7 +122,7 @@ func SyncData(mysqlDB, postgresDB *gorm.DB, model interface{}) error {
 	for {
 		// 从源数据库中选择要迁移的数据，限制每次批量选择的数量
 		result := mysqlDB.Offset(offset).Limit(batchSize).Find(model)
-		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return result.Error
 		}
 		log.Infof("从 %T 中同步 %d 条记录", model, totalRecords)

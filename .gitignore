@@ -15,3 +15,4 @@ filtered_app.log
 functions
 src
 .env
+/**/test.*

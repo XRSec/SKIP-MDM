@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	. "mdm_sync/custom"
 	"os"
@@ -87,7 +88,7 @@ func syncLogs(mysqlDB *gorm.DB) error {
 	for {
 		// 从源数据库中选择要迁移的数据，限制每次批量选择的数量
 		result := mysqlDB.Offset(offset).Limit(batchSize).Find(&serverLogs)
-		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return result.Error
 		}
 		log.Infof("从 %T 中同步%d条记录", serverLogs, totalRecords)

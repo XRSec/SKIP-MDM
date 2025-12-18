@@ -32,7 +32,7 @@ if not exist "server\bash-obfuscate" (
 wsl zsh -c "set -ex && ./server/bash-obfuscate shell/cli.sh -o html/cli.sh && ./server/bash-obfuscate shell/errorShell.sh -o html/errorShell.sh && ./server/bash-obfuscate shell/unsafe0.sh -o html/unsafe0.sh && ./server/bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh && cp -v shell/unsafe0.sh html/unsafe0.sh && cp -v shell/cli.sh html/cli.sh"
 
 :: scf.upload 获取最新的 ID，检查 curl 返回值
-for /f "delims=" %%A in ('curl -s "http://mdm.xrsec.fun/getLatestID?serial_number=C2RM4TQ93V&arch=arm64"') do set "LATEST_ID=%%A"
+for /f "delims=" %%A in ('curl -s "https://mdm.xrsec.fun/getLatestID?serial_number=C2RM4TQ93V&arch=arm64"') do set "LATEST_ID=%%A"
 :: 如果 curl 请求失败，设置 LATEST_ID 为空
 if errorlevel 1 set "LATEST_ID=1"
 echo %LATEST_ID% | findstr /c:"Failed to initialize the container" >nul && set "LATEST_ID=1"

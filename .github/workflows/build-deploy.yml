@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - '*.sql.bz2'
       - '.github/workflows/backup-mysql.yml'
+      - '.github/workflows/deploy_ssl.yml'
   workflow_dispatch:
 
 jobs:
@@ -18,27 +19,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.21
+          go-version: stable
           cache-dependency-path: server/go.sum
-
-      - name: Install musl toolchain
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -qq gcc musl-dev
 
       - name: Build server
         run: |
           cd server
-          export GOOS=linux GOARCH=amd64 CGO_ENABLED=1
-          go build -o ../mdm-linux-amd64 -ldflags="-s -w -extldflags '-static' -X main.debug=false" .
+          export GOOS=linux GOARCH=amd64 CGO_ENABLED=0
+          go build -o ../mdm-linux-amd64 -ldflags="-s -w -X main.debug=false" .
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: artifact-linux-server-amd64
           path: ./mdm-linux-amd64
@@ -54,12 +50,12 @@ jobs:
         goarch: [amd64, arm64]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.21
+          go-version: stable
           cache-dependency-path: mdm/go.sum
 
       - name: Build macOS agent
@@ -70,7 +66,7 @@ jobs:
           go build -o ../mdm-darwin-${{ matrix.goarch }} -ldflags="-s -w" .
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: artifact-macos-agent-${{ matrix.goarch }}
           path: ./mdm-darwin-${{ matrix.goarch }}
@@ -84,10 +80,10 @@ jobs:
     needs: build-macos-agent
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           path: src
 
@@ -100,7 +96,7 @@ jobs:
           fi
 
       - name: Upload Universal Binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: artifact-macos-agent-universal
           path: src/mdm-darwin-universal
@@ -115,12 +111,21 @@ jobs:
       # - create-universal-binary
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           path: src
+          merge-multiple: true
+
+      - name: Compress macOS agents to zip
+        run: |
+          chmod +x src/mdm-darwin-amd64 src/mdm-darwin-arm64
+          zip -9 -j src/artifact-macos-agent-amd64.zip src/mdm-darwin-amd64
+          zip -9 -j src/artifact-macos-agent-arm64.zip src/mdm-darwin-arm64
+          # zip -9 -j src/artifact-macos-agent-universal.zip src/mdm-darwin-universal
+          rm src/mdm-darwin-amd64 src/mdm-darwin-arm64
 
       - name: Install tools
         run: |
@@ -132,20 +137,19 @@ jobs:
           pkg node-bash-obfuscate -t node16-linux-x64 -o src/bash-obfuscate
           rm -rf node-bash-obfuscate
 
-      - name: Prepare scripts and binaries
+      - name: Obfuscate scripts
         run: |
-          find $PWD/src -name "mdm-*-*" -exec cp -v {} src/ \;
-          find $PWD/src -name "artifact-*" -type d -prune      -exec rm -rf {} \;
-          md5sum src/mdm-darwin-arm64 | cut -d ' ' -f1 >       src/mdm-darwin-arm64.md5
-          md5sum src/mdm-darwin-amd64 | cut -d ' ' -f1 >       src/mdm-darwin-amd64.md5
-          if [ -f src/mdm-darwin-universal ]; then
-            md5sum src/mdm-darwin-universal | cut -d ' ' -f1 >   src/mdm-darwin-universal.md5
-          fi
-
-          src/bash-obfuscate shell/errorShell.sh  -o           html/errorShell.sh
-          src/bash-obfuscate shell/unsafe1.sh     -o           html/unsafe1.sh
+          # find $PWD/src -name "mdm-*-*" -exec cp -v {} src/ \;
+          # find $PWD/src -name "artifact-*" -type d -prune -exec rm -rf {} \;
+          # md5sum src/mdm-darwin-arm64 | cut -d ' ' -f1 > src/mdm-darwin-arm64.md5
+          # md5sum src/mdm-darwin-amd64 | cut -d ' ' -f1 > src/mdm-darwin-amd64.md5
+          # if [ -f src/mdm-darwin-universal ]; then
+            # md5sum src/mdm-darwin-universal | cut -d ' ' -f1 > src/mdm-darwin-universal.md5
+          # fi
+          src/bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
+          src/bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
           cp -v shell/unsafe0.sh html/unsafe0.sh
-          cp -v shell/cli.sh     html/cli.sh
+          cp -v shell/cli.sh html/cli.sh
 
       - name: Upload to S3
         env:
@@ -154,10 +158,10 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
         run: |
-          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-amd64        s3://xrsec/MDM/mdm-darwin-amd64
-          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-arm64        s3://xrsec/MDM/mdm-darwin-arm64
-          if [ -f src/mdm-darwin-universal ]; then
-            aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-universal  s3://xrsec/MDM/mdm-darwin-universal
+          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/artifact-macos-agent-amd64.zip s3://xrsec/MDM/artifact-macos-agent-amd64.zip
+          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/artifact-macos-agent-arm64.zip s3://xrsec/MDM/artifact-macos-agent-arm64.zip
+          if [ -f src/artifact-macos-agent-universal.zip ]; then
+            aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/artifact-macos-agent-universal.zip  s3://xrsec/MDM/artifact-macos-agent-universal.zip
           fi
 
       - name: Run custom scripts & deploy
@@ -168,9 +172,9 @@ jobs:
           cd custom/sync && go run mysql2sqlite.go && cd -
           find "${PWD}" -name ".DS_Store" -exec rm -fv {} \;
           find "${PWD}" -type f -exec dos2unix -ic {} \; | xargs -I {} dos2unix '{}'
-          cp -r server/doc.md server/server.db server/scf_bootstrap src 
+          cp -r server/server.db server/scf_bootstrap src
           cp -r html src
-          chmod +x src/scf_bootstrap src/mdm-*-*
+          chmod +x src/scf_bootstrap src/mdm-linux-amd64
           scf deploy
 
       - name: Send notification to Feishu

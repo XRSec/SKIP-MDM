@@ -137,10 +137,12 @@ func processLogFile(db *gorm.DB, filename string, loc *time.Location) (int64, er
 	if err != nil {
 		return 0, fmt.Errorf("打开日志文件失败: %w", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	// 解析日志的正则表达式
-	re := regexp.MustCompile(`\[GIN\] (\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \| +(\d+) \| +(\d+\.?\d*[µmn]?s) \| +(\d+\.\d+\.\d+\.\d+) \| (\w+) +(".*?")`)
+	re := regexp.MustCompile(`\[GIN] (\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \| +(\d+) \| +(\d+\.?\d*[µmn]?s) \| +(\d+\.\d+\.\d+\.\d+) \| (\w+) +(".*?")`)
 
 	scanner := bufio.NewScanner(file)
 	var logs []ServerLogs

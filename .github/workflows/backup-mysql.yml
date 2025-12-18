@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0  # 获取完整历史，方便创建分支
 
@@ -43,7 +43,7 @@ jobs:
         run: echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       - name: Upload backup as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mysql-backup-${{ steps.date.outputs.date }}
           path: mdm.sql.bz2
