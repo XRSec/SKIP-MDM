@@ -1,0 +1,66 @@
+name: Auto Renew SSL and Deploy to Tencent SCF
+
+on:
+  # 每 2 个月执行一次
+  schedule:
+    - cron: '0 0 1 */2 *'
+  workflow_dispatch:
+
+jobs:
+  renew-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      CF_Token: ${{ secrets.CF_Token }}
+      TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+      TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+      CDN_DOMAIN: ${{ secrets.CDN_DOMAIN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y curl socat jq python3-pip
+          pip3 install tccli
+
+      - name: Install acme.sh
+        run: |
+          curl https://get.acme.sh | sh
+          ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+
+      - name: Issue / Renew certificate via Cloudflare DNS
+        run: |
+          export CF_Token="${CF_Token}"
+          ~/.acme.sh/acme.sh \
+            --issue \
+            --dns dns_cf \
+            -d "${CDN_DOMAIN}"
+
+      - name: Upload certificate to Tencent Cloud SSL
+        run: |
+          CERT_DIR="$HOME/.acme.sh/${CDN_DOMAIN}"
+
+          FULLCHAIN=$(sed ':a;N;$!ba;s/\n/\\n/g' ${CERT_DIR}/fullchain.cer)
+          PRIVATE_KEY=$(sed ':a;N;$!ba;s/\n/\\n/g' ${CERT_DIR}/${CDN_DOMAIN}.key)
+
+          tccli ssl UploadCertificate \
+            --CertificatePublicKey "${FULLCHAIN}" \
+            --CertificatePrivateKey "${PRIVATE_KEY}" \
+            --CertificateType "SVR" \
+            --Alias "auto-${CDN_DOMAIN}-$(date +%Y%m%d)" \
+            > cert.json
+
+          CERT_ID=$(jq -r '.CertificateId' cert.json)
+          echo "CERT_ID=${CERT_ID}" >> $GITHUB_ENV
+
+      - name: Bind certificate to Tencent CDN
+        run: |
+          tccli cdn ModifyDomainConfig \
+            --Domain "${CDN_DOMAIN}" \
+            --Https "{
+              \"Switch\": \"on\",
+              \"Http2\": \"on\",
+              \"OcspStapling\": \"on\",

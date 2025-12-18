@@ -2,9 +2,9 @@
 <html lang="en">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title class="title">MDM 权限验证</title>
     <style>
         * {
@@ -95,17 +95,17 @@
             border-radius: 30px;
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             animation: fadeIn 0.6s ease-out;
             overflow: hidden;
             /* 优化的过渡效果 */
             transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                padding 0.35s ease-out,
-                border-radius 0.35s ease-out,
-                left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                max-height 0.35s ease-out;
+            height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+            padding 0.35s ease-out,
+            border-radius 0.35s ease-out,
+            left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+            transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+            max-height 0.35s ease-out;
         }
 
         .container.collapsed {
@@ -122,16 +122,16 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
-                0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
             overflow: hidden;
             /* 收起时的过渡 - 更快更有弹性 */
             transition: width 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                height 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                padding 0.3s ease-out,
-                border-radius 0.3s ease-out,
-                left 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                transform 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                max-height 0.3s ease-out;
+            height 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+            padding 0.3s ease-out,
+            border-radius 0.3s ease-out,
+            left 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+            transform 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+            max-height 0.3s ease-out;
         }
 
         /* 收起时隐藏内容 */
@@ -549,7 +549,7 @@
             display: block;
         }
 
-        .container.collapsed~#content {
+        .container.collapsed ~ #content {
             transform: translate(-50%, -50%);
         }
 
@@ -819,7 +819,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        #content details>*:not(summary) {
+        #content details > *:not(summary) {
             padding: 15px 20px;
             color: rgba(255, 255, 255, 0.9);
         }
@@ -876,7 +876,7 @@
                 top: calc(50% - 40px);
             }
 
-            .container.collapsed~#content {
+            .container.collapsed ~ #content {
                 left: 50%;
                 transform: translate(-50%, -50%);
                 width: 95%;
@@ -899,7 +899,7 @@
                 font-size: 14px;
             }
 
-            #content details>*:not(summary) {
+            #content details > *:not(summary) {
                 padding: 10px;
             }
 
@@ -1192,7 +1192,7 @@
                 const url = (function buildUrl(endpoint, params) {
                     const queryString = Object.keys(params).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`).join('&');
                     return `http://${window.location.host}${endpoint}?${queryString}`;
-                })(endpoint, { serial_number: serialNumber, ...extraParams })
+                })(endpoint, {serial_number: serialNumber, ...extraParams})
 
                 fetch(url).then(response => response.json()).then(response => {
                     if (response?.code === 200) {
@@ -1235,7 +1235,7 @@
                                     const targetId = this.getAttribute('href');
                                     const targetElement = document.querySelector(targetId);
                                     if (targetElement) {
-                                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                                        targetElement.scrollIntoView({behavior: 'smooth'});
                                     }
                                 });
                             });
@@ -1337,6 +1337,45 @@
         });
 
         function copyText() {
+            const text = document.getElementById("copyText").textContent;
+
+            // ✅ 现代浏览器 + HTTPS
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert("复制成功");
+                }).catch(() => {
+                    legacyCopy(text);
+                });
+            } else {
+                // ✅ Safari / HTTP / file:// fallback
+                console.warn("无法使用 clipboard.writeText()，将使用旧方法复制");
+                legacyCopy(text);
+            }
+        }
+
+        function legacyCopy(text) {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+
+            // 关键：避免 Safari 自动滚动页面
+            textarea.style.position = "fixed";
+            textarea.style.top = "-1000px";
+
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            try {
+                document.execCommand("copy");
+                alert("复制成功");
+            } catch (err) {
+                console.log("无法使用 document.execCommand('copy')，将使用旧方法复制");
+                legacyCopy2()
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function legacyCopy2() {
             const text = document.getElementById("copyText").innerText; // 获取要复制的文本
             const tempInput = document.createElement("input"); // 创建一个临时输入框元素
             tempInput.type = "text";
@@ -1348,6 +1387,7 @@
             alert(`${dictionary[document.documentElement.lang]["copy_ok"]} ${text}`);
             // window.open('x-man-page://『 Command + T 打开新窗口 』', '_blank');
         }
+
 
         function toggleLanguage() {
             const language = document.documentElement.lang;
@@ -1428,59 +1468,59 @@
 </head>
 
 <body>
-    <div class="container">
-        <button id="collapse-button" onclick="toggleContainer()">−</button>
-        <div id="menu">
-            <ul>
-                <li class="active auth menu-item"></li>
-                <li class="add menu-item"></li>
-                <li class="language" onclick="toggleLanguage()"></li>
-            </ul>
-        </div>
-        <form id="form1">
-            <label class="serial_number" for="serial_number"></label>
-            <input type="text" id="serial_number" name="serial_number" class="placeholder_sn"><br>
-            <input class="submit" type="submit" value="">
-        </form>
-        <form id="form2">
-            <label class="card_id" for="card_id"></label>
-            <input type="text" id="card_id" name="card_id" class="placeholder_card_id"><br>
+<div class="container">
+    <button id="collapse-button" onclick="toggleContainer()">−</button>
+    <div id="menu">
+        <ul>
+            <li class="active auth menu-item"></li>
+            <li class="add menu-item"></li>
+            <li class="language" onclick="toggleLanguage()"></li>
+        </ul>
+    </div>
+    <form id="form1">
+        <label class="serial_number" for="serial_number"></label>
+        <input type="text" id="serial_number" name="serial_number" class="placeholder_sn"><br>
+        <input class="submit" type="submit" value="">
+    </form>
+    <form id="form2">
+        <label class="card_id" for="card_id"></label>
+        <input type="text" id="card_id" name="card_id" class="placeholder_card_id"><br>
 
-            <label class="password" for="password"></label>
-            <input type="text" id="password" name="password" class="placeholder_password"><br>
+        <label class="password" for="password"></label>
+        <input type="text" id="password" name="password" class="placeholder_password"><br>
 
-            <label class="serial_number" for="serial_number1"></label>
-            <input type="text" id="serial_number1" name="serial_number" class="placeholder_sn"><br>
+        <label class="serial_number" for="serial_number1"></label>
+        <input type="text" id="serial_number1" name="serial_number" class="placeholder_sn"><br>
 
-            <input class="submit" type="submit" value="">
-        </form>
-        <div class="code">
-            <code id="copyText"></code>
-            <button class="copyText" onclick="copyText()"></button>
-        </div>
+        <input class="submit" type="submit" value="">
+    </form>
+    <div class="code">
+        <pre><code id="copyText"></code></pre>
+        <button class="copyText" onclick="copyText()"></button>
     </div>
-    <div id="loading-container" style="display: none;">
-        <div class="loading-spinner"></div>
+</div>
+<div id="loading-container" style="display: none;">
+    <div class="loading-spinner"></div>
+</div>
+<div id="navbar">
+    <div id="navbar-header">
+        <span style="color: white; font-weight: 600; font-size: 16px;">目录</span>
+        <button id="toggle-button" onclick="toggleNavbar()"></button>
     </div>
-    <div id="navbar">
-        <div id="navbar-header">
-            <span style="color: white; font-weight: 600; font-size: 16px;">目录</span>
-            <button id="toggle-button" onclick="toggleNavbar()"></button>
-        </div>
-        <div id="navbar-content"></div>
-    </div>
-    <div id="content"></div>
-    <div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
-        建站不容易,熬夜两行泪<br>
-        <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer"
-            style="width: 14px;height: 14px" alt="Gov Logo">
-        <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
-        <br>
-        <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer"
-            style="width: 14px;height: 14px" alt="Gov Logo">
-        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=36082602000219" rel="noreferrer"
-            target="_blank">赣公网安备36082602000219</a>
-    </div>
+    <div id="navbar-content"></div>
+</div>
+<div id="content"></div>
+<div class="footer">同行请勿攻击, 黑客大佬饶命, 警察请手下留情! <br>
+    建站不容易,熬夜两行泪<br>
+    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer"
+         style="width: 14px;height: 14px" alt="Gov Logo">
+    <a href="https://beian.miit.gov.cn/" target="_blank">赣ICP备2023013014号</a>
+    <br>
+    <img src="https://beian.mps.gov.cn/web/resource/img/head-logo.png" rel="noreferrer"
+         style="width: 14px;height: 14px" alt="Gov Logo">
+    <a href="https://beian.mps.gov.cn/#/query/webSearch?code=36082602000219" rel="noreferrer"
+       target="_blank">赣公网安备36082602000219</a>
+</div>
 
 </body>
 
