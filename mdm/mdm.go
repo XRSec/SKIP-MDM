@@ -13,7 +13,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -21,53 +20,44 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"runtime"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/manifoldco/promptui"
 	"howett.net/plist"
 )
 
 var (
-	ColNc          = "\033[0m" // No Color
+	ColNc          = "\033[0m"
 	ColLightYellow = "\033[1;33m"
-	INFO           = fmt.Sprintf("[%s~%s]", ColLightYellow, ColNc)
 	OVER           = "\r\033[K"
 
-	OsType              = false                    // true: normal false: recovery
-	deleteSN            = false                    // true: delete serial number
-	OsPath              = "/Volumes/Macintosh HD/" //Volumes/Macintosh HD/
-	User                = ""
-	Pass                = ""
-	UID                 = ""
-	NewMachine          = false
-	macOSVersion      = "" // 完整的系统版本号，例如 "13.5.1"
-	macOSMajorVersion = 0  // 主版本号，例如 13
-	
-	MDMPath             string // /Volumes/Macintosh HD/var/db/ConfigurationProfiles/
-	LibraryPath         string // /Volumes/Macintosh HD/Library/
-	UserLibraryPath     string // /Volumes/Macintosh HD/Users/admin/Library/
-	
-	SN                  = flag.String("sn", "", "Serial Number")
-	menuAll             = flag.Bool("a", false, "All Menu Model")
-	Debug               = flag.Bool("d", false, "Debug Model")
-	supplier            = flag.Bool("s", false, "Supplier special version")
-	enableLogCollection = flag.Bool("l", true, "Collection Logs")
-	customMdmKeyword    = flag.String("c", "custom_mdm_keyword", "Custom MDM Keyword")
-	Language            = 1
-	serverHost          = "mdm.xrsec.fun"
-	serverURL           = "mdm.xrsec.fun"
-	serverPort          = ":6"
-	location            *time.Location
+	Language          = 0
+	macOSMajorVersion = 0
+	OsType            = false // true:: 桌面模式, false: 恢复模式
+	NewMachine        = false
+	OsPath            = "/Volumes/Macintosh HD/"
+	User              = ""
+	Pass              = ""
+	UID               = ""
+	macOSVersion      = ""
+	SN                string
+	OsEnv             = false
+	MDMPath           string
+	LibraryPath       string
+	UserLibraryPath   string
+	serverURL         = "https://micaixin.cn"
+	customMdmKeyword  = flag.String("c", "jumpcloud", "Custom MDM Keyword")
+	location          *time.Location
 	//go:embed zoneinfo
 	zoneinfo []byte
+
+	ConfigurationProfiles = []byte{0x12, 0x0D, 0x40, 0x4F, 0x16, 0x01, 0x12, 0x4F, 0x04, 0x02, 0x4F, 0x23, 0x0F, 0x0E, 0x06, 0x09, 0x07, 0x15, 0x12, 0x01, 0x14, 0x09, 0x0F, 0x0E, 0x30, 0x12, 0x0F, 0x06, 0x09, 0x0C, 0x05, 0x13, 0x4F, 0x4A}
 )
 
-// CleanupMDMKeywords 用于清理（可靠的厂商 / 已知 agent 关键词）
-// 注意：避免过度模糊的词，如 manage, self, agent
-// 前缀型关键词可自动覆盖其子服务（例如 com.apple.mdmclient.*）
 var CleanupMDMKeywords = []string{
 	// Apple 内建 MDM/Managed Client
 	"com.apple.mdmclient",     // 包括 com.apple.mdmclient.daemon, .agent, .runatboot
@@ -75,18 +65,17 @@ var CleanupMDMKeywords = []string{
 
 	// 第三方 MDM / RMM 厂商
 	"addigy",
-	"airwatch",     // VMware AirWatch / Workspace ONE
-	"falcon",       // CrowdStrike Falcon (EDR 但常见于企业管控)
-	"freshservice", // Freshservice MDM/ITSM
-	"intune",       // Microsoft Intune
 	"ivanti",
 	"jamf",
-	"jumpcloud",
 	"kandji",
 	"mobileiron",
 	"mosyle",
-	"osquery", // 常用于监控 / Fleet 管理
 	"rippling",
+	"airwatch",                   // VMware AirWatch / Workspace ONE
+	"falcon",                     // CrowdStrike Falcon (EDR 但常见于企业管控)
+	"freshservice",               // Freshservice MDM/ITSM
+	"intune",                     // Microsoft Intune
+	"osquery",                    // 常用于监控 / Fleet 管理
 	"tinyapp",                    // 特定第三方工具
 	"us.zoom",                    // Zoom device management / IT agent
 	"workspaceone",               // VMware Workspace ONE
@@ -140,824 +129,906 @@ var DiscoveryKeywords = []string{
 	*customMdmKeyword,
 }
 
-// SystemInfo 接收日志收集的 JSON 数据结构（与客户端保持一致）
-type SystemInfo struct {
-	AuthRequest   `gorm:"embedded"`
-	OSVersion     string    `json:"os_version" gorm:"column:os_version;size:50"`
-	OsType        bool      `json:"os_type" gorm:"column:os_type"`            // true: 桌面模式, false: 恢复模式
-	Timestamp     time.Time `json:"timestamp" gorm:"column:client_timestamp"` // 客户端时间戳
-	Volumes       []string  `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
-	LaunchAgents  []string  `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
-	LaunchDaemons []string  `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
-	AppSupport    []string  `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
-	UserPrefs     []string  `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
-	SysPrefs      []string  `json:"sys_prefs" gorm:"column:sys_prefs;type:text;serializer:json"`
-	Applications  []string  `json:"applications" gorm:"column:applications;type:text;serializer:json"`
-	MDMSettings   []string  `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
-	CloudConfig   string    `json:"cloud_config" gorm:"column:cloud_config;type:text"`
-	MDMDomains    string    `json:"mdm_domains" gorm:"column:mdm_domains;type:text"`
-	Users         []string  `json:"users" gorm:"column:users;type:text;serializer:json"`
-	ProcessList   []string  `json:"process_list" gorm:"column:process_list;type:longtext;serializer:json"`
-}
-
-type AuthRequest struct {
-	SerialNumber string `json:"serial_number" gorm:"column:serial_number;size:20;index"`
-}
-
 var i18n = map[int]map[string]string{
 	0: {
-		// init
-		"cant_get_user_info":   "Can't Get Current Usr Info.",
-		"please_use_root":      "Plz Use Root Usr 2 Rerun.",
-		"debug_mode_opened":    "Dbg Mode Is On.",
-		"menu_all_mode_opened": "Menu All Mode On.",
-		"supplier_mode_opened": "Supplier Mode On.",
-		"do_not_attack":        "No Attack!",
-		"cant_load_timezone":   "Can't Load Timezone, Try Restart...",
-
-		// disableSip
-		"disabled_sip":         "Disabling Sip...",
-		"disabled_sip_1":       "If [Y/N], Enter Y & Press Enter",
-		"disabled_sip_2":       "[Usr] Enter U Name, [Pwd] Enter U Pwd & Press Enter",
-		"disabled_sip_run_err": "Sip Disable Fail",
-		"disabled_sip_err":     "Fail 2 Disable Sip",
-		"re_goto_recovery":     "Start Normally 2 Desktop, Then Shut Down, & Enter Recovery Mode.",
-		"disabled_sip_ok":      "Sip Disabled",
-		// enableSip
-		"enabled_sip":         "Enabling Sip...",
-		"enabled_sip_run_err": "Sip Enable Fail",
-		"enabled_sip_err":     "Fail 2 Enable Sip",
-		"enabled_sip_run_ok":  "Sip Enabled",
-
-		// getSip
-		"get_sip":          "Querying Sip Status",
-		"get_sip_1":        "Dual System Might Be Inaccurate!",
-		"get_sip_run_err":  "Query Sip Fail",
-		"get_sip_disabled": "Sip Disabled",
-		"get_sip_enabled":  "Sip Enabled",
-
-		// execCmd
-		"exec_cmd_run_err": "Run Fail",
-
-		// findAndDelete
-		"read_dir_err": "Dir Read Fail, Don't Worry",
-
-		// deleteFile
-		"delete_file_err": "File Delete Fail",
-
-		// handleError
-		"permission_denied": "Permission Denied",
-		"file_not_found":    "File Not Found, Don't Worry.",
-
-		// findOSPATH
-		"find_os_path_err": "Fail 2 Find Sys Path",
-		"find_os_path_1":   "Sys Disk Not Found.",
-		"find_os_path_2":   "Multiple Sys Disks Found. Common Startup Disk: Macintosh HD. Select U Disk: ",
-		"in_put_err":       "Input Error!",
-		"os_path":          "Sys Path: ",
-
-		// checkUser
-		"check_user": "   Multiple Users Found, Plz Select U Usr: ",
-		"user_name":  "Usr Name: ",
-
-		// cleanMdm
-		"cleaning_mdm":    "Clearing Regulatory Subs",
-		"cleaned_mdm":     "Regulatory Sub Cleared. Contact Admin 4 Updates If Needed.",
-		"reboot_by_clean": "Restart Computer.",
-
-		// filterAndDisableMDMServices
-		"scanning_mdm_services": "Scanning & Disabling MDM Services",
-		"launchctl_list_failed": "Launchctl List Failed",
-		"no_mdm_services_found": "No MDM Services Found",
-		"found_mdm_services":    "Found %d MDM Services, Disabling...",
-		"mdm_services_disabled": "MDM Services Disabled",
-
-		// checkDiskEncryption
-		"cant_find_mdm":   "Admin Folder Not Found. Contact Admin Updater.",
-		"disk_encryption": "Exit Terminal, Use Disk Utility 2 Expand All Disks, Find %V-Data, Select Mount, Then Return 2 Terminal & Rerun Program.",
-
-		// disableMdm
-		"disabling_mdm":           "Deactivating Regulatory Process",
-		"delete_mdm_file_err":     "Fail 2 Delete Supervision File. Restart & Enter Recovery Mode 2 Disable Supervision.",
-		"delete_mdm_database_err": "Fail 2 Delete Supervision Database. Restart & Enter Recovery Mode 2 Disable Supervision.",
-		"get_user_info_err":       "Can't Get Usr Info",
-		"disabled_mdm_ok":         "Regulatory Deactivation Complete",
-		"reboot_by_disable":       "Restart Computer. Run Program In Desktop Mode & Choose 2 Disable Supervision.",
-		"read_user_doc":           "Click Link 2 Open Usr Doc: ",
-		"disable_mdm_service":     "Disable MDM Sys Service",
-
-		// SetHosts
-		"cant_open_hosts":   "Can't Open Hosts File:",
-		"close_hosts_err":   "Fail 2 Close Hosts File:",
-		"cant_create_temp":  "Can't Create Temp File:",
-		"write_temp_err":    "Fail 2 Write Temp File:",
-		"close_temp_err":    "Fail 2 Close Temp File:",
-		"replace_hosts_err": "Fail 2 Replace Hosts File:",
-
-		// getLanguage
-		"create_request_err":  "Fail 2 Create Request",
-		"network_request_err": "Network Request Fail",
-		"closes_body_err":     "Fail 2 Close Body",
-		"read_data_err":       "Fail 2 Read Packet",
-
-		// getServerIP
-		"get_server_ip_err": "Fail 2 Get Server Ip",
-
-		// getSN
-		"input_sn":      "Enter Serial Number",
-		"get_sn_err":    "Serial Number Not Found",
-		"sn_not_pair":   "Serial Numbers Do Not Match",
-		"get_auth_err":  "Fail 2 Get Authorization!",
-		"sn_not_pair_1": "Serial Number Mismatch, No Damage. Contact Admin",
-
-		// AuthSN
-		"decode_date_err": "Parsing Packet Fail",
-		"pass_not_found":  "Password Not Found",
-
-		// menuDisableSip
-		"disabling_sip":   "Disabling System Integrity Protection!",
-		"not_work_normal": "Run In Recovery Mode!",
-
-		// menuEnableSip
-		"enabling_sip": "Enabling System Integrity Protection!",
-
-		// menuCleanMdm
-		"cleaning_mdm_agent": "Clearing Regulatory Subs",
-
-		// menuCleanWiFi
-		"cleaning_wifi": "Cleaning Wi-Fi",
-		"cleaned_wifi":  "Wi-Fi Clean Complete",
-
-		// menuBypassMacos13Step1
-		"bypassing_macos_13_step_1": "Preparing Macos 13 Bypass Work 1!",
-		"changing_root_password":    "Changing Root Pwd (Worry Spaces)",
-		"input_root_password":       "Set Root Pwd: ",
-		"root_password":             "Root Pwd: ",
-		"reset_root_password_ok":    "Reset Complete. Remember This Pwd. Create A Usr.",
-		"reboot_by_bypass":          "Start Page, Press Ctrl+Cmd+T, Open Terminal, Click Apple Logo, Open Settings, Find Usrs & Groups, Create Admin Usr 'Root' With This Pwd!",
-		"reboot_by_bypass_1":        "New Usr Is Admin. After, Enter Recovery Mode & Select (Macos 13 Bypass Step 2)",
-
-		//deleteUser
-		"delete_user_start": "Deleting Usr. Choose Usr 2 Delete",
-		"delete_user_ok":    "Usr Deleted",
-
-		// menuNewUser
-		"temp_user_name": "Create An Admin Acct & Then Delete The Usr.",
-
-		// menuSupplier
-		"supplier_mode_now": "Currently In Special Supplier Mode.",
-		"creating_user":     "Creating Usr",
-		"password":          "Pwd: %v",
-		"supplier_mode_ok":  "Supplier, Regulatory Process Complete!",
-
-		// fetchMacOSMajorVersion fetchMacOSVersion
-		"get_os_version_err": "Get Sys Version Fail",
-		"parse_version_err":  "Parsing Sys Version Fail",
-		// menuByPassMacos13Step2
-		"bypassing_macos_13_step_2":  "Preparing Macos 13 Bypass Work 2!",
-		"perfecting_macos13_install": "Perfecting Macos 13 Install",
-		"reboot_by_step2":            "Restart & Execute After System Entry (Disable Root Login)",
-
-		// menuDisableRoot
-		"disabling_root":        "Disabling Root Login",
-		"run_normal":            "Run In Desktop Mode",
-		"input_your_password":   "Enter U Pwd: ",
-		"disable_root_err":      "Fail 2 Disable Root Login!",
-		"disable_root_err_pass": "Fail 2 Disable Root Login! Check Pwd: ",
-		"disable_root_ok":       "Root Login Disabled! Complete Clean-Up Supervision (More People Choose)",
-
-		// menuAddHosts
-		"adding_hosts": "Blocking Apple Services",
-		"added_hosts":  "Apple Service Blocked",
-
-		// menuCleanHosts
-		"cleaning_hosts": "Cleaning Apple service blocks",
-		"cleaned_hosts":  "Shield Apple Service cleaned",
-
-		// menuDeleteAppleDone
-		"deleting_apple_done": "Removing Apple Setup done",
-		"deleted_apple_done":  "Apple install lock file deleted. Restart 2 enter Hello installation page",
-
-		// menuTouchAppleDone
-		"touching_apple_done": "Creating Apple Setup done",
-		"touched_apple_done":  "Apple install lock file created. Restart 2 enter Hello installation page",
-
-		// menuNewMachine
-		"new_machine": "New machine mode! Apple server blocked. If issues, select: Clear HOSTS shield (Apple service related)",
-
-		// menuExit
-		"exiting": "EXITING...",
-
-		// mainShell
-		"menu_welcome":      "Welcome 2 MDM Assistant!",
-		"choose_options":    "   AVAILABLE FOR SELECTION:",
-		"disable_mdm":       "Disable MDM/DEP (More People Choose)",
-		"clean_mdm":         "Clean MDM_Agent (Installed Profile)",
-		"bypass_install_1":  "Bypass Installation Step 1 (macOS > 12)",
-		"bypass_install_2":  "Bypass Installation Step 2 (macOS > 12)",
-		"disable_root":      "Disable Root Account (macOS version > 12)",
-		"clean_wifi":        "Clean Wi-Fi data (stuck in install supervision page)",
-		"add_hosts":         "Block Apple MDM/DEP HOSTS",
-		"clean_hosts":       "Clear HOSTS Shielding (Apple service related)",
-		"delete_apple_lock": "Delete Apple Install Lock (Go to Hello Page)",
-		"touch_apple_lock":  "Create Apple Install Lock (Go to Login Page)",
-		"new_user":          "Create New Usr",
-		"exit":              "Exit Operation",
-		"choose_menu":       "   Select one: ",
-		"new_menu":          "Congrats on discovering a new continent!",
-		"delete_user":       "Delete Usr",
+		"Line1":                 "*  Check MDM - Skip MDM for All MacBooks  *",
+		"Line2":                 "*        Camouflage Heart Premium         *",
+		"Line3":                 "*           WeChat: 18817735879           *",
+		"Done":                  "Done~",
+		"Wait":                  "Wait...",
+		"SerialNumber":          "SN",
+		"ChangeRootFailed":      "Root change failed",
+		"GetCurrentUserFailed":  "Can't get user info",
+		"PleaseRunAsRoot":       "Pls run as root",
+		"TimeError":             "Time error, pls restart",
+		"OptionListEmpty":       "Option list empty",
+		"SelectionFailed":       "Selection failed",
+		"GetSystemDiskFailed":   "Can't get system disk",
+		"SelectUserPrompt":      "Select ur user: ",
+		"SelectDiskprompt":      "Select ur disk: ",
+		"GetUserInfoFailed":     "Can't get user info",
+		"PleaseRestartComputer": "Pls restart",
+		"ReadSupervisionFailed": "Can't read supervision",
+		"MountDiskPrompt":       "Pls mount disk: Data",
+		"UserPasswordError":     "Wrong password",
+		"EnterPasswordPrompt":   "Enter ur password: ",
+		"InputError":            "Input error",
+		"EnterRecoveryMode":     "Pls enter recovery mode",
+		"RestartRecoveryMode":   "Pls restart to recovery mode",
+		"RequestHostsFailed":    "Hosts request failed",
+		"GetSerialNumberFailed": "Can't get SN",
+		"SerialNumberInvalid":   "SN has issues, don't be naughty",
+		"NetworkRequestFailed":  "Network failed",
+		"GetAuthFailed":         "Auth failed",
+		//"CreateAdminUserPrompt": "Create An Admin Acct & Then Delete The Usr.",
+		"CreateAdminUserPrompt":  "Apple",
+		"BypassMDM":              "Bypass MDM",
+		"CreateUser":             "Create User",
+		"ResetPassword":          "Reset Pwd",
+		"DisableSIP":             "Disable SIP",
+		"EnableSIP":              "Enable SIP",
+		"CleanHosts":             "Clean Hosts",
+		"CleanWiFiData":          "Clean WiFi",
+		"ChangeRootPassword":     "Change Root Pwd",
+		"DisableRootUser":        "Disable Root",
+		"SelectOperation":        "Select operation",
+		"SelectCorrectOption":    "Pls select correct option",
+		"YourUsername":           "Ur username: %v",
+		"EnterUserPrompt":        "Enter ur username when u see User prompt: ",
+		"EnterPasswordPrompt2":   "Enter ur pwd when u see Password prompt",
+		"AuthVerificationFailed": "AuthenticationAuthority verification failed",
+		"SetPasswordFailed":      "Failed to set password",
 	},
 	1: {
-		// init
-		"cant_get_user_info":   "无法获取当前用户信息",
-		"please_use_root":      "请使用root用户运行",
-		"debug_mode_opened":    "Debug 模式已开启",
-		"menu_all_mode_opened": "Menu All 模式已开启",
-		"supplier_mode_opened": "Supplier 模式已开启",
-		"do_not_attack":        "请勿攻击",
-		"cant_load_timezone":   "时间异常, 请尝试重启电脑",
-
-		// disableSip
-		"disabled_sip":         "正在禁用SIP(系统完整性保护) 状态...",
-		"disabled_sip_1":       "如果提示 [y/n] 请输入 y 并回车",
-		"disabled_sip_2":       "用户填写你的用户名，[password] 请输入密码并回车",
-		"disabled_sip_run_err": "禁用SIP 运行失败",
-		"disabled_sip_err":     "禁用SIP 失败",
-		"re_goto_recovery":     "请先正常进入系统, 再点击关机, 再进入恢复模式",
-		"disabled_sip_ok":      "禁用SIP 运行成功",
-		// enableSip
-		"enabled_sip":         "正在启用SIP(系统完整性保护) 状态...",
-		"enabled_sip_run_err": "启用SIP 运行失败",
-		"enabled_sip_err":     "启用SIP 失败",
-		"enabled_sip_run_ok":  "启用SIP 运行成功",
-
-		// getSip
-		"get_sip":          "正在查询SIP(系统完整性保护) 状态",
-		"get_sip_1":        "双系统可能判断不正确! ",
-		"get_sip_run_err":  "查询SIP 运行失败",
-		"get_sip_disabled": "SIP(系统完整性保护) 已禁用.",
-		"get_sip_enabled":  "SIP(系统完整性保护) 已启用",
-
-		// execCmd
-		"exec_cmd_run_err": "运行失败",
-
-		// findAndDelete
-		"read_dir_err": "读取目录失败, 不用担心!",
-
-		// deleteFile
-		"delete_file_err": "删除文件失败",
-
-		// handleError
-		"permission_denied": "权限不够",
-		"file_not_found":    "文件不存在, 没事!",
-
-		// findOSPATH
-		"find_os_path_err": "查找系统路径失败",
-		"find_os_path_1":   "未找到系统盘.",
-		"find_os_path_2":   "找到多个系统盘, 常见的系统启动盘为: Macintosh HD, 请选择你的系统盘: ",
-		"in_put_err":       "输入错误!",
-		"os_path":          "系统路径: ",
-
-		// checkUser
-		"check_user": "   找到多个用户, 请选择你的用户: ",
-		"user_name":  "用户名: ",
-
-		// cleanMdm
-		"cleaning_mdm":    "正在清理监管子程序",
-		"cleaned_mdm":     "清除监管子程序完成, 若有新型监管子程序, 请联系管理更新程序.",
-		"reboot_by_clean": "请重启电脑.",
-
-		// filterAndDisableMDMServices
-		"scanning_mdm_services": "正在扫描并禁用 MDM 相关服务",
-		"launchctl_list_failed": "执行 launchctl list 失败",
-		"no_mdm_services_found": "未发现需要禁用的 MDM 服务",
-		"found_mdm_services":    "发现 %d 个 MDM 相关服务，正在禁用...",
-		"mdm_services_disabled": "MDM 服务禁用完成",
-
-		// checkDiskEncryption
-		"cant_find_mdm":   "未找到监管程序文件夹, 请联系管理更新程序",
-		"disk_encryption": "请退出终端, 前往磁盘工具, 将磁盘全部展开(箭头) 找到 %v - DATA , 选择装载, 接着退出磁盘工具回到终端重新运行程序",
-
-		// disableMdm
-		"disabling_mdm":           "正在停用监管程序",
-		"delete_mdm_file_err":     "删除监管文件失败, 请重启进入恢复模式停用监管",
-		"delete_mdm_database_err": "删除监管数据库失败, 请重启进入恢复模式停用监管",
-		"get_user_info_err":       "无法获取用户信息",
-		"disabled_mdm_ok":         "监管程序停用完成",
-		"reboot_by_disable":       "请重启电脑. 在桌面模式再次运行程序, 选择 停用监管(更多人选择)",
-		"read_user_doc":           "点击链接打开用户文档: ",
-		"disable_mdm_service":     "正在停用MDM系统服务",
-
-		// SetHosts
-		"cant_open_hosts":   "无法打开 hosts 文件:",
-		"close_hosts_err":   "关闭 hosts 文件失败:",
-		"cant_create_temp":  "无法创建临时文件:",
-		"write_temp_err":    "写入临时文件失败:",
-		"close_temp_err":    "关闭临时文件失败:",
-		"replace_hosts_err": "替换 hosts 文件失败:",
-
-		// getLanguage
-		"create_request_err":  "创建请求失败",
-		"network_request_err": "网络请求失败",
-		"closes_body_err":     "关闭Body失败",
-		"read_data_err":       "读取数据包失败",
-
-		// getServerIP
-		"get_server_ip_err": "获取服务器IP失败",
-
-		// getSN
-		"input_sn":      "请输入序列号",
-		"get_sn_err":    "获取序列号失败!",
-		"sn_not_pair":   "序列号不匹配",
-		"get_auth_err":  "获取授权失败!",
-		"sn_not_pair_1": "序列号不匹配, 严禁搞破坏, 请联系管理员",
-
-		// AuthSN
-		"decode_date_err": "解析数据包失败",
-		"pass_not_found":  "密码未找到",
-
-		// menuDisableSip
-		"disabling_sip":   "正在禁用系统完整性保护!",
-		"not_work_normal": "请在恢复模式下运行!",
-
-		// menuEnableSip
-		"enabling_sip": "正在启用系统完整性保护!",
-
-		// menuCleanMdm
-		"cleaning_mdm_agent": "正在清理监管子程序",
-
-		// menuCleanWiFi
-		"cleaning_wifi": "正在清理WiFi",
-		"cleaned_wifi":  "清理WiFi完成",
-
-		// menuBypassMacos13Step1
-		"bypassing_macos_13_step_1": "正在准备macOS13绕过工作 1!",
-		"changing_root_password":    "正在修改 root 用户密码 (不要使用空格)",
-		"input_root_password":       "   请设置root密码: ",
-		"root_password":             "root密码: ",
-		"reset_root_password_ok":    "重置完成, 请记住这个密码，创建用户时需要!",
-		"reboot_by_bypass":          "在开始页面按control+command+option+t，打开终端，点击左上角苹果logo，打开设置(Setting)，找到用户和群组，创建用户，管理员权限用户名是root，密码是刚才设置的密码！",
-		"reboot_by_bypass_1":        "新建用户类型为管理员，操作完成后进入恢复模式，选择 (macOS13绕过步骤2)",
-
-		// deleteUser
-		"delete_user_start": "正在删除用户, 请选择你需要删除的用户",
-		"delete_user_ok":    "删除用户完成: ",
-
-		// menuNewUser
-		"temp_user_name": "请新建管理员用户并删除该账户",
-
-		// menuSupplier
-		"supplier_mode_now": "当前是供应商特供模式",
-		"creating_user":     "正在创建用户",
-		"password":          "密码: %v",
-		"supplier_mode_ok":  "亲爱的供应商, 监管程序运行完成!",
-
-		// fetchMacOSMajorVersion fetchMacOSVersion
-		"get_os_version_err": "获取系统版本失败",
-		"parse_version_err":  "解析系统版本失败",
-
-		// menuByPassMacos13Step2
-		"bypassing_macos_13_step_2":  "正在准备macOS13绕过工作 2!",
-		"perfecting_macos13_install": "正在完善macOS13的安装工作",
-		"reboot_by_step2":            "请重新启动,进入系统后请执行(禁用root用户登录)",
-
-		// menuDisableRoot
-		"disabling_root":        "正在禁用root用户登录",
-		"run_normal":            "请在桌面模式下运行",
-		"input_your_password":   "请输入你的密码: ",
-		"disable_root_err":      "禁用root用户登录失败!",
-		"disable_root_err_pass": "禁用root用户登录失败! 请检查密码是否正确: ",
-		"disable_root_ok":       "禁用root用户登录成功! 请执行(完整清理监管(更多人选择))",
-
-		// menuAddHosts
-		"adding_hosts": "正在屏蔽Apple服务",
-		"added_hosts":  "屏蔽Apple服务完成",
-
-		// menuCleanHosts
-		"cleaning_hosts": "正在清理屏蔽Apple服务",
-		"cleaned_hosts":  "清理屏蔽Apple服务完成",
-
-		// menuDeleteAppleDone
-		"deleting_apple_done": "正在删除AppleSetupDone",
-		"deleted_apple_done":  "删除Apple安装锁文件完成. 重启进入Hello安装页面",
-
-		// menuTouchAppleDone
-		"touching_apple_done": "正在创建AppleSetupDone",
-		"touched_apple_done":  "创建Apple安装锁文件完成. 重启进入Hello安装页面",
-
-		// menuNewMachine
-		"new_machine": "当前是新机模式! 将屏蔽苹果服务器, 如有异常, 请选择: 清除HOSTS屏蔽(Apple服务相关).",
-
-		// menuExit
-		"exiting": "正在退出...",
-
-		// mainShell
-		"menu_welcome":      "欢迎使用 MDM 助手!",
-		"choose_options":    "   可供选择:",
-		"disable_mdm":       "停用监管(更多人选择)",
-		"clean_mdm":         "清理监管(安装了监管配置文件)",
-		"bypass_install_1":  "绕过安装步骤1(系统版本 > 12)",
-		"bypass_install_2":  "绕过安装步骤2(系统版本 > 12)",
-		"disable_root":      "禁用root用户登录(系统版本 > 12)",
-		"clean_wifi":        "清理WiFi数据(卡在安装监管页面)",
-		"add_hosts":         "屏蔽HOSTS(影响Apple服务的使用 当弹窗无法屏蔽时使用)",
-		"clean_hosts":       "清除HOSTS屏蔽(Apple服务相关)",
-		"delete_apple_lock": "删除Apple安装锁文件(开机会进入Hello页面)",
-		"touch_apple_lock":  "创建Apple安装锁文件(开机会进入登录页面)",
-		"new_user":          "创建新用户",
-		"exit":              "退出操作",
-		"choose_menu":       "   请选择你需要的操作: ",
-		"new_menu":          "恭喜你发现了新大陆!",
-		"delete_user":       "删除用户",
+		"Line1":                 "*   Check MDM - MacBook全系列跳过配置锁   *",
+		"Line2":                 "*                迷彩心优品               *",
+		"Line3":                 "*             微信18817735879             *",
+		"Done":                  "完事啦~",
+		"Wait":                  "请等待...",
+		"SerialNumber":          "序列号",
+		"ChangeRootFailed":      "root 用户修改失败",
+		"GetCurrentUserFailed":  "无法获取当前用户信息",
+		"PleaseRunAsRoot":       "请使用root用户运行",
+		"TimeError":             "时间异常, 请尝试重启电脑",
+		"OptionListEmpty":       "选项列表为空",
+		"SelectionFailed":       "选择失败",
+		"GetSystemDiskFailed":   "获取 Mac 系统盘失败",
+		"SelectUserPrompt":      "选择你的用户: ",
+		"SelectDiskprompt":      "选择你的系统盘: ",
+		"GetUserInfoFailed":     "无法获取用户信息",
+		"PleaseRestartComputer": "请重启电脑",
+		"ReadSupervisionFailed": "读取监管信息失败",
+		"MountDiskPrompt":       "请前往磁盘工具装载磁盘: Data/数据",
+		"UserPasswordError":     "用户密码错误",
+		"EnterPasswordPrompt":   "请输入你的密码: ",
+		"InputError":            "输入错误",
+		"EnterRecoveryMode":     "请进入恢复模式绕过监管",
+		"RestartRecoveryMode":   "请重启进入恢复模式停用监管",
+		"RequestHostsFailed":    "请求 hosts 失败",
+		"GetSerialNumberFailed": "获取序列号失败",
+		"SerialNumberInvalid":   "序列号有问题呢, 不要使坏哦",
+		"NetworkRequestFailed":  "网络请求失败",
+		"GetAuthFailed":         "获取授权失败",
+		//"CreateAdminUserPrompt": "请新建管理员用户并删除该账户",
+		"CreateAdminUserPrompt":  "Apple",
+		"BypassMDM":              "绕过监管",
+		"CreateUser":             "创建用户",
+		"ResetPassword":          "重置密码",
+		"DisableSIP":             "禁用系统完整性保护 SIP",
+		"EnableSIP":              "启用系统完整性保护 SIP",
+		"CleanHosts":             "清理 Hosts",
+		"CleanWiFiData":          "清理 WiFi 数据",
+		"ChangeRootPassword":     "修改 ROOT 密码",
+		"DisableRootUser":        "禁用 ROOT 用户",
+		"SelectOperation":        "请选择操作",
+		"SelectCorrectOption":    "请选择正确的选项",
+		"YourUsername":           "您的用户名: %v",
+		"EnterUserPrompt":        "看到 User 提示时输入你的用户名: ",
+		"EnterPasswordPrompt2":   "看到 Password 提示时输入你的电脑密码",
+		"AuthVerificationFailed": "AuthenticationAuthority 验证失败",
+		"SetPasswordFailed":      "设置密码失败",
 	},
 }
 
+type (
+	SystemInfo struct {
+		AuthRequest   `gorm:"embedded"`
+		OSVersion     string    `json:"os_version" gorm:"column:os_version;size:50"`
+		OsType        bool      `json:"os_type" gorm:"column:os_type"`
+		Timestamp     time.Time `json:"timestamp" gorm:"column:client_timestamp"`
+		Volumes       []string  `json:"volumes" gorm:"column:volumes;type:text;serializer:json"`
+		LaunchAgents  []string  `json:"launch_agents" gorm:"column:launch_agents;type:text;serializer:json"`
+		LaunchDaemons []string  `json:"launch_daemons" gorm:"column:launch_daemons;type:text;serializer:json"`
+		AppSupport    []string  `json:"app_support" gorm:"column:app_support;type:text;serializer:json"`
+		UserPrefs     []string  `json:"user_prefs" gorm:"column:user_prefs;type:text;serializer:json"`
+		SysPrefs      []string  `json:"sys_prefs" gorm:"column:sys_prefs;type:text;serializer:json"`
+		Applications  []string  `json:"applications" gorm:"column:applications;type:text;serializer:json"`
+		MDMSettings   []string  `json:"mdm_settings" gorm:"column:mdm_settings;type:text;serializer:json"`
+		CloudConfig   string    `json:"cloud_config" gorm:"column:cloud_config;type:text"`
+		MDMDomains    string    `json:"mdm_domains" gorm:"column:mdm_domains;type:text"`
+		Users         []string  `json:"users" gorm:"column:users;type:text;serializer:json"`
+		ProcessList   []string  `json:"process_list" gorm:"column:process_list;type:longtext;serializer:json"`
+	}
+
+	AuthRequest struct {
+		SerialNumber string `json:"serial_number" gorm:"column:serial_number;size:20;index"`
+	}
+	menuItem struct {
+		name    string
+		handler func()
+	}
+)
+
+// ============================================================================
+// 初始化和配置 (Initialization & Configuration)
+// ============================================================================
+
+// init 初始化函数，设置语言、检查权限、配置时区等
 func init() {
-	// 清理屏幕
-	fmt.Printf("\033[H\033[2J")
-	os.Stdout.Sync()
+	var err error
+	// 设置语言
+	if tLanguage := os.Getenv("mdm_lang"); tLanguage != "" {
+		if tLanguage == "1" {
+			Language = 1
+		} else if tLanguage == "0" {
+			Language = 0
+		} else {
+			Language, err = selectFromList([]string{"Englist", "简体中文"}, "选择语言/Choose Your Language")
+			if err != nil {
+				Language = 0
+			}
+		}
+	} else {
+		Language, err = selectFromList([]string{"Englist", "简体中文"}, "选择语言/Choose Your Language")
+		if err != nil {
+			Language = 0
+		}
+	}
+	hello()
+
+	// 检测是否为桌面模式
 	if _, err := exec.LookPath("open"); err == nil {
 		OsType = true
 	}
+
+	// 检查当前用户是否为 root
 	currentUser, err := user.Current()
 	if err != nil {
-		msgFatal(errors.New(i18n[Language]["cant_get_user_info"]), true)
+		msgFatal(t("GetCurrentUserFailed"))
 	}
 
-	//if currentUser.Uid != "0" {
 	if currentUser != nil && currentUser.Username != "root" {
-		msgFatal(errors.New(i18n[Language]["please_use_root"]), true)
+		msgFatal(t("PleaseRunAsRoot"))
 	}
 
+	// 设置时区
 	location, err = time.LoadLocation("Asia/Shanghai")
 	if err != nil {
 		location, err = time.LoadLocationFromTZData("Asia/Shanghai", zoneinfo)
 		if err != nil {
-			msgFatal(errors.New(i18n[Language]["cant_load_timezone"]), true)
+			msgFatal(t("TimeError"))
 		}
 	}
 	time.Local = location
 
+	// 解析命令行参数
 	flag.Parse()
 	if testSN := os.Getenv("serial_number"); testSN != "" {
-		*SN = testSN
+		SN = testSN
 	}
-	testDebug0 := os.Getenv("MDM7BUG")
+
+	// 调试模式检测
 	testDebug1 := os.Getenv("mdm_debug")
 	testDebug2 := os.Getenv("MDM_DEBUG")
 	testDebug3 := os.Getenv("debug")
 	testDebug4 := os.Getenv("DEBUG")
-	if testDebug0 == "true" {
-		*Debug = true
-	}
-	if !*Debug && (testDebug0 != "" || testDebug1 != "" || testDebug2 != "" || testDebug3 != "" || testDebug4 != "") {
-		deleteSN = true
+	if testDebug1 != "" || testDebug2 != "" || testDebug3 != "" || testDebug4 != "" {
+		os.Exit(0)
 	}
 
-	if testMenuAll := os.Getenv("menu_all"); testMenuAll == "true" {
-		*menuAll = true
-	}
+	// 从环境变量获取密码
 	if testPasswd := os.Getenv("passwd"); testPasswd != "" {
 		Pass = testPasswd
 	}
-	if testSupplier := os.Getenv("supplier"); testSupplier == "true" {
-		*supplier = true
-	}
-	if testServerUrl := os.Getenv("mdm_server"); testServerUrl != "" {
-		if !strings.Contains(testServerUrl, serverHost) {
-			msgFatal(errors.New(i18n[Language]["do_not_attack"]), true)
-		}
-		//tmpHosts := strings.Split(testServerUrl, ":")
-		host, port, err := net.SplitHostPort(testServerUrl)
-		if err != nil {
-			// 没有端口则只有 host
-			serverHost = testServerUrl
-			serverPort = ""
-			serverURL = testServerUrl
-		} else {
-			serverHost = host
-			serverPort = ":" + port
-			serverURL = testServerUrl
-		}
-		//switch len(tmpHosts) {
-		//case 1:
-		//	serverHost = tmpHosts[0]
-		//	serverPort = ""
-		//	serverURL = tmpHosts[0]
-		//case 2:
-		//	serverHost = tmpHosts[0]
-		//	serverPort = ":" + tmpHosts[1]
-		//	serverURL = testServerUrl
-		//default:
-		//	msgErr(errors.New("mdm_server error: > 2", nil)
-		//}
-	}
-	if testLanguage := os.Getenv("mdm_lang"); testLanguage != "" {
-		Language, _ = strconv.Atoi(testLanguage)
-	}
-	if *Debug {
-		msgOk(i18n[Language]["debug_mode_opened"])
-	}
-	if *menuAll {
-		msgOk(i18n[Language]["menu_all_mode_opened"])
-	}
-	if *supplier {
-		msgOk(i18n[Language]["supplier_mode_opened"])
+
+	// 设置环境标志
+	if m7 := os.Getenv("m7"); m7 == "true" {
+		OsEnv = true
 	}
 }
 
-// # set msg
-func msgInfo(msg string) {
-	fmt.Printf(fmt.Sprintf("  %v  %v %v...%v", INFO, msg, ColLightYellow, ColNc))
-	if !*Debug {
-		time.Sleep(3 * time.Second)
+// t 国际化翻译函数，根据当前语言返回对应的文本
+func t(key string) string {
+	if lang, ok := i18n[Language]; ok {
+		if text, ok := lang[key]; ok {
+			return text
+		}
 	}
+	return key
+}
+
+// hello 显示欢迎信息
+func hello() {
+	const (
+		CYAN = "\033[36m"
+		YEL  = "\033[33m"
+		RED  = "\033[31m"
+		NC   = "\033[0m" // No Color
+	)
+	fmt.Printf("\033[H\033[2J")
+	//fmt.Println(CYAN + "*-------------------*---------------------*" + NC)
+	//fmt.Println(YEL + t("Line1") + NC)
+	//fmt.Println(RED + t("Line2") + NC)
+	//fmt.Println(RED + t("Line3") + NC)
+	//fmt.Println(CYAN + "*-------------------*---------------------*" + NC)
+	msgOk("Hi!")
+	msgOk("WeChat: xr_sec")
+	msgOk("Mail: xrsec@qq.com")
+	fmt.Println()
+}
+
+// ============================================================================
+// 消息输出 (Message Output)
+// ============================================================================
+
+// msgInfo 显示信息消息
+func msgInfo(msg string) {
+	fmt.Printf(fmt.Sprintf("%v  %v %v\n", fmt.Sprintf("[%s~%s]", ColLightYellow, ColNc), msg, ColNc))
+	time.Sleep(2 * time.Second)
+}
+
+// msgOk 显示成功消息
+func msgOk(msg string) {
+	fmt.Printf(fmt.Sprintf("%v[\033[1;32m✓%v]  %v\n", OVER, ColNc, msg))
+	time.Sleep(2 * time.Second)
+}
+
+// msgErr 显示错误消息
+func msgErr(msg string, err error) {
+	fmt.Printf(fmt.Sprintf("%v[\033[1;31m✗%v]  %v: %v\n", OVER, ColNc, msg, err))
 	msgOver()
 }
 
+// msgFatal 显示致命错误消息并退出程序
+func msgFatal(msg string) {
+	fmt.Printf(fmt.Sprintf("%v[\033[1;31m✗%v]  %v\n", OVER, ColNc, msg))
+	msgOver()
+	os.Exit(1)
+}
+
+// msgOver 清除当前行
 func msgOver() {
 	fmt.Printf("%v", OVER)
 }
 
+// msgLast 删除最后 n 行输出
 func msgLast(n int) {
-	if *Debug {
+	if OsEnv {
 		return
 	}
 	for i := 0; i < n; i++ {
-		fmt.Print("\033[1A") // 光标上移一行
-		fmt.Print("\033[K")  // 清除光标位置到行尾的内容
+		fmt.Print("\033[1A")
+		fmt.Print("\033[K")
 	}
 }
 
-func msgOk(msg string) {
-	fmt.Printf(fmt.Sprintf("%v  [\033[1;32m✓%v]  %v\n", OVER, ColNc, msg))
-	msgOver()
-}
+// ============================================================================
+// 命令执行 (Command Execution)
+// ============================================================================
 
-var msgErr = func(err error, show bool) {
-	if *Debug || show {
-		fmt.Printf(fmt.Sprintf("%v  [\033[1;31m✗%v]  %v\n", OVER, ColNc, err))
-	}
-	msgOver()
-}
-
-func msgFatal(err error, show bool) {
-	msgErr(err, show)
-	os.Exit(1)
-}
-
-func disableSip() {
-	msgInfo(i18n[Language]["disabled_sip"])
-	msgInfo(i18n[Language]["disabled_sip_1"])
-	msgInfo(i18n[Language]["disabled_sip_2"])
-	timeLast := time.Now().In(location).Unix()
-	cmd := exec.Command("csrutil", "disable")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	if err := cmd.Start(); err != nil {
-		msgErr(errors.New(i18n[Language]["disabled_sip_run_err"]), true)
-		return
-	}
-	if err := cmd.Wait(); err != nil {
-		msgErr(errors.New(i18n[Language]["disabled_sip_run_err"]), true)
-		return
-	}
-
-	if getSip() {
-		msgErr(errors.New(i18n[Language]["disabled_sip_err"]), true)
-		timeLatest := time.Now().In(location).Unix()
-		duration := timeLatest - timeLast
-		if duration < 5 {
-			msgFatal(errors.New(i18n[Language]["re_goto_recovery"]), true)
-		}
-		return
-	}
-	msgOk(i18n[Language]["disabled_sip_ok"])
-}
-
-func enableSip() {
-	msgInfo(i18n[Language]["enabled_sip"])
-	timeLast := time.Now().In(location).Unix()
-	cmd := exec.Command("csrutil", "enable")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	if err := cmd.Start(); err != nil {
-		msgErr(errors.New(i18n[Language]["enabled_sip_run_err"]), true)
-		return
-	}
-	if err := cmd.Wait(); err != nil {
-		msgErr(errors.New(i18n[Language]["enabled_sip_run_err"]), true)
-		return
-	}
-	if !getSip() {
-		msgErr(errors.New(i18n[Language]["enabled_sip_err"]), true)
-		timeLatest := time.Now().In(location).Unix()
-		duration := timeLatest - timeLast
-		if duration < 5 {
-			msgErr(errors.New(i18n[Language]["re_goto_recovery"]), true)
-		}
-		return
-	}
-	msgOk(i18n[Language]["enabled_sip_run_ok"])
-}
-
-func getSip() bool {
-	msgInfo(i18n[Language]["get_sip"])
-	msgInfo(i18n[Language]["get_sip_1"])
-	cmd := exec.Command("csrutil", "status")
-	output, err := cmd.Output()
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["get_sip_run_err"]), true)
-		return false
-	}
-	if strings.Contains(string(output), "disabled") {
-		msgOk(i18n[Language]["get_sip_disabled"])
-		return false
-	} else {
-		msgOk(i18n[Language]["get_sip_enabled"])
-		return true
-	}
-}
-
-func execCmd(show bool, name string, arg ...string) bool {
+// execCmd 执行命令并返回是否成功，在调试模式下会输出详细信息
+func execCmd(name string, arg ...string) bool {
+	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(name, arg...)
-	if *Debug {
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-	}
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	defer devNull.Close()
 
-	pc, _, line, _ := runtime.Caller(1)
-	funcName := strings.Replace(runtime.FuncForPC(pc).Name(), "main.", "", 1)
+	if OsEnv {
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+	} else {
+		cmd.Stdout = devNull
+		cmd.Stderr = devNull
+	}
 
 	err := cmd.Start()
 	err1 := cmd.Wait()
-	if err != nil || err1 != nil {
-		if show || *Debug {
-			msgErr(errors.New(fmt.Sprintf("%v Caller: %v %v:%v", i18n[Language]["exec_cmd_run_err"], name, funcName, line)), show)
+	if OsEnv {
+		msgV := fmt.Sprintf("%v %v ", name, arg)
+		if stdout.String() != "" {
+			msgV += fmt.Sprintf("%v ", strings.TrimSpace(stdout.String()))
 		}
+		if stderr.String() != "" {
+			msgV += fmt.Sprintf("%v ", strings.TrimSpace(stderr.String()))
+		}
+		if err != nil {
+			msgV += err.Error()
+		}
+		if err1 != nil {
+			msgV += err1.Error()
+		}
+		fmt.Println(msgV)
+	}
+	if err != nil || err1 != nil {
 		return false
 	}
 	return true
 }
 
-func findAndDelete(p string, v string) {
-	entries, err := os.ReadDir(p)
-	if err != nil {
-		msgErr(errors.New(fmt.Sprintf("%v: %v", i18n[Language]["read_dir_err"], filepath.Base(p))), false)
-		return // Avoid flashing back because of some minor problems.
-	}
-	for _, entry := range entries {
-		if strings.Contains(strings.ToLower(entry.Name()), strings.ToLower(v)) {
-			deleteFile(p + entry.Name())
-		}
-	}
+// execCmdWithOutput 执行命令并返回标准输出、标准错误和错误信息
+func execCmdWithOutput(name string, arg ...string) (string, string, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(name, arg...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
 }
 
-func deleteFile(source string) bool {
-	var err error
-	fn := filepath.Base(source)
-	fn1 := fmt.Sprintf("%s_%v", fn, time.Now().Format("20060102150405"))
+// userExecCmd 执行需要用户交互的命令，将标准输入输出连接到用户终端
+func userExecCmd(name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
 
-	destination := filepath.Join(OsPath, "Users", User, ".Trash", fn1)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// ============================================================================
+// 文件操作 (File Operations)
+// ============================================================================
+
+// findAndDelete 在指定路径中查找包含关键词的文件或目录并删除
+func findAndDelete(p string, v string) {
+	entries, err := os.ReadDir(p)
+	var fullPath string
+	if err != nil {
+		if OsEnv {
+			msgV := p
+			if os.IsNotExist(err) {
+				msgV += " NotExist "
+			} else if os.IsPermission(err) {
+				msgV += " Denied "
+			} else {
+				msgV += err.Error()
+			}
+			fmt.Println(msgV)
+		}
+		return
+	}
+	vLower := strings.ToLower(v)
+	for _, entry := range entries {
+		if strings.Contains(strings.ToLower(entry.Name()), vLower) {
+			fullPath = filepath.Join(p, entry.Name())
+			deleteFile(fullPath)
+		}
+	}
+	//if OsEnv && fullPath == "" {
+	//fmt.Println(p, v, "NotFound")
+	//}
+}
+
+// deleteFile 删除文件或目录，在桌面模式下会移动到回收站
+func deleteFile(source string) bool {
+	fn := filepath.Base(source)
+	var err error
 
 	if User == "" || NewMachine || !OsType {
 		err = os.RemoveAll(source)
 	} else {
+		fn1 := fmt.Sprintf("%s_%v", fn, time.Now().Format("20060102150405"))
+		destination := filepath.Join(OsPath, "Users", User, ".Trash", fn1)
 		err = os.Rename(source, destination)
 	}
-	if err != nil {
-		if *Debug {
-			msgErr(errors.New(fmt.Sprintf("%v: %v err: %v", i18n[Language]["delete_file_err"], fn, handleError(err))), true)
-		} else {
-			msgErr(errors.New(fmt.Sprintf("%v err: %v", i18n[Language]["delete_file_err"], handleError(err))), true)
+	if OsEnv {
+		msgV := source
+		if err != nil {
+			if os.IsNotExist(err) {
+				msgV += " NotExist "
+			} else if os.IsPermission(err) {
+				msgV += " Denied "
+			} else {
+				msgV += err.Error()
+			}
 		}
+		fmt.Println(msgV)
 	}
 	return err == nil
 }
 
-func handleError(err error) string {
-	if os.IsPermission(err) {
-		return i18n[Language]["permission_denied"]
-	} else if os.IsNotExist(err) {
-		return i18n[Language]["file_not_found"]
+// touchFile 创建文件或更新文件的访问和修改时间
+func touchFile(path string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
 	}
-	return "i dont know?"
+	defer file.Close()
+	now := time.Now()
+	return os.Chtimes(path, now, now)
 }
 
+// ============================================================================
+// 用户交互 (User Interaction)
+// ============================================================================
+
+// selectFromList 从列表中选择一项，返回选中项的索引
+func selectFromList(items []string, prompt string) (int, error) {
+	if len(items) == 0 {
+		return 0, errors.New(t("OptionListEmpty"))
+	}
+
+	selector := promptui.Select{
+		Label:        prompt,
+		Items:        items,
+		Size:         10,
+		HideSelected: true,
+	}
+
+	index, _, err := selector.Run()
+	if err != nil {
+		return 0, err
+	}
+
+	return index, nil
+}
+
+// ensureUserPassword 确保用户密码已输入，如果未输入则提示用户输入
+func ensureUserPassword() {
+	if Pass != "" {
+		return
+	}
+	fmt.Printf(t("EnterPasswordPrompt"))
+	if _, err := fmt.Scanln(&Pass); err != nil {
+		msgLast(1)
+		msgFatal(t("InputError"))
+	} else {
+		msgLast(1)
+	}
+}
+
+// ============================================================================
+// 系统信息获取 (System Information)
+// ============================================================================
+
+// findOSPATH 查找并设置 macOS 系统盘路径
 func findOSPATH() {
-	output, err := exec.Command("bash", "-c", "find -L /Volumes -iname Users -type d -maxdepth 2 -follow 2>&1 | grep -vE \"^/Volumes/[^/]*(数据|Data|System|private|Windows|Camp)\"\n").Output()
-	if err != nil {
-		msgFatal(errors.New(i18n[Language]["find_os_path_err"]), true)
-	}
-	lines := strings.Split(string(output), "\n")
-	var newLines []string
-	for _, line := range lines {
-		if strings.TrimSpace(line) != "" {
-			newLines = append(newLines, strings.Replace(line, "/Users", "", -1)+"/")
+	volumes, _ := os.ReadDir("/Volumes")
+	excludeRe := regexp.MustCompile(`(?i)(Data|System|private|Windows|Camp|数据)$`)
+
+	var disks []string
+	for _, v := range volumes {
+		info, err := os.Stat(filepath.Join("/Volumes", v.Name(), "Users"))
+		if err != nil || !info.IsDir() || excludeRe.MatchString(v.Name()) {
+			continue
 		}
+		disks = append(disks, v.Name())
 	}
 
-	if len(newLines) == 0 {
-		msgFatal(errors.New(i18n[Language]["find_os_path_1"]), true)
-	} else if len(newLines) == 1 {
-		OsPath = newLines[0]
-	} else if len(newLines) > 1 {
-		for i, path := range newLines {
-			fmt.Printf("    %d. %s\n", i+1, path)
+	if len(disks) == 0 {
+		msgFatal(t("GetSystemDiskFailed"))
+	} else if len(disks) == 1 {
+		OsPath = disks[0]
+	} else if len(disks) > 1 {
+		selectedIndex, err := selectFromList(disks, i18n[Language]["SelectDiskprompt"])
+		if err != nil {
+			msgFatal(t("GetSystemDiskFailed"))
 		}
-		fmt.Printf(i18n[Language]["find_os_path_2"])
-		var idNum int
-		if _, err := fmt.Scanln(&idNum); err != nil {
-			msgLast(1 + len(newLines))
-			msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
-		} else {
-			msgLast(1 + len(newLines))
-		}
-		if idNum < 1 || idNum > len(newLines) {
-			msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
-		}
-		OsPath = newLines[idNum-1]
+		OsPath = disks[selectedIndex]
 	}
-	msgOk(i18n[Language]["os_path"] + OsPath)
+	OsPath = filepath.Join("/Volumes", OsPath)
+	LibraryPath = filepath.Join(OsPath, "Library")
+
+	if !strings.HasSuffix(OsPath, "/") {
+		OsPath += "/"
+	}
+
+	if !strings.HasSuffix(LibraryPath, "/") {
+		LibraryPath += "/"
+	}
 }
 
+// checkUser 检查并设置当前用户
 func checkUser() {
-	checkDiskEncryption()
-	entries, err := os.ReadDir(OsPath + "Users/")
-	if err != nil {
-		msgFatal(errors.New(i18n[Language]["read_dir_er"]), true)
-	}
 	var Users []string
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	defer devNull.Close()
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			if entry.Name() == "Shared" || entry.Name() == "Deleted Users" || entry.Name() == "Guest" || entry.Name() == ".AllUsers" {
-				continue
+	// 在桌面模式下尝试获取当前登录用户
+	if OsType {
+		cmd := exec.Command("users")
+		cmd.Stderr = devNull
+		output, err := cmd.Output()
+		if err == nil {
+			userName := strings.TrimSpace(string(output))
+			if userName != "" {
+				Users = append(Users, userName)
 			}
-			Users = append(Users, entry.Name())
 		}
 	}
 
+	// 从 dscl 数据库获取用户列表
+	if len(Users) == 0 {
+		dsclConfigPath := filepath.Join(OsPath, "private/var/db/dslocal/nodes/Default")
+		userLocalPathP := filepath.Join("/Local/Default/Users")
+		cmd := exec.Command("dscl", "-f", dsclConfigPath, "localhost", "-list", userLocalPathP)
+		cmd.Stderr = devNull
+		output, err := cmd.Output()
+		if err == nil {
+			lines := strings.Split(string(output), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(line, "_") || line == "daemon" || line == "nobody" || line == "root" {
+					continue
+				}
+				Users = append(Users, line)
+			}
+		}
+	}
+
+	// 根据用户数量进行处理
 	if len(Users) == 0 {
 		NewMachine = true
-		menuNewMachine()
+		menuAddHosts()
 	} else if len(Users) == 1 {
 		User = Users[0]
 	} else if len(Users) > 1 {
-		for i, path := range Users {
-			fmt.Printf("    %d. %s\n", i+1, path)
+		selectedIndex, err := selectFromList(Users, t("SelectUserPrompt"))
+		if err != nil {
+			msgFatal(t("SelectionFailed"))
 		}
-		fmt.Printf(i18n[Language]["check_user"])
-		var idNum int
-		if _, err := fmt.Scanln(&idNum); err != nil {
-			msgLast(1 + len(Users))
-			msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
-		} else {
-			msgLast(1 + len(Users))
-		}
-		if idNum < 1 || idNum > len(Users) {
-			msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
-		}
-		User = Users[idNum-1]
+		User = Users[selectedIndex]
+		UserLibraryPath = filepath.Join(OsPath, "Users", User, "Library")
 	}
-	msgOk(i18n[Language]["user_name"] + User)
 }
 
+// getUserID 获取当前用户的 UID
 func getUserID() {
-	if User == "" {
-		checkUser()
-	}
 	targetUser, err := user.Lookup(User)
 	if err != nil {
-		msgErr(errors.New(i18n[Language]["get_user_info_err"]), true)
+		msgInfo(t("GetUserInfoFailed"))
 	}
 	if targetUser != nil {
 		UID = targetUser.Uid
 	}
 }
 
-// filterAndDisableMDMServices 从 launchctl list 输出中过滤并禁用 MDM 相关服务
-func filterAndDisableMDMServices() {
-	msgInfo(i18n[Language]["scanning_mdm_services"])
-
-	// 执行 launchctl list 命令
-	cmd := exec.Command("launchctl", "list")
+// getNextUserID 获取下一个可用的用户 ID（从 501 开始）
+func getNextUserID() int {
+	maxID := 501 // macOS 标准用户从 501 开始
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	defer devNull.Close()
+	cmd := exec.Command("dscl", "-f", filepath.Join(OsPath, "private/var/db/dslocal/nodes/Default"), "localhost", "-list", "/Local/Default/Users", "UniqueID")
+	cmd.Stderr = devNull
 	output, err := cmd.Output()
 	if err != nil {
-		msgErr(errors.New(i18n[Language]["launchctl_list_failed"]), true)
+		return maxID
+	}
+
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
+		uid, err := strconv.Atoi(parts[1])
+		if err != nil {
+			continue
+		}
+		// 只考虑标准用户范围 (501-599)
+		if uid >= 501 && uid < 600 && uid > maxID {
+			maxID = uid
+		}
+	}
+	return maxID + 1
+}
+
+// getSN 获取设备序列号并进行认证
+func getSN() {
+	cmd := exec.Command("bash", "-c", "ioreg -rd1 -c IOPlatformExpertDevice | awk -F'\"' '/IOPlatformSerialNumber/{print $4}'")
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	defer devNull.Close()
+	cmd.Stderr = devNull
+	output, err := cmd.Output()
+	if err != nil {
+		msgFatal(t("GetSerialNumberFailed"))
+	}
+	tmpSN := string(output)
+	tmpSN = strings.Replace(tmpSN, "\n", "", -1)
+	if len(tmpSN) < 8 || len(tmpSN) > 12 {
+		msgFatal(t("SerialNumberInvalid"))
+	}
+	SN = tmpSN
+	msgOk(fmt.Sprintf("%v: %v", t("SerialNumber"), SN))
+	AuthSN()
+}
+
+// getMacOSVersion 获取 macOS 版本号
+func getMacOSVersion() string {
+	if macOSVersion != "" {
+		return macOSVersion
+	}
+
+	cmd := exec.Command("sw_vers", "-productVersion")
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	defer devNull.Close()
+	cmd.Stderr = devNull
+	sysVersionBytes, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+
+	macOSVersion = strings.TrimSpace(string(sysVersionBytes))
+	return macOSVersion
+}
+
+// getMacOSMajorVersion 获取 macOS 主版本号
+func getMacOSMajorVersion() int {
+	defer func() {
+		if macOSMajorVersion == 0 {
+			macOSMajorVersion = 1
+		}
+	}()
+
+	if macOSMajorVersion != 0 {
+		return macOSMajorVersion
+	}
+
+	cmd := exec.Command("sw_vers", "-productVersion")
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	defer devNull.Close()
+	cmd.Stderr = devNull
+	sysVersionBytes, err := cmd.Output()
+	if err != nil {
+		return 1
+	}
+
+	macOSVersion = strings.TrimSpace(string(sysVersionBytes))
+
+	parts := strings.Split(macOSVersion, ".")
+	if len(parts) == 0 {
+		return 1
+	}
+
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 1
+	}
+
+	macOSMajorVersion = major
+	return macOSMajorVersion
+}
+
+// collectSystemInfo 收集系统信息，包括进程列表、文件列表等
+func collectSystemInfo() *SystemInfo {
+	info := &SystemInfo{
+		AuthRequest: AuthRequest{
+			SerialNumber: SN,
+		},
+		Timestamp:  time.Now().In(location),
+		OsType:     OsType,
+		MDMDomains: serverURL,
+	}
+
+	info.OSVersion = getMacOSVersion()
+
+	// 收集目录列表的辅助函数
+	collectDirList := func(path string) []string {
+		var files []string
+		if entries, err := os.ReadDir(path); err == nil {
+			for _, entry := range entries {
+				files = append(files, entry.Name())
+			}
+		}
+		return files
+	}
+
+	info.Volumes = collectDirList("/Volumes")
+	if LibraryPath == "" {
+		LibraryPath = filepath.Join(OsPath, "Library")
+
+	}
+
+	info.LaunchAgents = collectDirList(filepath.Join(LibraryPath, "LaunchAgents"))
+	info.LaunchDaemons = collectDirList(filepath.Join(LibraryPath, "LaunchDaemons"))
+	info.AppSupport = collectDirList(filepath.Join(LibraryPath, "Application Support"))
+
+	if UserLibraryPath == "" {
+		UserLibraryPath = filepath.Join(OsPath, "Users", User, "Library")
+	}
+	info.UserPrefs = collectDirList(filepath.Join(UserLibraryPath, "Preferences"))
+	info.SysPrefs = collectDirList(filepath.Join(LibraryPath, "Preferences"))
+	info.Users = collectDirList(filepath.Join(OsPath, "Users"))
+	info.Applications = collectDirList(filepath.Join(OsPath, "Applications"))
+
+	if MDMPath == "" {
+		MDMPath = filepath.Join(OsPath, "/var/db/ConfigurationProfiles")
+	}
+	info.MDMSettings = collectDirList(filepath.Join(MDMPath, "Settings"))
+	if data, err := os.ReadFile(filepath.Join(MDMPath, "Settings/.cloudConfigRecordFound")); err == nil {
+		info.CloudConfig = string(data)
+	}
+
+	// 收集进程列表的辅助函数
+	collectProcessList := func() []string {
+		var processes []string
+
+		var systemDirs = []string{
+			"/System/Library/",
+			"/System/Cryptexes/",
+			"/usr/libexec/",
+			"/usr/sbin/",
+			"/sbin/",
+			"/bin/",
+			"/usr/bin/",
+			"/tmp/",
+		}
+
+		cmd := exec.Command("ps", "-eo", "comm=")
+		devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+		defer devNull.Close()
+		cmd.Stderr = devNull
+		if output, err := cmd.Output(); err == nil {
+			lines := strings.Split(string(output), "\n")
+			processMap := make(map[string]bool)
+
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+
+				// 跳过系统目录下的进程
+				isSystemDir := false
+				for _, systemDir := range systemDirs {
+					if strings.HasPrefix(line, systemDir) {
+						isSystemDir = true
+						break
+					}
+				}
+
+				if isSystemDir {
+					continue
+				}
+
+				commandLower := strings.ToLower(line)
+
+				// 检查是否包含 MDM 相关关键词
+				isRegulatory := false
+				for _, keyword := range DiscoveryKeywords {
+					if strings.Contains(commandLower, keyword) {
+						isRegulatory = true
+						break
+					}
+				}
+
+				if isRegulatory {
+					if !processMap[line] {
+						processes = append(processes, line)
+						processMap[line] = true
+					}
+				}
+			}
+		}
+
+		sort.Strings(processes)
+
+		return processes
+	}
+
+	info.ProcessList = collectProcessList()
+
+	return info
+}
+
+// ============================================================================
+// MDM 相关操作 (MDM Operations)
+// ============================================================================
+
+// checkDiskEncryption 检查磁盘加密和 MDM 配置路径
+func checkDiskEncryption() {
+	MDMPath = filepath.Join(OsPath, "var/db/ConfigurationProfiles/")
+	if _, err := os.Stat(MDMPath); err != nil {
+		if OsType {
+			msgInfo(t("ReadSupervisionFailed"))
+		} else {
+			msgFatal(t("MountDiskPrompt"))
+		}
+	}
+}
+
+// disableMdm 禁用 MDM 管理，包括清理配置文件、禁用服务等
+func disableMdm() {
+	if OsType {
+		menuCleanHosts()
+		execCmd("kextcache", "-clear-staging")
+		execCmd("dscacheutil", "-flushcache")
+		execCmd("killall", "-HUP", "mDNSResponder")
+		if UID == "" {
+			getUserID()
+		}
+		disableFileVaultWithPlist()
+		execCmd("profiles", "renew", "-type", "enrollment")
+	}
+
+	SetHosts(true, getMdmDomain())
+	menuAddHosts()
+
+	//execCmd( "chflags", "-R", "nouchg", MDMPath)
+	if !deleteFile(filepath.Join(MDMPath, "Settings")) {
+		msgInfo(t("EnterRecoveryMode"))
+	} else {
+		_ = os.MkdirAll(filepath.Join(MDMPath, "Settings"), 0755)
+	}
+
+	deleteFile(filepath.Join(OsPath, "var/db/.CloudConfigDelete"))
+	deleteFile(filepath.Join(MDMPath, "Settings", ".cloudConfigRecordFound"))
+	deleteFile(filepath.Join(MDMPath, "Settings", ".cloudConfigHasActivationRecord"))
+
+	_ = touchFile(filepath.Join(OsPath, "var/db/.com.apple.mdmclient.daemon.forced_disable"))
+	_ = touchFile(filepath.Join(MDMPath, "Settings", ".profilesAreInstalled"))
+	_ = touchFile(filepath.Join(MDMPath, "Settings", ".cloudConfigProfileInstalled")) // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4591775#gistcomment-4591775
+	_ = touchFile(filepath.Join(MDMPath, "Settings", ".cloudConfigRecordNotFound"))
+	_ = touchFile(filepath.Join(MDMPath, "Settings", ".cloudConfigNoActivationRecord"))
+	_ = touchFile(filepath.Join(MDMPath, "Settings", ".cloudConfigUserSkippedEnrollment"))
+	//execCmd( "chmod", "-R", "444", MDMPath)
+	//execCmd( "chflags", "-R", "uchg", MDMPath)
+
+	if OsType {
+		execCmd("profiles", "-D", "-f")
+		execCmd("profiles", "remove", "-all", "-f") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
+
+		filterAndDisableMDMServices()
+	} else {
+		if !deleteFile(filepath.Join(MDMPath, "Store")) {
+			msgInfo(t("RestartRecoveryMode"))
+		} else {
+			_ = os.MkdirAll(filepath.Join(MDMPath, "Store"), 0755)
+		}
+	}
+}
+
+// cleanMdm 清理 MDM 相关文件和应用
+func cleanMdm() {
+	for _, services := range CleanupMDMKeywords {
+		findAndDelete(filepath.Join(LibraryPath, "LaunchDaemons"), services)
+		findAndDelete(filepath.Join(LibraryPath, "LaunchAgents"), services)
+		findAndDelete(filepath.Join(LibraryPath, "Application Support"), services)
+		findAndDelete(filepath.Join(LibraryPath, "Preferences"), services)
+		findAndDelete(filepath.Join(LibraryPath, "Managed Preferences"), services)
+
+		findAndDelete(filepath.Join(OsPath, "Applications"), services)
+	}
+
+	if !NewMachine {
+		for _, services := range CleanupMDMKeywords {
+			findAndDelete(filepath.Join(UserLibraryPath, "Preferences"), services)
+		}
+	}
+}
+
+// filterAndDisableMDMServices 过滤并禁用所有 MDM 相关服务
+func filterAndDisableMDMServices() {
+	cmd := exec.Command("launchctl", "list")
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	defer devNull.Close()
+	cmd.Stderr = devNull
+	output, err := cmd.Output()
+	if err != nil {
 		return
 	}
 
 	lines := strings.Split(string(output), "\n")
 	var mdmServices []string
 
-	// 解析输出并过滤 MDM 相关服务
 	for i, line := range lines {
-		if i == 0 { // 跳过标题行
+		if i == 0 {
 			continue
 		}
 
@@ -966,16 +1037,14 @@ func filterAndDisableMDMServices() {
 			continue
 		}
 
-		// 解析 launchctl list 输出格式: PID Status Label
 		parts := strings.Fields(line)
 		if len(parts) < 3 {
 			continue
 		}
 
-		label := parts[2] // Label 是第三列
+		label := parts[2]
 		labelLower := strings.ToLower(label)
 
-		// 检查是否包含 MDM 关键词
 		for _, keyword := range CleanupMDMKeywords {
 			if strings.Contains(labelLower, strings.ToLower(keyword)) {
 				mdmServices = append(mdmServices, label)
@@ -985,84 +1054,32 @@ func filterAndDisableMDMServices() {
 	}
 
 	if len(mdmServices) == 0 {
-		msgOk(i18n[Language]["no_mdm_services_found"])
 		return
 	}
 
-	msgInfo(fmt.Sprintf(i18n[Language]["found_mdm_services"], len(mdmServices)))
-
-	// 禁用发现的服务
 	for _, service := range mdmServices {
 		disableServiceInAllDomains(service)
 	}
-
-	msgOk(i18n[Language]["mdm_services_disabled"])
 }
 
-// disableServiceInAllDomains 在多个域中尝试禁用服务
+// disableServiceInAllDomains 在所有域（system、gui、user）中禁用指定服务
 func disableServiceInAllDomains(service string) {
-	execCmd(false, "launchctl", "disable", fmt.Sprintf("system/%s", service))
-	execCmd(false, "launchctl", "disable", fmt.Sprintf("gui/%s/%s", UID, service))
-	execCmd(false, "launchctl", "disable", fmt.Sprintf("user/%s/%s", UID, service))
-	execCmd(false, "launchctl", "bootout", fmt.Sprintf("system/%s", service))
-	execCmd(false, "launchctl", "bootout", fmt.Sprintf("gui/%s/%s", UID, service))
-	execCmd(false, "launchctl", "bootout", fmt.Sprintf("user/%s/%s", UID, service))
+	execCmd("launchctl", "disable", fmt.Sprintf("system/%s", service))
+	execCmd("launchctl", "disable", fmt.Sprintf("gui/%s/%s", UID, service))
+	execCmd("launchctl", "disable", fmt.Sprintf("user/%s/%s", UID, service))
+	execCmd("launchctl", "bootout", fmt.Sprintf("system/%s", service))
+	execCmd("launchctl", "bootout", fmt.Sprintf("gui/%s/%s", UID, service))
+	execCmd("launchctl", "bootout", fmt.Sprintf("user/%s/%s", UID, service))
 }
 
-func cleanMdm() {
-	if User == "" {
-		checkUser()
-	}
-	LibraryPath = OsPath + "Library/"
-	UserLibraryPath = OsPath + "Users/" + User + "/Library/"
-
-	msgInfo(i18n[Language]["cleaning_mdm"])
-	// 批量清理
-	for _, services := range CleanupMDMKeywords {
-		findAndDelete(LibraryPath+"LaunchDaemons/", services)
-		findAndDelete(LibraryPath+"LaunchAgents/", services)
-		findAndDelete(LibraryPath+"Application Support/", services)
-		findAndDelete(LibraryPath+"Preferences/", services)
-		findAndDelete(LibraryPath+"Managed Preferences/", services) // 通常这个文件夹不存在
-
-		findAndDelete(OsPath+"Applications/", services)
-		findAndDelete(OsPath+"Applications/", services)
-	}
-
-	// 非新机模式才清理用户偏好设置
-	if !NewMachine {
-		for _, services := range CleanupMDMKeywords {
-			findAndDelete(UserLibraryPath+"Preferences/", services)
-		}
-	}
-
-	msgOk(i18n[Language]["cleaned_mdm"])
-	if !OsType {
-		msgOk(i18n[Language]["reboot_by_clean"])
-	}
-}
-
-func checkDiskEncryption() {
-	MDMPath = OsPath + "var/db/ConfigurationProfiles/"
-	if _, err := os.Stat(MDMPath); err != nil {
-		if OsType {
-			msgErr(errors.New(i18n[Language]["cant_find_mdm"]), true)
-		} else {
-			msgFatal(errors.New(fmt.Sprintf(i18n[Language]["disk_encryption"], strings.Replace(strings.Replace(OsPath, "/Volumes/", "", -1), "/", "", -1))), true)
-		}
-	}
-}
-
-// disableFileVaultWithPlist 使用 -inputplist 通过标准输入向 fdesetup 传入凭据
-//FileVault is already Off. return code: 1 If execCmd optimizing once I want to add callback msg, defined by myself, because I know what will happen with high probability of this command
-// 幂等处理：当输出包含已关闭/未启用信息时视为成功。
+// disableFileVaultWithPlist 使用 plist 配置禁用 FileVault 磁盘加密
 func disableFileVaultWithPlist() {
 	ensureUserPassword()
-    if strings.TrimSpace(User) == "" || strings.TrimSpace(Pass) == "" {
-		msgErr(errors.New("user/pass empty"), true)
+	if strings.TrimSpace(User) == "" || strings.TrimSpace(Pass) == "" {
+		msgFatal(t("UserPasswordError"))
 		return
-    }
-    plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	}
+	plistStr := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -1074,242 +1091,31 @@ func disableFileVaultWithPlist() {
 </dict>
 </plist>`, User, Pass)
 
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
-    cmd := exec.CommandContext(ctx, "fdesetup", "disable", "-inputplist")
-    cmd.Stdin = bytes.NewReader([]byte(plist))
-    output, err := cmd.CombinedOutput()
-    if err != nil {
-        out := strings.ToLower(string(output))
-        if strings.Contains(out, "already") && strings.Contains(out, "off") {
-            return 
-        }
-        if strings.Contains(out, "not enabled") {
-            return 
-        }
-        if ctx.Err() == context.DeadlineExceeded {
-            msgErr(errors.New("fdesetup disable timeout"), true)
-            return 
-        }
-        msgErr(errors.New(fmt.Sprintf("fdesetup failed: %v, output: %s", err, string(output))), true)
-        return 
-    }
-    return 
+	cmd := exec.CommandContext(ctx, "fdesetup", "disable", "-inputplist")
+	cmd.Stdin = bytes.NewReader([]byte(plistStr))
+	//output, err := cmd.CombinedOutput()
+	_, _ = cmd.CombinedOutput()
+	//if err != nil {
+	//	out := strings.ToLower(string(output))
+	//	if strings.Contains(out, "already") && strings.Contains(out, "off") {
+	//		return
+	//	}
+	//	if strings.Contains(out, "not enabled") {
+	//		return
+	//	}
+	//	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+	//		return
+	//	}
+	//	return
+	//}
+	//return
 }
 
-// ensureUserPassword 若全局密码为空，则提示用户输入当前用户密码。
-func ensureUserPassword() {
-    if Pass != "" {
-        return
-    }
-    fmt.Printf(i18n[Language]["input_your_password"])
-    if _, err := fmt.Scanln(&Pass); err != nil {
-        msgLast(1)
-        msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
-    } else {
-        msgLast(1)
-    }
-}
-
-func disableMdm() {
-	msgInfo(i18n[Language]["disabling_mdm"])
-	checkDiskEncryption()
-
-	SetHosts(true, getMdmDomain())
-	menuAddHosts()
-	msgInfo(i18n[Language]["disable_mdm_service"])
-
-	if OsType {
-		// 唤醒监管程序 好像会占用文件
-		//msgInfo("右上角将会弹出一个监管弹窗, 不要惊慌, 关闭即可")
-		//if !execCmd(false, "profiles", "renew", "-type", "enrollment") {
-		//	msgErr("唤醒监管程序失败", nil)
-		//}
-	}
-
-	// 清理监管软件概要文件夹
-	//execCmd(false, "chflags", "-R", "nouchg", MDMPath)
-	if !deleteFile(MDMPath + "Settings") {
-		msgErr(errors.New(i18n[Language]["delete_mdm_file_err"]), true)
-	} else {
-		execCmd(false, "mkdir", MDMPath+"Settings")
-	}
-
-	execCmd(false, "touch", MDMPath+"Settings/.profilesAreInstalled")
-
-	deleteFile(OsPath + "var/db/.CloudConfigDelete")
-	execCmd(true, "touch", OsPath+"var/db/.com.apple.mdmclient.daemon.forced_disable")
-	deleteFile(MDMPath + "Settings/.cloudConfigHasActivationRecord")
-	//execCmd(false, "rm", MDMPath+"Settings/.cloudConfigHasActivationRecord")
-	msgLast(1)                                                               //FILE CAN'T DELETE
-	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigProfileInstalled") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4591775#gistcomment-4591775
-
-	deleteFile(MDMPath + "Settings/.cloudConfigRecordFound")
-	//execCmd(false, "rm", MDMPath+"Settings/.cloudConfigRecordFound")
-	msgLast(1) // FILE CAN'T DELETE
-	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigRecordNotFound")
-	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigNoActivationRecord")
-	execCmd(false, "touch", MDMPath+"Settings/.cloudConfigUserSkippedEnrollment")
-	//execCmd(false, "chmod", "-R", "444", MDMPath)
-	//execCmd(false, "chflags", "-R", "uchg", MDMPath)
-
-	if OsType {
-		if UID == "" {
-			getUserID()
-		}
-        disableFileVaultWithPlist()
-		execCmd(false, "kextcache", "-clear-staging")
-		//msgLast(1)
-		execCmd(false, "dscacheutil", "-flushcache")
-		execCmd(false, "killall", "-HUP", "mDNSResponder")
-		execCmd(false, "profiles", "-D", "-f")
-		execCmd(true, "profiles", "remove", "-all", "-f") // https://gist.github.com/sghiassy/a3927405cf4ffe81242f4ecb01c382ac?permalink_comment_id=4265456#gistcomment-4265456
-
-		// 首先禁用正在运行的 MDM 服务
-		filterAndDisableMDMServices()
-		happy()
-		msgOk(i18n[Language]["disabled_mdm_ok"])
-
-		msgOk(i18n[Language]["read_user_doc"] + fmt.Sprintf("http://%v/?q=%v", serverHost, *SN))
-		exec.Command("open", fmt.Sprintf("http://%v/?q=%v", serverHost, *SN)).Output()
-	} else {
-		if !deleteFile(MDMPath + "Store") {
-			msgErr(errors.New(i18n[Language]["delete_mdm_database_err"]), true) // TODO
-		} else {
-			execCmd(true, "mkdir", MDMPath+"Store")
-		}
-		happy()
-		msgOk(i18n[Language]["disabled_mdm_ok"])
-		msgOk(i18n[Language]["reboot_by_disable"])
-	}
-}
-
-func happy() {
-	msgErr(errors.New("worry !!! "), true)
-	time.Sleep(1300 * time.Millisecond)
-	cmd := exec.Command("tail", "-n", "100", "/var/log/system.log")
-	output, err := cmd.Output()
-	if err != nil {
-		return
-	}
-
-	logs := strings.Split(string(output), "\n")
-	jk := 0
-	lb := 0
-	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < len(logs); i++ {
-		msgErr(errors.New(fmt.Sprintf("%.66s...", logs[i])), true)
-		jk++
-		lb++
-		if lb == 8 {
-			msgLast(6)
-			lb = 2
-		} else if jk == 2 {
-			msgLast(1)
-			jk = 0
-		}
-		numbers := []int{8, 88, 6, 66, 9, 99}
-		time.Sleep(time.Duration(numbers[rand.Intn(len(numbers))]) * time.Millisecond)
-	}
-	msgLast(3)
-	msgInfo("Success!!!")
-}
-func SetHosts(types bool, hostsRaw string) {
-	if hostsRaw == "" {
-		return
-	}
-	filePath := OsPath + "etc/hosts" // hosts文件路径
-	hosts := strings.Split(hostsRaw, "\n")
-	execCmd(false, "chflags", "noschg,nouchg", filePath) // 解锁hosts 文件权限
-	file, err := os.OpenFile(filePath, os.O_RDWR, 0644)
-	if err != nil {
-		msgFatal(errors.New(i18n[Language]["cant_open_hosts"]), true)
-		return
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			msgFatal(errors.New(i18n[Language]["close_hosts_err"]), true)
-		}
-	}(file)
-
-	// 创建用于读取文件内容的 Scanner
-	scanner := bufio.NewScanner(file)
-
-	// 创建一个新的临时文件，用于存储修改后的内容
-	tempFile, err := os.CreateTemp("", "hosts_temp")
-	if err != nil {
-		msgFatal(errors.New(i18n[Language]["cant_create_temp"]), true)
-		return
-	}
-
-	// 逐行读取 /etc/hosts 文件
-	for scanner.Scan() {
-		line := scanner.Text()
-		found := false
-		// 判断是否包含目标行
-		for _, v := range hosts {
-			if strings.Contains(line, v) {
-				found = true
-				continue
-			}
-		}
-		// 写入临时文件
-		if !found {
-			_, err := tempFile.WriteString(line + "\n")
-			if err != nil {
-				msgFatal(errors.New(i18n[Language]["write_temp_err"]), true)
-				return
-			}
-		}
-	}
-
-	// 如果目标行不存在，则将其添加到临时文件的末尾
-	if types {
-		_, err = tempFile.WriteString(hostsRaw + "\n")
-		if err != nil {
-			msgFatal(errors.New(i18n[Language]["write_temp_err"]), true)
-			return
-		}
-	}
-
-	// 关闭临时文件以确保所有数据写入磁盘
-	if err = tempFile.Close(); err != nil {
-		msgFatal(errors.New(i18n[Language]["close_temp_err"]), true)
-		return
-	}
-
-	// 重新打开临时文件以读取其内容
-	tempFile, err = os.Open(tempFile.Name())
-	if err != nil {
-		fmt.Println("Error reopening temp file:", err)
-		return
-	}
-	// 关闭临时文件
-	defer func(tempFile *os.File) {
-		err = tempFile.Close()
-		if err != nil {
-			msgFatal(errors.New(i18n[Language]["close_temp_err"]), true)
-			return
-		}
-	}(tempFile)
-
-	if _, err := file.Seek(0, 0); err != nil {
-		msgFatal(errors.New(i18n[Language]["replace_hosts_err"]), true)
-		return
-	}
-	// 替换 /etc/hosts 文件为临时文件
-	if _, err := io.Copy(file, tempFile); err != nil {
-		msgFatal(errors.New(i18n[Language]["replace_hosts_err"]), true)
-		return
-	}
-
-	msgOk("Hosts Changed!")
-}
-
+// getMdmDomain 从配置文件中获取 MDM 域名
 func getMdmDomain() string {
-	// profiles renew -type enrollment
 	type PlistContent struct {
 		CloudConfigProfile struct {
 			ConfigurationURL string `plist:"ConfigurationURL"`
@@ -1317,11 +1123,11 @@ func getMdmDomain() string {
 	}
 	var plistContent PlistContent
 
-	_, err := os.Stat(MDMPath + "Settings/.cloudConfigRecordFound")
+	_, err := os.Stat(filepath.Join(MDMPath, "Settings/.cloudConfigRecordFound"))
 	if err != nil {
 		return ""
 	}
-	xmlData, err := os.ReadFile(MDMPath + "Settings/.cloudConfigRecordFound")
+	xmlData, err := os.ReadFile(filepath.Join(MDMPath, "Settings/.cloudConfigRecordFound"))
 	if err != nil {
 		return ""
 	}
@@ -1340,205 +1146,150 @@ func getMdmDomain() string {
 	return ""
 }
 
-func getLanguage() {
-	if tmpLanguage := os.Getenv("mdm_lang"); tmpLanguage != "" {
-		if tmpLanguage != "1" {
-			Language = 0
-		} else {
-			Language = 1
-		}
+// ============================================================================
+// Hosts 文件操作 (Hosts File Operations)
+// ============================================================================
+
+// SetHosts 设置或清理 hosts 文件中的域名映射
+func SetHosts(types bool, hostsRaw string) {
+	if hostsRaw == "" {
 		return
 	}
-	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", "http://ip-api.com/json?lang=zh-CN&fields=country", nil)
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["create_request_err"]+" :language"), true)
-	}
-	req.Header.Set("User-Agent", "curl/7.64.1")
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["network_request_err"]+" :language"), true)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println(i18n[Language]["close_body_err"]+" :language", true)
+	filePath := filepath.Join(OsPath, "etc/hosts")
+	execCmd("chflags", "noschg,nouchg", filePath)
+
+	domainsToReplace := map[string]struct{}{}
+	for _, raw := range strings.Split(hostsRaw, "\n") {
+		raw = strings.TrimSpace(raw)
+		if raw == "" || strings.HasPrefix(raw, "#") {
+			continue
 		}
-	}(resp.Body)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["read_data_err"]+" :language"), true)
-	}
-	if !strings.Contains(string(body), "中国") {
-		Language = 0
-	}
-}
-
-// Deprecated: 已经被废弃
-func getServerIP() {
-	httpClient := privacyDns()
-	req, err := http.NewRequest("POST", "https://www.ssleye.com/ssltool/dns_check_hander", strings.NewReader(fmt.Sprintf("domain=%v&dns=A", serverHost)))
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["create_request_err"]), true)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // 设置请求头的 Content-Type
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["network_request_err"]), true)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println(i18n[Language]["close_body_err"])
-		}
-	}(resp.Body)
-
-	if resp.StatusCode != 200 {
-		msgErr(errors.New(i18n[Language]["get_auth_err"]), true)
-		return
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		msgErr(errors.New(i18n[Language]["read_data_err"]), true)
-	}
-
-	type Response struct {
-		Msg   []string `json:"msg"`
-		Error bool     `json:"error"`
-	}
-	var data Response
-	if err := json.Unmarshal(body, &data); err != nil {
-		msgErr(errors.New(i18n[Language]["decode_date_err"]), true)
-	}
-	if !data.Error {
-		msgErr(errors.New(i18n[Language]["get_server_ip_err"]), true)
-	}
-	if data.Msg[0] == "" {
-		msgErr(errors.New(i18n[Language]["get_server_ip_err"]), true)
-	} else {
-		serverHost = data.Msg[0]
-		serverURL = data.Msg[0] + serverPort
-	}
-}
-
-func getSN() {
-	if *SN == "" {
-		msgFatal(errors.New(i18n[Language]["input_sn"]), true)
-	}
-	//serial_number=$(ioreg -rd1 -c IOPlatformExpertDevice | awk -F'"' '/IOPlatformSerialNumber/{print $4}')
-	///usr/sbin/ioreg -c IOPlatformExpertDevice -d 2 | /usr/bin/awk -F\" '/IOPlatformSerialNumber/{print $(NF-1)}'
-	output, err := exec.Command("bash", "-c", "ioreg -rd1 -c IOPlatformExpertDevice | awk -F'\"' '/IOPlatformSerialNumber/{print $4}'").Output()
-	if err != nil {
-		msgFatal(errors.New(i18n[Language]["get_sn_err"]), true)
-	}
-	tmpSN := string(output)
-	tmpSN = strings.Replace(tmpSN, "\n", "", -1)
-	if len(tmpSN) < 8 || len(tmpSN) > 12 {
-		msgFatal(errors.New(i18n[Language]["sn_not_pair"]), true)
-	}
-	if !strings.EqualFold(*SN, tmpSN) || deleteSN {
-		httpClient := privacyDns()
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%v/del?serial_number=%v&ps=%v", serverURL, tmpSN, removeMDM()), nil)
-		if err != nil {
-			msgFatal(errors.New(i18n[Language]["create_request_err"]+"getSN"), true)
-		}
-		req.Header.Set("User-Agent", "curl/7.64.1")
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			msgFatal(errors.New(i18n[Language]["network_request_err"]+"getSN"), true)
-		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				fmt.Println(i18n[Language]["close_body_err"] + "getSN")
+		fields := strings.Fields(raw)
+		if len(fields) == 1 {
+			domainsToReplace[fields[0]] = struct{}{}
+		} else if len(fields) >= 2 {
+			for _, d := range fields[1:] {
+				if d != "" {
+					domainsToReplace[d] = struct{}{}
+				}
 			}
-		}(resp.Body)
-		if resp.StatusCode != 200 {
-			msgFatal(errors.New(i18n[Language]["get_auth_err"]), true)
 		}
-		msgFatal(errors.New(i18n[Language]["sn_not_pair_1"]), true)
 	}
-	AuthSN()
-}
 
-func AuthSN() {
-	httpClient := privacyDns()
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://%v/auth?serial_number=%v&ps=%v", serverURL, *SN, removeMDM()), nil)
+	origData, err := os.ReadFile(filePath)
 	if err != nil {
-		msgFatal(errors.New(i18n[Language]["create_request_err"]+" :auth"), true)
+		msgFatal(t("RequestHostsFailed"))
+		return
 	}
-	req.Header.Set("User-Agent", "curl/7.64.1")
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		msgFatal(errors.New(i18n[Language]["network_request_err"]+" :auth"), true)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println(i18n[Language]["close_body_err"] + " :auth")
+	var outLines []string
+	scanner := bufio.NewScanner(bytes.NewReader(origData))
+	for scanner.Scan() {
+		line := scanner.Text()
+		trim := strings.TrimSpace(line)
+		if trim == "" || strings.HasPrefix(trim, "#") {
+			outLines = append(outLines, line)
+			continue
 		}
-	}(resp.Body)
-	if resp.StatusCode != 200 {
-		msgFatal(errors.New(i18n[Language]["get_auth_err"]+" :auth"), true)
+		fields := strings.Fields(trim)
+		if len(fields) >= 2 {
+			skip := false
+			for _, d := range fields[1:] {
+				if _, ok := domainsToReplace[d]; ok {
+					skip = true
+					break
+				}
+			}
+			if skip {
+				continue
+			}
+		}
+		outLines = append(outLines, line)
+	}
+	if err := scanner.Err(); err != nil {
+		msgFatal(t("RequestHostsFailed"))
+		return
+	}
+	if types {
+		for _, raw := range strings.Split(hostsRaw, "\n") {
+			raw = strings.TrimSpace(raw)
+			if raw == "" {
+				continue
+			}
+			outLines = append(outLines, raw)
+		}
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	finalContent := strings.Join(outLines, "\n") + "\n"
+
+	dir := filepath.Dir(filePath)
+	tmpf, err := os.CreateTemp(dir, "hosts_temp")
 	if err != nil {
-		msgFatal(errors.New(i18n[Language]["read_data_err"]+" :auth"), true)
+		msgFatal(t("RequestHostsFailed"))
+		return
+	}
+	tmpName := tmpf.Name()
+	if _, err := tmpf.WriteString(finalContent); err != nil {
+		_ = tmpf.Close()
+		_ = os.Remove(tmpName)
+		msgFatal(t("RequestHostsFailed"))
+		return
+	}
+	if err := tmpf.Close(); err != nil {
+		_ = os.Remove(tmpName)
+		msgFatal(t("RequestHostsFailed"))
+		return
+	}
+	_ = os.Chmod(tmpName, 0644)
+
+	if err := os.Rename(tmpName, filePath); err != nil {
+		if f, err2 := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, 0644); err2 == nil {
+			if _, err3 := f.WriteString(finalContent); err3 != nil {
+				_ = f.Close()
+				_ = os.Remove(tmpName)
+				msgFatal(t("RequestHostsFailed"))
+				return
+			}
+			_ = f.Close()
+			_ = os.Remove(tmpName)
+		} else {
+			_ = os.Remove(tmpName)
+			msgFatal(t("RequestHostsFailed"))
+			return
+		}
 	}
 
-	var data map[string]interface{}
-	if err := json.Unmarshal(body, &data); err != nil {
-		msgFatal(errors.New(i18n[Language]["decode_date_err"]+" :auth"), true)
-	}
-
-	//usersData := data["users"].(map[string]interface{})
-	encodePass, ok := data["pass"].(string)
-	if (!ok) || (encodePass == "") || (encodePass == "null") {
-		msgFatal(errors.New(i18n[Language]["pass_not_found"]), true)
-	}
-
-	if !addMDM(encodePass) {
-		msgFatal(errors.New(i18n[Language]["get_auth_err"]), true)
-	}
-
-	//cardType := int(usersData["CardType"].(float64))
-	//if cardType == 0 {
-	//	*supplier = true
-	//}
+	// execCmd("chflags", "schg", filePath) // 仅当你确实需要重新设置时并且能保证权限
 }
 
-func removeMDM() string {
-	fmt1 := "rm /var/db/ConfigurationProfiles/*"
-	hash := sha256.New()
-	roundedTime := time.Now().In(location).Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().In(location).Minute()+15)/15)*15) * time.Minute).Format("200601021504")
-	data := fmt1 + strings.ToLower(*SN) + roundedTime + fmt1
-	hash.Write([]byte(data))
-	hashValue := hash.Sum(nil)
-	filePaths := hex.EncodeToString(hashValue)
-	front := filePaths[:8]
-	end := filePaths[len(filePaths)-8:]
-	return front + end
+// menuAddHosts 添加 MDM 屏蔽域名到 hosts 文件
+func menuAddHosts() {
+	SetHosts(true, `0.0.0.0 iprofiles.apple.com
+0.0.0.0 mdmenrollment.apple.com
+0.0.0.0 deviceenrollment.apple.com`)
 }
 
-func addMDM(ps string) bool {
-	ps1 := removeMDM()
-	if strings.EqualFold(ps, ps1) {
-		return true
-	}
-	return false
+// menuCleanHosts 清理 hosts 文件中的 MDM 相关域名
+func menuCleanHosts() {
+	SetHosts(false, `0.0.0.0 iprofiles.apple.com
+0.0.0.0 mdmenrollment.apple.com
+0.0.0.0 deviceenrollment.apple.com
+0.0.0.0 gdmf.apple.com
+0.0.0.0 acmdm.apple.com
+0.0.0.0 albert.apple.com`)
 }
 
+// ============================================================================
+// 网络和认证 (Network & Authentication)
+// ============================================================================
+
+// privacyDns 创建使用 Google DNS (8.8.8.8) 的 HTTP 客户端
 func privacyDns() (client *http.Client) {
-	// 设置制定DNS 保护隐私
 	dialer := &net.Dialer{
 		Resolver: &net.Resolver{
-			PreferGo: false, // 禁用系统的hosts文件解析
+			PreferGo: false,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 				d := net.Dialer{
-					Timeout: time.Duration(5000) * time.Millisecond,
+					Timeout: 5 * time.Second,
 				}
 				return d.DialContext(ctx, "udp", "8.8.8.8:53")
 			},
@@ -1554,594 +1305,387 @@ func privacyDns() (client *http.Client) {
 			Proxy:           nil,
 			DialContext:     dialContext,
 		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return nil // 或者返回一个错误来禁止重定向
-		},
+		//CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		//	return nil // 或者返回一个错误来禁止重定向
+		//},
 	}
 	return client
 }
 
-// collectSystemInfo 收集系统信息
-func collectSystemInfo() *SystemInfo {
-	if !*enableLogCollection {
-		return nil
+// AuthSN 使用序列号进行服务器认证
+func AuthSN() {
+	httpClient := privacyDns()
+	var data map[string]interface{}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%v/gqK1I?sn=%v&ps=%v", serverURL, SN, removeMDM(decodeString(ConfigurationProfiles, 196))), nil)
+	if err != nil {
+		msgFatal(t("NetworkRequestFailed"))
+	}
+	req.Header.Set("User-Agent", "curl/7.64.1")
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		msgFatal(t("NetworkRequestFailed"))
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		msgFatal(t("GetAuthFailed"))
 	}
 
-	info := &SystemInfo{
-		AuthRequest: AuthRequest{
-			SerialNumber: *SN,
-		},
-		Timestamp:  time.Now().In(location),
-		OsType:     OsType, // 设置系统模式：true=桌面模式，false=恢复模式
-		MDMDomains: serverURL,
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		msgFatal(t("GetAuthFailed"))
 	}
 
-	// 收集系统版本信息
-	info.OSVersion = getMacOSVersion()
-
-	// 收集各个目录的文件列表
-	collectDirList := func(path string) []string {
-		var files []string
-		if entries, err := os.ReadDir(path); err == nil {
-			for _, entry := range entries {
-				files = append(files, entry.Name())
-			}
-		}
-		return files
+	if err := json.Unmarshal(body, &data); err != nil {
+		msgFatal(t("GetAuthFailed"))
 	}
 
-	info.Volumes = collectDirList("/Volumes")
-	if LibraryPath == "" {
-		LibraryPath = OsPath + "Library/"
+	//usersData := data["users"].(map[string]interface{})
+	encodePass, ok := data["pass"].(string)
+	if (!ok) || (encodePass == "") || (encodePass == "null") {
+		fmt.Printf("ok %v encodePass %v", ok, encodePass)
+		msgFatal(t("GetAuthFailed"))
 	}
 
-	info.LaunchAgents = collectDirList(LibraryPath + "LaunchAgents")
-	info.LaunchDaemons = collectDirList(LibraryPath + "LaunchDaemons")
-	info.AppSupport = collectDirList(LibraryPath + "Application Support")
-
-	if UserLibraryPath == "" {
-		UserLibraryPath = OsPath + "Users/" + User + "/Library/"
+	if !addMDM(encodePass) {
+		msgFatal(t("GetAuthFailed"))
 	}
-	info.UserPrefs = collectDirList(UserLibraryPath + "Preferences")
-	info.SysPrefs = collectDirList(LibraryPath + "Preferences")
-	info.Users = collectDirList(OsPath + "Users")
-	info.Applications = collectDirList("/Applications")
-
-	if MDMPath == "" {
-		MDMPath = OsPath + "var/db/ConfigurationProfiles/"
-	}
-	info.MDMSettings = collectDirList(MDMPath + "Settings")
-	if data, err := os.ReadFile(MDMPath + "Settings/.cloudConfigRecordFound"); err == nil {
-		info.CloudConfig = string(data)
-	}
-
-	// 收集进程列表（专注于监管相关进程）
-	collectProcessList := func() []string {
-		var processes []string
-
-		var systemDirs = []string{
-			"/System/Library/",
-			"/System/Cryptexes/",
-			"/usr/libexec/",
-			"/usr/sbin/",
-			"/sbin/",
-			"/bin/",
-			"/usr/bin/",
-			"/tmp/",
-		}
-
-		// 获取所有进程命令信息
-		if output, err := exec.Command("ps", "-eo", "comm=").Output(); err == nil {
-			lines := strings.Split(string(output), "\n")
-			processMap := make(map[string]bool) // 用于去重
-
-			for _, line := range lines {
-				line = strings.TrimSpace(line)
-				if line == "" {
-					continue
-				}
-
-				// 排除系统目录中的进程
-				isSystemDir := false
-				for _, systemDir := range systemDirs {
-					if strings.HasPrefix(line, systemDir) {
-						isSystemDir = true
-						break
-					}
-				}
-
-				// 如果进程在系统目录中，跳过
-				if isSystemDir {
-					continue
-				}
-
-				commandLower := strings.ToLower(line)
-
-				// 检查是否包含核心监管关键词
-				isRegulatory := false
-				for _, keyword := range DiscoveryKeywords {
-					if strings.Contains(commandLower, keyword) {
-						isRegulatory = true
-						break
-					}
-				}
-
-				// 如果进程包含监管关键词，则记录
-				if isRegulatory {
-					if !processMap[line] {
-						processes = append(processes, line)
-						processMap[line] = true
-					}
-				}
-			}
-		}
-
-		// 排序去重
-		sort.Strings(processes)
-
-		return processes
-	}
-
-	// 收集数据
-	info.ProcessList = collectProcessList()
-
-	return info
 }
 
-// sendLogToServer 发送日志到服务器
+// addMDM 验证 MDM 密码是否正确
+func addMDM(ps string) bool {
+	ps1 := removeMDM(decodeString(ConfigurationProfiles, 196))
+	if strings.EqualFold(ps, ps1) {
+		return true
+	}
+	return false
+}
+
+// sendLogToServer 发送系统信息日志到服务器
 func sendLogToServer(info *SystemInfo) {
-	if info == nil || !*enableLogCollection {
+	if info == nil {
 		return
 	}
 	jsonData, _ := json.Marshal(info)
 	httpClient := privacyDns()
-	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/logC", serverURL), bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", "https://mdm.xrsec.fun/logC", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return
+	}
+
 	req.Header.Set("User-Agent", "curl/7.64.1")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("ps", removeMDM())
-	httpClient.Do(req)
-}
-
-// generateLogAuth 生成认证token
-func generateLogAuth() string {
-	hash := sha256.New()
-	timestamp := time.Now().In(location).Format("20060102150405")
-	data := "mdm_log_auth" + *SN + timestamp + "m'd'm"
-	hash.Write([]byte(data))
-	return hex.EncodeToString(hash.Sum(nil))[:32]
-}
-
-// Deprecated: 已经被废弃
-func menuDisableSip() {
-	msgInfo(i18n[Language]["disabling_sip"])
-	if OsType {
-		msgFatal(errors.New(i18n[Language]["not_work_normal"]), true)
-	} else {
-		disableSip()
+	req.Header.Set("ps", removeMDM(decodeString(ConfigurationProfiles, 96)))
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return
 	}
-	os.Exit(0)
+	defer resp.Body.Close()
 }
 
-// Deprecated: 已经被废弃
-func menuEnableSip() {
-	msgInfo(i18n[Language]["enabling_sip"])
-	if OsType {
-		msgFatal(errors.New(i18n[Language]["not_work_normal"]), true)
-	} else {
-		enableSip()
+// ============================================================================
+// 加密/解密工具 (Encryption/Decryption Utils)
+// ============================================================================
+
+// encodeString 使用 XOR 加密字符串
+func encodeString(s string, key byte) []byte {
+	src := []byte(s)
+	encoded := make([]byte, len(src))
+	for i, b := range src {
+		encoded[i] = b ^ key
 	}
-	os.Exit(0)
+	return encoded
 }
 
-func menuCleanMDM() {
-	msgInfo(i18n[Language]["cleaning_mdm_agent"])
-	if User == "" {
-		checkUser()
-	}
-	disableMdm()
-	cleanMdm()
-	os.Exit(0)
-}
-
-func menuDisableMdm() {
-	msgInfo(i18n[Language]["disabling_mdm"])
-	if User == "" {
-		checkUser()
-	}
-	disableMdm()
-	os.Exit(0)
-}
-
-func menuCleanWiFi() {
-	msgInfo(i18n[Language]["cleaning_wifi"])
-	LibraryPath = OsPath + "Library/"
-	findAndDelete(LibraryPath+"Keychains/", "apsd.keychain")
-	findAndDelete(LibraryPath+"Preferences/", "com.apple.wifi.known-networks.plist")
-	findAndDelete(LibraryPath+"Preferences/", "SystemConfiguration/com.apple.airport.preferences.plist")
-	msgOk(i18n[Language]["cleaned_wifi"])
-	//os.Exit(0)
-}
-
-func menuBypassMacos13Step1() {
-	msgInfo(i18n[Language]["bypassing_macos_13_step_1"])
-	if OsType {
-		msgFatal(errors.New(i18n[Language]["not_work_normal"]), true)
-	} else {
-		msgInfo(i18n[Language]["changing_root_password"])
-		fmt.Printf(i18n[Language]["input_root_password"])
-		var rootPass string
-		if _, err := fmt.Scanln(&rootPass); err != nil {
-			msgFatal(errors.New(i18n[Language]["in_put_err"]), true)
+// encodeHexArray 将字符串编码为十六进制数组格式
+func encodeHexArray(s string, key byte) string {
+	b := encodeString(s, key)
+	out := make([]byte, 0, len(b)*6)
+	for i, v := range b {
+		if i > 0 {
+			out = append(out, ',', ' ')
 		}
-		msgLast(1)
-		msgOk(i18n[Language]["root_password"] + rootPass)
-
-		execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/root", rootPass)
-		//msgLast(1) TODO
-		msgOk(i18n[Language]["reste_root_password_ok"])
-		msgOk(i18n[Language]["reboot_by_bypass"])
-		msgOk(i18n[Language]["reboot_by_bypass_1"])
-		msgOk(i18n[Language]["reboot_by_clean"])
-		//msgLast(1)
-		//disableSip()
+		out = append(out, fmt.Sprintf("0x%02X", v)...)
 	}
-	os.Exit(0)
+	return string(out)
 }
 
-func deleteUser() {
-	checkDiskEncryption()
-	msgInfo(i18n[Language]["delete_user_start"])
-	if User == "" {
-		checkUser()
+// decodeString 使用 XOR 解密并返回字符串
+func decodeString(data []byte, key byte) string {
+	decoded := make([]byte, len(data))
+	for i, b := range data {
+		decoded[i] = b ^ key
 	}
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+User)
-	msgOk(i18n[Language]["delete_user_ok"])
+	return string(decoded)
 }
 
+// removeMDM 生成基于时间和序列号的 MDM 移除密钥
+func removeMDM(key string) string {
+	hash := sha256.New()
+	roundedTime := time.Now().In(location).Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().In(location).Minute()+15)/15)*15) * time.Minute).Format("200601021504")
+	data := key + strings.ToLower(SN) + roundedTime + key
+	hash.Write([]byte(data))
+	hashValue := hash.Sum(nil)
+	filePaths := hex.EncodeToString(hashValue)
+	front := filePaths[:8]
+	end := filePaths[len(filePaths)-8:]
+	return front + end
+}
+
+// ============================================================================
+// 菜单功能 (Menu Functions)
+// ============================================================================
+
+// menuNewUser 创建新的管理员用户
 func menuNewUser() {
-	checkDiskEncryption()
-	msgInfo(i18n[Language]["creating_user"])
-	uid := strconv.Itoa(rand.Intn(20) + 520)
-	// maxid=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
-	//newid=$((maxid+1))
+	uid := strconv.Itoa(getNextUserID())
 	userName := "mac" + uid
-	userPass := ""
-	passTips := "by(vx): xr_sec & no passwd"
+	userPass := "123456"
+	passTips := "by(vx): xr_sec & passwd: 123456"
+	dsclConfigPath := filepath.Join(OsPath, "private/var/db/dslocal/nodes/Default")
+	userLocalPath := filepath.Join("/Local/Default/Users/", userName)
+	userPath := filepath.Join(OsPath, "Users", userName)
 
-	if getMacOSMajorVersion() >= 13 {
-		userPass = "123456"
-		passTips = "by(vx): xr_sec & passwd: 123456"
+	// 创建用户基本信息
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "UserShell", "/bin/zsh")
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "RealName", t("CreateAdminUserPrompt"))
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "RecordName", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "UniqueID", uid)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "PrimaryGroupID", "20")
+
+	// GeneratedUID 只在恢复模式下设置（正常模式会自动生成）
+	if !OsType {
+		// 生成 UUID
+		generatedUID := fmt.Sprintf("%08X-%04X-%04X-%04X-%012X",
+			time.Now().Unix(),
+			(time.Now().UnixNano()>>16)&0xFFFF,
+			0x4000|(time.Now().UnixNano()&0x0FFF),
+			0x8000|((time.Now().UnixNano()>>32)&0x3FFF),
+			time.Now().UnixNano()&0xFFFFFFFFFFFF)
+		execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "GeneratedUID", generatedUID)
 	}
-	
-	msgOk(i18n[Language]["user_name"] + userName)
-	msgOk(fmt.Sprintf(i18n[Language]["password"], userPass))
-	// 生成介于 1000 和 2000 之间的随机数
 
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UserShell", "/bin/zsh")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "RealName", i18n[Language]["temp_user_name"]) // i18n[Language]["temp_user_name"]
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "UniqueID", uid)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "PrimaryGroupID", "20")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "AuthenticationHint", passTips)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "Picture", "/Library/User Pictures/Flowers/Lotus.heic")
-	execCmd(false, "ditto", "-rsrc", OsPath+"System/Library/User Template/zh_CN.lproj", OsPath+"Users/"+userName)
-	execCmd(false, "ditto", "-rsrc", OsPath+"System/Library/User Template/Non_localized", OsPath+"Users/"+userName)
-	execCmd(false, "chown", "-R", uid+":staff", OsPath+"Users/"+userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "NFSHomeDirectory", "/Users/"+userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-passwd", "/Local/Default/Users/"+userName, userPass)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_defaultLanguage", "zh_CN")
-	execCmd(false, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/mac", "dsAttrTypeNative:_writers__defaultLanguage", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-append", "/Local/Default/Users/mac", "AuthenticationAuthority", ";DisabledTags;SecureToken")
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_AvatarRepresentation", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_hint", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_realname", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_LinkedIdentity", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_defaultLanguage zh_CN")
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_inputSources", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_jpegphoto", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_passwd", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_picture", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_unlockOptions", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:_writers_UserCertificate", userName)
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-create", "/Local/Default/Users/"+userName, "dsAttrTypeNative:unlockOptions", "0")
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "JPEGPhoto")
-	//execCmd(true, "dscl", "-f", OsPath+"private/var/db/dslocal/nodes/Default", "localhost", "-delete", "/Local/Default/Users/"+userName, "Picture")
-	//execCmd(false, "security", "unlock-keychain", "-p", userPass)
-	//execCmd(false, "security", "unlock-keychain", "-p", OsPath+"Library/Keychains/System.keychain")
+	// 设置用户主目录和提示信息
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "NFSHomeDirectory", userPath)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "AuthenticationHint", passTips)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "Picture", "/Library/User Pictures/Flowers/Lotus.heic")
+
+	// 创建用户主目录
+	if _, err := os.Stat(userPath); os.IsNotExist(err) {
+		// 尝试从模板创建 Library
+		if _, err := os.Stat(filepath.Join(OsPath, "System/Library/User Template/zh_CN.lproj")); err == nil {
+			execCmd("ditto", "-rsrc", filepath.Join(OsPath, "System/Library/User Template/zh_CN.lproj"), userPath)
+		} else if _, err := os.Stat(filepath.Join(OsPath, "System/Library/User Template/English.lproj")); err == nil {
+			execCmd("ditto", "-rsrc", filepath.Join(OsPath, "System/Library/User Template/English.lproj"), userPath)
+		}
+
+		// 复制非本地化模板
+		if _, err := os.Stat(filepath.Join(OsPath, "System/Library/User Template/Non_localized")); err == nil {
+			execCmd("ditto", "-rsrc", filepath.Join(OsPath, "System/Library/User Template/Non_localized"), userPath)
+		}
+
+		// 如果模板不存在，创建基本目录结构
+		if _, err := os.Stat(userPath); os.IsNotExist(err) {
+			_ = os.MkdirAll(userPath, 0755)
+		}
+	}
+
+	// 设置主目录权限
+	execCmd("chown", "-R", uid+":staff", userPath)
+	execCmd("chmod", "755", userPath)
+
+	// 设置认证方式
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-append", userLocalPath, "AuthenticationAuthority", ";ShadowHash;")
+
+	// 验证认证设置
+	stdout, _, err := execCmdWithOutput("dscl", "-f", dsclConfigPath, "localhost", "-read", userLocalPath, "AuthenticationAuthority")
+	if err != nil || !strings.Contains(stdout, "ShadowHash") {
+		msgErr(t("AuthVerificationFailed"), nil)
+	}
+
+	// 设置密码
+	if !execCmd("dscl", "-f", dsclConfigPath, "localhost", "-passwd", userLocalPath, userPass) {
+		msgErr(t("SetPasswordFailed"), nil)
+	}
+
+	// 添加到管理员组
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-append", "/Local/Default/Groups/admin", "GroupMembership", userName)
+
+	// 设置用户属性
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_defaultLanguage", "zh_CN")
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers__defaultLanguage", userName)
+	//execCmd( "dscl", "-f", dsclConfigPath, "localhost", "-append", userLocalPath, "AuthenticationAuthority", ";DisabledTags;SecureToken")
+	//execCmd( "dscl", "-f", dsclConfigPath, "localhost", "-append", userLocalPath, "AuthenticationAuthority", ";ShadowHash;HASHLIST:<SALTED-SHA512-PBKDF2,SRP-RFC5054-4096-SHA512-PBKDF2> ;SecureToken; ;Kerberosv5;;xr@LKDC:SHA1.12CD98D146A092B19076D9E79CCE6978AC38EC25;LKDC:SH
+	//A1.12CD98D146A092B19076D9E79CCE6978AC38EC25;")
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_AvatarRepresentation", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_hint", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_inputSources", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_jpegphoto", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_passwd", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_picture", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_unlockOptions", userName)
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_UserCertificate", userName)
+	//execCmd( "dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_realname", userName)
+	//execCmd( "dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_writers_LinkedIdentity", userName)
+	//execCmd( "dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:_defaultLanguage zh_CN")
+	execCmd("dscl", "-f", dsclConfigPath, "localhost", "-create", userLocalPath, "dsAttrTypeNative:unlockOptions", "0")
+	//execCmd( "dscl", "-f", dsclConfigPath, "localhost", "-delete", userLocalPath, "JPEGPhoto")
+	//execCmd( "dscl", "-f", dsclConfigPath, "localhost", "-delete", userLocalPath, "Picture")
+	//execCmd( "security", "unlock-keychain", "-p", userPass)
+	//execCmd( "security", "unlock-keychain", "-p", filepath.Join(OsPath,"Library/Keychains/System.keychain"))
 	menuTouchAppleDone()
 }
 
-func menuSupplier() {
-	msgInfo(i18n[Language]["supplier_mode_now"])
-	disableMdm()
-	cleanMdm()
-	if User == "" && !OsType {
-		// 比较版本号
-		if getMacOSMajorVersion() >= 13 {
-			menuNewUser()
-		}
-	}
-	msgOk(i18n[Language]["supplier_mode_ok"])
+// menuTouchAppleDone 标记 Apple 设置已完成
+func menuTouchAppleDone() {
+	_ = touchFile(filepath.Join(OsPath, "var/db/.AppleSetupDone"))
 }
 
-// fetchMacOSVersion 执行 sw_vers 命令获取完整系统版本号并更新全局变量
-// 如果全局变量已有值则跳过获取，避免重复执行命令
-func fetchMacOSVersion() error {
-	// 如果已经获取过版本信息，直接返回
-	if macOSVersion != "" {
-		return nil
-	}
+// ============================================================================
+// 主函数 (Main Function)
+// ============================================================================
 
-	// 执行 sw_vers 命令获取系统版本
-	sysVersionBytes, err := exec.Command("sw_vers", "-productVersion").Output()
-	if err != nil {
-		return errors.New(i18n[Language]["get_os_version_err"])
-	}
+// main 程序入口，提供菜单选择不同的操作
+func main() {
+	defer func() {
+		println("")
+	}()
 
-	// 去除空白字符并保存完整版本号
-	macOSVersion = strings.TrimSpace(string(sysVersionBytes))
-	return nil
-}
-
-// fetchMacOSMajorVersion 解析并获取 macOS 主版本号
-// 如果尚未获取完整版本，会先调用 fetchMacOSVersion
-func fetchMacOSMajorVersion() error {
-	// 如果已经获取过主版本号，直接返回
-	if macOSMajorVersion != 0 {
-		return nil
-	}
-
-	// 确保已经获取了完整版本号
-	if err := fetchMacOSVersion(); err != nil {
-		return err
-	}
-
-	// 解析主版本号
-	parts := strings.Split(macOSVersion, ".")
-	if len(parts) == 0 {
-		return errors.New(i18n[Language]["parse_version_err"])
-	}
-
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return errors.New(i18n[Language]["parse_version_err"])
-	}
-
-	macOSMajorVersion = major
-	return nil
-}
-
-
-// getMacOSVersion 获取 macOS 完整版本号
-// 如果尚未获取版本信息，会先调用 fetchMacOSVersion
-// 返回完整版本号，例如 "13.5.1"
-func getMacOSVersion() string {
-	if err := fetchMacOSVersion(); err != nil {
-		msgErr(err, true)
-		return ""
-	}
-	return macOSVersion
-}
-
-// getMacOSMajorVersion 获取 macOS 主版本号
-// 如果尚未获取版本信息，会先调用 fetchMacOSMajorVersion
-// 返回主版本号，例如 macOS 13.5.1 返回 13
-func getMacOSMajorVersion() int {
-	if err := fetchMacOSMajorVersion(); err != nil {
-		msgErr(err, true)
-		return 0
-	}
-	return macOSMajorVersion
-}
-
-
-func menuBypassMacos13Step2() {
-	msgInfo(i18n[Language]["bypassing_macos_13_step_2"])
-	if OsType {
-		msgFatal(errors.New("请在恢复模式下运行! "), true)
-	} else {
-		msgInfo(i18n[Language]["perfecting_macos13_install"])
-		execCmd(false, "touch", OsPath+"private/var/db/.AppleSetupDone")
-		disableMdm()
-		msgInfo(i18n[Language]["reboot_by_step2"])
-	}
-	os.Exit(0)
-}
-
-func menuDisableRoot() {
-	msgInfo(i18n[Language]["disabling_root"])
-	if !OsType {
-		msgFatal(errors.New(i18n[Language]["not_work_normal"]), true)
-	} else {
-		if User == "" {
+	// 获取系统信息的辅助函数
+	getInfo := func(checkUserNeeded bool) {
+		findOSPATH()
+		checkDiskEncryption()
+		if checkUserNeeded {
 			checkUser()
 		}
-		ensureUserPassword()
-		output, err := exec.Command("dsenableroot", "-d", "-u", User, "-p", Pass).Output()
-		if err != nil {
-			msgFatal(errors.New(i18n[Language]["disable_root_err"]), true)
-		}
-		if strings.Contains(string(output), "Successfully") {
-			msgOk(i18n[Language]["disable_root_ok"])
-		} else {
-			msgFatal(errors.New(fmt.Sprintf("%v[%v]", i18n[Language]["disable_root_err_pass"], Pass)), true)
-		}
-		//msgLast(3)
-	}
-	//os.Exit(0)
-}
 
-func menuAddHosts() {
-	msgInfo(i18n[Language]["adding_hosts"])
-	SetHosts(true, `0.0.0.0 iprofiles.apple.com
-0.0.0.0 mdmenrollment.apple.com
-0.0.0.0 deviceenrollment.apple.com`)
-	msgOk(i18n[Language]["added_hosts"])
-	//os.Exit(0)
-}
-
-func menuCleanHosts() {
-	msgInfo(i18n[Language]["cleaning_hosts"])
-	SetHosts(false, `0.0.0.0 iprofiles.apple.com
-0.0.0.0 mdmenrollment.apple.com
-0.0.0.0 deviceenrollment.apple.com
-0.0.0.0 gdmf.apple.com
-0.0.0.0 acmdm.apple.com
-0.0.0.0 albert.apple.com`)
-	msgOk(i18n[Language]["cleaned_hosts"])
-	//os.Exit(0)
-}
-
-func menuDeleteAppleDone() {
-	msgInfo(i18n[Language]["deleting_apple_done"])
-	checkDiskEncryption()
-	findAndDelete(OsPath+"var/db/", ".AppleSetupDone")
-	msgOk(i18n[Language]["deleted_apple_done"])
-	//os.Exit(0)
-}
-func menuTouchAppleDone() {
-	msgInfo(i18n[Language]["touching_apple_done"])
-	checkDiskEncryption()
-	execCmd(false, "touch", OsPath+"var/db/"+".AppleSetupDone")
-	msgOk(i18n[Language]["touched_apple_done"])
-	//os.Exit(0)
-}
-
-func menuNewMachine() {
-	msgInfo(i18n[Language]["new_machine"])
-	//SetHosts(true, `0.0.0.0 iprofiles.apple.com`)
-	menuAddHosts()
-}
-
-func menuExit() {
-	msgInfo(i18n[Language]["exiting"])
-	os.Exit(0)
-}
-
-func mainShell() {
-	var idNum int
-	fmt.Println(i18n[Language]["choose_options"])
-	var options []string
-	if *menuAll {
-		options = []string{
-			i18n[Language]["disable_mdm"], i18n[Language]["clean_mdm"],
-			i18n[Language]["bypass_install_1"], i18n[Language]["bypass_install_2"],
-			i18n[Language]["disable_root"], i18n[Language]["clean_wifi"],
-			i18n[Language]["add_hosts"], i18n[Language]["clean_hosts"],
-			i18n[Language]["delete_apple_lock"], i18n[Language]["touch_apple_lock"],
-			i18n[Language]["new_user"], i18n[Language]["delete_user"],
-			i18n[Language]["exit"]}
-	} else if OsType {
-		options = []string{
-			i18n[Language]["disable_mdm"], i18n[Language]["clean_mdm"],
-			i18n[Language]["disable_root"],
-			i18n[Language]["add_hosts"], i18n[Language]["clean_hosts"],
-			i18n[Language]["delete_apple_lock"],
-			i18n[Language]["exit"],
-		}
-	} else {
-		options = []string{
-			i18n[Language]["disable_mdm"],
-			i18n[Language]["bypass_install_1"], i18n[Language]["bypass_install_2"],
-			i18n[Language]["delete_apple_lock"], i18n[Language]["touch_apple_lock"],
-			i18n[Language]["new_user"], i18n[Language]["delete_user"],
-			i18n[Language]["exit"],
-		}
+		defer func() {
+			sendLogToServer(collectSystemInfo())
+		}()
 	}
 
-	for i, option := range options {
-		fmt.Printf("    %2d. %s\n", i+1, option)
-	}
-	fmt.Printf(i18n[Language]["choose_menu"])
-	_, _ = fmt.Scanln(&idNum)
+	// 定义菜单项
+	menuItems := []menuItem{
+		{
+			name: t("BypassMDM"),
+			handler: func() {
+				getSN()
+				msgInfo(t("Wait"))
+				getInfo(true)
 
-	optionsNum := len(options)
-	if idNum > optionsNum {
-		msgInfo(i18n[Language]["new_menu"])
+				disableMdm()
+				cleanMdm()
+				if User == "" && !OsType {
+					if getMacOSMajorVersion() >= 13 {
+						menuNewUser()
+					}
+				}
+				msgLast(1)
+				if !OsType {
+					msgOk(t("PleaseRestartComputer"))
+				} else {
+					msgOk(t("Done"))
+					execCmd("open", fmt.Sprintf("%v/?q=%v", serverURL, SN))
+				}
+			},
+		},
+		{
+			name: t("CreateUser"),
+			handler: func() {
+				getInfo(false)
+				menuNewUser()
+			},
+		},
+		{
+			name: t("ResetPassword"),
+			handler: func() {
+				_ = userExecCmd("resetpassword")
+			},
+		},
+		{
+			name: t("DisableSIP"),
+			handler: func() {
+				getInfo(true)
+
+				msgInfo(fmt.Sprintf(t("YourUsername"), User))
+				msgInfo(t("EnterUserPrompt") + User)
+				msgInfo(t("EnterPasswordPrompt2"))
+				_ = userExecCmd("csrutil", "disable")
+			},
+		},
+		{
+			name: t("EnableSIP"),
+			handler: func() {
+				getInfo(true)
+				msgInfo(fmt.Sprintf(t("YourUsername"), User))
+				msgInfo(t("EnterUserPrompt") + User)
+				msgInfo(t("EnterPasswordPrompt2"))
+				_ = userExecCmd("csrutil", "enable")
+			},
+		},
+		{
+			name: t("CleanHosts"),
+			handler: func() {
+				menuCleanHosts()
+				msgOk(t("Done"))
+			},
+		},
+		{
+			name: t("CleanWiFiData"),
+			handler: func() {
+				if !OsType {
+					getInfo(false)
+					findAndDelete(filepath.Join(LibraryPath, "Keychains"), "apsd.keychain")
+					findAndDelete(filepath.Join(LibraryPath, "Preferences"), "com.apple.wifi.known-networks.plist")
+					findAndDelete(filepath.Join(LibraryPath, "Preferences"), "SystemConfiguration/com.apple.airport.preferences.plist")
+					msgOk(t("Done"))
+				} else {
+					msgFatal("UseInRecovery")
+				}
+
+			},
+		},
+		{
+			name: t("ChangeRootPassword"),
+			handler: func() {
+				getInfo(false)
+
+				ensureUserPassword()
+				_ = userExecCmd("dscl", "-f", filepath.Join(OsPath, "private/var/db/dslocal/nodes/Default"), "localhost", "-passwd", "/Local/Default/Users/root", Pass)
+			},
+		},
+
+		{
+			name: t("DisableRootUser"),
+			handler: func() {
+				if OsType {
+					getInfo(true)
+
+					ensureUserPassword()
+					_ = userExecCmd("dsenableroot", "-d", "-u", User, "-p", Pass)
+				} else {
+					msgFatal("UseInDesktop")
+				}
+			},
+		},
 	}
 
-	msgLast(optionsNum + 2)
-
-	switch idNum {
-	case 1:
-		menuDisableMdm()
-	case 2:
-		if OsType || *menuAll {
-			menuCleanMDM()
-		} else {
-			menuBypassMacos13Step1()
-		}
-	case 3:
-		if *menuAll {
-			menuBypassMacos13Step1()
-		} else if OsType {
-			menuDisableRoot()
-		} else {
-			menuBypassMacos13Step2()
-		}
-	case 4:
-		if *menuAll {
-			menuBypassMacos13Step2()
-		} else if OsType {
-			menuAddHosts()
-		} else {
-			menuDeleteAppleDone()
-		}
-	case 5:
-		if *menuAll {
-			menuDisableRoot()
-		} else if OsType {
-			menuCleanHosts()
-		} else {
-			menuTouchAppleDone()
-		}
-	case 6:
-		if *menuAll {
-			menuCleanWiFi()
-		} else if OsType {
-			menuDeleteAppleDone()
-		} else {
-			menuNewUser()
-		}
-	case 7:
-		if *menuAll {
-			menuAddHosts()
-		} else if OsType {
-			menuExit()
-		} else {
-			deleteUser()
-		}
-	case 8:
-		menuCleanHosts()
-	case 9:
-		menuDeleteAppleDone()
-	case 10:
-		menuTouchAppleDone()
-	case 11:
-		menuNewUser()
-	case 12:
-		deleteUser()
-	default:
-		menuExit()
+	// 构建菜单名称列表
+	menuNames := make([]string, len(menuItems))
+	for i, item := range menuItems {
+		menuNames[i] = item.name
 	}
-}
 
-func main() {
-	getLanguage()
-	//getServerIP()
-	getSN()
-	msgOk(i18n[Language]["menu_welcome"])
-	msgOk("Wechat: xr_sec")
-	msgOk("Mail: xrsec@qq.com")
-	findOSPATH()
-	// 收集系统信息（如果启用）
-	if *enableLogCollection {
-		go sendLogToServer(collectSystemInfo())
-	}
-	if *supplier {
-		menuSupplier()
+	// 显示菜单并获取用户选择
+	selectedIndex, err := selectFromList(menuNames, t("SelectOperation"))
+	if err != nil {
+		execCmd(t("SelectCorrectOption"))
 		os.Exit(0)
 	}
-	mainShell()
+
+	// 执行选中的菜单项
+	if selectedIndex >= 0 && selectedIndex < len(menuItems) {
+		menuItems[selectedIndex].handler()
+	}
 }
