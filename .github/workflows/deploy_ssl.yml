@@ -1,0 +1,114 @@
+name: 自动续期 SSL 并部署到腾讯云 SCF
+
+on:
+  # 每 2 个月执行一次
+  schedule:
+    - cron: '0 0 1 */2 *'
+  workflow_dispatch:
+    inputs:
+      CDN_DOMAIN:
+        description: 'CDN 域名，多个域名用空格分隔'
+        required: false
+
+jobs:
+  renew-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      CF_Token: ${{ secrets.CF_Token }}
+      TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+      TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+      CDN_DOMAIN: ${{ inputs.CDN_DOMAIN || secrets.CDN_DOMAIN }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装依赖
+        run: |
+          sudo apt update
+          sudo apt install -y curl socat jq python3-pip
+          pip3 install tccli
+
+      - name: 安装 acme.sh
+        run: |
+          curl https://get.acme.sh | sh
+          ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+
+      - name: 通过 Cloudflare DNS 为多个域名签发 / 续期证书
+        run: |
+          # CDN_DOMAIN 可以是多个域名，用空格分隔，例如：example.com cdn.example.com
+          # acme.sh 会为每个域名单独签发一张 ECC 证书
+          for domain in ${CDN_DOMAIN}; do
+            echo "为域名 $domain 签发 / 续期证书..."
+            if ! $HOME/.acme.sh/acme.sh \
+              --issue \
+              --dns dns_cf \
+              -d "$domain" \
+              --ecc \
+              --debug 0; then
+              echo "为域名 $domain 签发 / 续期证书失败，跳过该域名，继续处理后续域名。"
+              continue
+            fi
+            zip -r ~/certs.zip ~/.acme.sh/${domain}_ecc
+          done
+
+      - name: 上传最新证书到工作流工件（7 天保留）
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-ssl-certs
+          path: ~/certs.zip
+          retention-days: 7
+
+      - name: 为每个 CDN 域名上传证书并更新配置
+        run: |
+          # 遍历每个 CDN 域名：逐个上传证书并绑定到对应域名
+          for domain in ${CDN_DOMAIN}; do
+            echo "处理 CDN 域名：$domain"
+
+            CERT_DIR="$HOME/.acme.sh/${domain}_ecc"
+            FULLCHAIN_FILE="${CERT_DIR}/fullchain.cer"
+            KEY_FILE="${CERT_DIR}/${domain}.key"
+
+            if [ ! -f "$FULLCHAIN_FILE" ] || [ ! -f "$KEY_FILE" ]; then
+              echo "错误：未找到域名 $domain 的证书或私钥文件！"
+              continue
+            fi
+
+            # 用 jq -Rs 读取并做 JSON 转义，避免换行和引号导致的转义问题
+            cert_json=$(jq -Rs . "$FULLCHAIN_FILE")
+            key_json=$(jq -Rs . "$KEY_FILE")
+
+            https_json=$(jq -n \
+              --argjson cert "$cert_json" \
+              --argjson key "$key_json" \
+              --arg msg "证书最后更新时间：$(date '+%Y-%m-%d %H:%M:%S')" \
+              '{
+                Switch: "on",
+                Http2: "on",
+                OcspStapling: "on",
+                Hsts: { Switch: "on", MaxAge: 604800 },
+                ForceRedirect: {
+                  Switch: "on",
+                  RedirectType: "Http",
+                  RedirectStatusCode: 301,
+                  CarryHeaders: "on"
+                },
+                CertInfo: {
+                  Certificate: $cert,
+                  PrivateKey: $key,
+                  Message: $msg
+                }
+              }')
+
+            echo "为域名 $domain 构造的 HTTPS 配置：$https_json"
+
+            if ! deploy_response=$(tccli cdn UpdateDomainConfig \
+              --Domain "$domain" \
+              --Https "$https_json"); then
+              echo "为域名 $domain 更新 CDN HTTPS 配置失败，跳过该域名，继续处理后续域名。"
+              continue
+            fi
+
+            echo "证书部署到 CDN 域名 $domain 的响应：$deploy_response"
+          done

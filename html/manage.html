@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+            background: #FFF8F0;
+            color: #333;
+            padding: 20px 15px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #8B7355;
+            margin-bottom: 10px;
+        }
+
+        .section {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #8B7355;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #F5E6D3;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-title:hover {
+            color: #5A4A3A;
+        }
+
+        .toggle-icon {
+            margin-left: 8px;
+            font-size: 14px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 5000px;
+            opacity: 1;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
+            margin-bottom: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .sub-section {
+            margin-top: 15px;
+        }
+
+        .sub-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #8B7355;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #F5E6D3;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sub-section-title:hover {
+            color: #5A4A3A;
+        }
+
+        .sub-section-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 5000px;
+            opacity: 1;
+        }
+
+        .sub-section-content.collapsed {
+            max-height: 0;
+            margin-bottom: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+
+        .count-badge {
+            background: #D4C4B0;
+            color: #5A4A3A;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .user-list {
+            list-style: none;
+        }
+
+        .user-item {
+            background: #FFF8F0;
+            border: 1px solid #F5E6D3;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .user-item:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .user-label {
+            color: #8B7355;
+            font-weight: 500;
+            min-width: 70px;
+        }
+
+        .user-value {
+            color: #333;
+            flex: 1;
+            word-break: break-all;
+        }
+
+        .serial-number {
+            font-weight: 600;
+            color: #5A4A3A;
+            font-size: 15px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .serial-number:hover {
+            background: #F5E6D3;
+            color: #8B7355;
+            transform: scale(1.05);
+        }
+
+        .serial-number:active {
+            transform: scale(0.98);
+        }
+
+        .serial-number.copied {
+            background: #D4EDDA;
+            color: #155724;
+        }
+
+        .location {
+            color: #8B7355;
+        }
+
+        .rule-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .rule-temp {
+            background: #FFF3CD;
+            color: #856404;
+        }
+
+        .rule-vip {
+            background: #D1ECF1;
+            color: #0C5460;
+        }
+
+        .rule-unauthorized {
+            background: #F8D7DA;
+            color: #721C24;
+        }
+
+        .rule-permanent {
+            background: #D4EDDA;
+            color: #155724;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8B7355;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #F5E6D3;
+            border-top-color: #8B7355;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error {
+            background: #F8D7DA;
+            color: #721C24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #D4EDDA;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .select-all {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #8B7355;
+            cursor: pointer;
+        }
+
+        .select-all input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+
+        .auth-btn {
+            background: #D4C4B0;
+            color: #5A4A3A;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .auth-btn.dfu {
+            background: #E7D4F0;
+            color: #6A4C7A;
+        }
+
+        .auth-btn.dfu:hover {
+            background: #D9C0E8;
+        }
+
+        .auth-btn:hover {
+            background: #C4B4A0;
+        }
+
+        .auth-btn:active {
+            transform: scale(0.98);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .auth-btn.temp {
+            background: #FFF3CD;
+            color: #856404;
+        }
+
+        .auth-btn.temp:hover {
+            background: #FFE69C;
+        }
+
+        .auth-btn.permanent {
+            background: #D1ECF1;
+            color: #0C5460;
+        }
+
+        .auth-btn.permanent:hover {
+            background: #B8DAE6;
+        }
+
+        .auth-btn.delete {
+            background: #F8D7DA;
+            color: #721C24;
+            position: relative;
+        }
+
+        .auth-btn.delete:hover {
+            background: #F5C6CB;
+        }
+
+        .delete-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .delete-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 5px;
+            background: #FFFFFF;
+            border: 1px solid #F5E6D3;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        @media (max-width: 480px) {
+            .delete-menu {
+                right: 0;
+            }
+        }
+
+        .delete-menu.show {
+            display: block;
+        }
+
+        .delete-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #721C24;
+            transition: background 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .delete-menu-item:hover {
+            background: #F8D7DA;
+        }
+
+        .delete-menu-item:first-child {
+            border-bottom: 1px solid #F5E6D3;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .user-checkbox {
+            margin-top: 2px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .user-content {
+            flex: 1;
+        }
+
+        .password-input {
+            background: #FFFFFF;
+            border: 1px solid #F5E6D3;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 15px;
+            color: #333;
+            width: 200px;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: #D4C4B0;
+        }
+
+        /* 批量表格样式 */
+        .batch-table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #F5E6D3;
+        }
+
+        .batch-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .batch-table th,
+        .batch-table td {
+            padding: 12px 3px;
+            border-bottom: 1px solid #F5E6D3;
+            text-align: left;
+        }
+
+        .batch-table th {
+            background: linear-gradient(135deg, #FFF8F0 0%, #F5E6D3 100%);
+            color: #8B7355;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .batch-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .batch-table tbody tr:hover {
+            background: #FFFAF5;
+        }
+
+        .batch-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .batch-table td {
+            background: #FFFFFF;
+        }
+
+        .batch-table input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #E5D5C5;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .batch-table input[type="text"]:focus {
+            outline: none;
+            border-color: #D4C4B0;
+            box-shadow: 0 0 0 3px rgba(212, 196, 176, 0.2);
+        }
+
+        .batch-table input[type="text"]::placeholder {
+            color: #C4B4A0;
+        }
+
+        .batch-table select {
+            width: 100%;
+            border: 1px solid #E5D5C5;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+            background: #FFFFFF url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238B7355' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 12px center;
+            padding: 10px 32px 10px 12px;
+        }
+
+        .batch-table select:focus {
+            outline: none;
+            border-color: #D4C4B0;
+            box-shadow: 0 0 0 3px rgba(212, 196, 176, 0.2);
+        }
+
+        .batch-table .delete-row-btn {
+            background: linear-gradient(135deg, #F8D7DA 0%, #F5C6CB 100%);
+            color: #721C24;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .batch-table .delete-row-btn:hover {
+            background: linear-gradient(135deg, #F5C6CB 0%, #F1B0B7 100%);
+            transform: translateY(-1px);
+        }
+
+        .batch-table .delete-row-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+            .user-item {
+                padding: 12px;
+            }
+
+            .user-row {
+                font-size: 13px;
+            }
+
+            .user-label {
+                min-width: 60px;
+                font-size: 13px;
+            }
+
+            .action-bar {
+                flex-wrap: wrap;
+            }
+
+            .auth-buttons {
+                justify-content: flex-end;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .auth-btn {
+                flex: 0 0 auto;
+                font-size: 13px;
+                padding: 5px 5px;
+            }
+
+            .rule-badge {
+                font-size: 11px;
+                padding: 2px 6px;
+            }
+
+            .user-row {
+                flex-wrap: wrap;
+            }
+
+            .serial-number {
+                font-size: 14px;
+            }
+
+            .password-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>管理后台</h1>
+    </div>
+
+    <div id="error-container"></div>
+
+    <div class="section">
+        <div class="section-title" onclick="toggleSection('auth-query')">
+            <span>授权查询 (DFU/MDM)</span>
+            <span class="toggle-icon collapsed" id="auth-query-icon">▼</span>
+        </div>
+        <div class="section-content collapsed" id="auth-query-content">
+            <div style="padding: 15px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                    <input type="text" id="query-sn-input" class="password-input" placeholder="请输入序列号"
+                           style="flex: 1;" onkeypress="if(event.key==='Enter') queryAuth()">
+                    <button class="auth-btn" onclick="queryAuth()">查询</button>
+                </div>
+                <div id="query-result" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title" onclick="toggleSection('user-auth')">
+            <span>最近使用</span>
+            <span class="toggle-icon collapsed" id="user-auth-icon">▼</span>
+        </div>
+        <div class="section-content collapsed" id="user-auth-content">
+            <div style="margin-bottom: 15px;">
+                <div style="font-size: 16px; font-weight: 600; color: #8B7355; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F5E6D3;">
+                    用户操作
+                </div>
+                <div class="action-bar" id="user-auth-actions" style="display: none;">
+                    <div class="auth-buttons">
+                        <button class="auth-btn temp" onclick="batchAuthorizeBoth(1)">MDM临时</button>
+                        <button class="auth-btn permanent" onclick="batchAuthorizeBoth(2)">MDM永久</button>
+                        <button class="auth-btn dfu" onclick="batchAuthorizeDFU()">DFU授权</button>
+                        <div class="delete-dropdown">
+                            <button class="auth-btn delete" onclick="toggleDeleteMenu(event)">删除 ▼</button>
+                            <div class="delete-menu" id="deleteMenu">
+                                <button class="delete-menu-item" onclick="batchDeleteMDM()">MDM</button>
+                                <button class="delete-menu-item" onclick="batchDeleteDFU()">DFU</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sub-section">
+                <div class="sub-section-title">
+                        <span onclick="toggleSubSection('unauthorized')"
+                              style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                            <span>未授权用户</span>
+                            <span class="count-badge" id="unauthorized-count">0</span>
+                            <span class="toggle-icon" id="unauthorized-icon">▼</span>
+                        </span>
+                    <label class="select-all" onclick="event.stopPropagation();" style="margin-left: 10px;">
+                        <input type="checkbox" id="select-all-unauthorized"
+                               onchange="toggleSelectAll('unauthorized', this.checked)"
+                               onclick="event.stopPropagation();">
+                        <span>全选</span>
+                    </label>
+                </div>
+                <div class="sub-section-content" id="unauthorized-content">
+                    <ul class="user-list" id="unauthorized-list">
+                        <li class="loading">加载中...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-section-title">
+                        <span onclick="toggleSubSection('authorized')"
+                              style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                            <span>已授权用户</span>
+                            <span class="count-badge" id="authorized-count">0</span>
+                            <span class="toggle-icon" id="authorized-icon">▼</span>
+                        </span>
+                    <label class="select-all" onclick="event.stopPropagation();" style="margin-left: 10px;">
+                        <input type="checkbox" id="select-all-authorized"
+                               onchange="toggleSelectAll('authorized', this.checked)"
+                               onclick="event.stopPropagation();">
+                        <span>全选</span>
+                    </label>
+                </div>
+                <div class="sub-section-content" id="authorized-content">
+                    <ul class="user-list" id="authorized-list">
+                        <li class="loading">加载中...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <div class="section-title" onclick="toggleSection('batch-auth')">
+            <span>批量授权</span>
+            <span class="toggle-icon collapsed" id="batch-auth-icon">▼</span>
+        </div>
+        <div class="section-content collapsed" id="batch-auth-content">
+            <div>
+                <!-- 批量导入区域 -->
+                <div style="margin-bottom: 20px; background: #FFFAF5; border-radius: 10px; padding: 15px; border: 1px dashed #E5D5C5;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                        <span style="font-size: 14px; color: #8B7355; font-weight: 500;">📥 批量导入</span>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="batch-import-type"
+                                    style="padding: 8px 12px; border: 1px solid #E5D5C5; border-radius: 6px; font-size: 14px; background: #fff; cursor: pointer;">
+                                <option value="mdm_temp">MDM 临时</option>
+                                <option value="mdm_perm">MDM 永久</option>
+                                <option value="dfu">DFU 授权</option>
+                                <option value="mdm_del">MDM 删除</option>
+                                <option value="dfu_del">DFU 删除</option>
+                            </select>
+                            <button class="auth-btn" onclick="importBatchSN()"
+                                    style="display: flex; align-items: center; gap: 5px;">
+                                <span>导入</span>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="batch-import-input"
+                              placeholder="粘贴序列号，支持换行、空格、逗号分隔&#10;例如：ABC123, DEF456&#10;或每行一个序列号"
+                              style="width: 100%; height: 90px; padding: 12px; border: 1px solid #E5D5C5; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box; font-family: inherit; line-height: 1.5;"></textarea>
+                </div>
+                <div class="batch-table-container" style="max-height: 350px; overflow-y: auto;">
+                    <table class="batch-table" id="batch-table">
+                        <thead>
+                        <tr>
+                            <th style="width: 47%;">序列号</th>
+                            <th style="width: 41%;">授权类型</th>
+                            <th style="width: 12%;">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="batch-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="auth-btn" onclick="addBatchRow()"
+                                style="display: flex; align-items: center; gap: 5px;">
+                            <span style="font-size: 16px;">+</span> 添加行
+                        </button>
+                        <button class="auth-btn delete" onclick="clearBatchTable()"
+                                style="background: #F5E6D3; color: #8B7355;">清空
+                        </button>
+                    </div>
+                    <button class="auth-btn" onclick="submitBatchAuth()"
+                            style="background: linear-gradient(135deg, #8B7355 0%, #6A5A45 100%); color: #fff; padding: 10px 24px; font-size: 15px;">
+                        🚀 提交授权
+                    </button>
+                </div>
+                <div id="batch-result" style="margin-top: 15px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 从 URL 中获取 ps 参数
+    function getPsFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('ps') || '';
+    }
+
+    // 验证 ps 参数
+    function validatePs(ps) {
+        return ps && ps.length === 16;
+    }
+
+    // 全局保存 ps 参数
+    let authPs = '';
+
+    function showError(message) {
+        const container = document.getElementById('error-container');
+        container.innerHTML = `<div class="error">${message}</div>`;
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+
+    function showSuccess(message) {
+        const container = document.getElementById('error-container');
+        container.innerHTML = `<div class="success">${message}</div>`;
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+
+    // 统一的批量授权请求
+    async function batchAuthRequest(mdmItems = [], dfuItems = []) {
+        if (!authPs) {
+            throw new Error('缺少授权参数');
+        }
+        const response = await fetch('/FSElO', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ps: authPs, mdm: mdmItems, dfu: dfuItems})
+        });
+        return response.json();
+    }
+
+    // 复制序列号到剪贴板
+    function copySerialNumber(sn, element) {
+        if (!sn || sn === '未知') {
+            return;
+        }
+
+        const serialNumber = sn.toUpperCase();
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(serialNumber).then(() => {
+                showCopySuccess(element);
+            }).catch(() => {
+                legacyCopySerial(serialNumber, element);
+            });
+        } else {
+            legacyCopySerial(serialNumber, element);
+        }
+    }
+
+    function legacyCopySerial(text, element) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.top = "-1000px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        try {
+            document.execCommand("copy");
+            showCopySuccess(element);
+        } catch (err) {
+            console.error("复制失败:", err);
+            showError("复制失败，请手动复制");
+        }
+        document.body.removeChild(textarea);
+    }
+
+    function showCopySuccess(element) {
+        const originalText = element.textContent;
+        element.classList.add('copied');
+        element.textContent = '✅ 已复制';
+
+        setTimeout(() => {
+            element.classList.remove('copied');
+            element.textContent = originalText;
+        }, 1500);
+    }
+
+    function renderUserItem(user, isAuthorized = false) {
+        const item = document.createElement('li');
+        item.className = 'user-item';
+        item.dataset.sn = user.sn || '';
+
+        let checkbox;
+        let mdmBadge = '';
+        let dfuBadge = '';
+        let countBadge = '';
+
+        // 显示 MDM 状态标签（根据 mdm_status 值判断：2=永久会员绿色，1=临时黄色，0=未授权红色）
+        // 标签只显示"MDM"，通过颜色区分状态
+        // 只有当 mdm_status 存在时才显示 MDM 标签（表示该序列号有 MDM 记录）
+        if (user.mdm_status !== undefined) {
+            const mdmRule = Number(user.mdm_status);
+
+            let mdmStatusClass;
+
+            if (mdmRule === 2) {
+                // 永久会员：绿色
+                mdmStatusClass = 'rule-permanent';
+            } else if (mdmRule === 1) {
+                // 临时：黄色
+                mdmStatusClass = 'rule-temp';
+            } else {
+                // 未授权：红色
+                mdmStatusClass = 'rule-unauthorized';
+            }
+            mdmBadge = `<span class="rule-badge ${mdmStatusClass}" style="margin-left: 6px;">MDM</span>`;
+        }
+
+        // 显示 DFU 状态标签（已授权绿色，未授权红色）
+        // 标签只显示"DFU"，通过颜色区分状态
+        if (user.dfu_status !== undefined || user.type === 'dfu') {
+            const dfuStatus = user.dfu_status !== undefined ? user.dfu_status : 0;
+            const dfuStatusClass = dfuStatus === 1 ? 'rule-permanent' : 'rule-unauthorized';
+            dfuBadge = `<span class="rule-badge ${dfuStatusClass}" style="margin-left: 6px;">DFU</span>`;
+        }
+
+        // 显示访问次数标签
+        const totalCount = (user.mdm_count || 0) + (user.dfu_count || 0);
+        if (totalCount > 0) {
+            countBadge = `<span class="rule-badge" style="margin-left: 6px; background: #E2E3E5; color: #383D41;">${totalCount}次</span>`;
+        }
+        if (isAuthorized) {
+            // 已授权用户显示复选框，不需要额外的 ruleBadge（MDM/DFU 标签已足够）
+            checkbox = `<input type="checkbox" class="user-checkbox" data-sn="${user.sn || ''}" onchange="updateSelectAllState('authorized')">`;
+        } else {
+            // 未授权用户显示复选框
+            checkbox = `<input type="checkbox" class="user-checkbox" data-sn="${user.sn || ''}" onchange="updateSelectAllState('unauthorized')">`;
+        }
+
+        let ipRow = '';
+        let locationRow = '';
+        let modelIdentifierRow = '';
+        // 只有当位置信息存在时才显示IP地址和位置信息
+        if (user.location && user.location.trim()) {
+            locationRow = `
+                    <div class="user-row">
+                        <span class="user-label">位置:</span>
+                        <span class="user-value location">${user.location}</span>
+                    </div>
+                `;
+            // 如果位置存在，也显示IP地址（如果存在）
+            if (user.ip_address && user.ip_address.trim()) {
+                ipRow = `
+                        <div class="user-row">
+                            <span class="user-label">IP地址:</span>
+                            <span class="user-value">${user.ip_address}</span>
+                        </div>
+                    `;
+            }
+        }
+        // 显示型号标识（如果存在且不为空）
+        if (user.model_identifier && user.model_identifier.trim()) {
+            modelIdentifierRow = `
+                    <div class="user-row">
+                        <span class="user-label">型号:</span>
+                        <span class="user-value">${user.model_identifier}</span>
+                    </div>
+                `;
+        }
+
+        item.innerHTML = `
+                ${checkbox}
+                <div class="user-content">
+                    <div class="user-info">
+                        <div class="user-row">
+                            <span class="user-label">序列号:</span>
+                            <span class="user-value serial-number" onclick="copySerialNumber('${user.sn || ''}', this)" title="点击复制序列号">${(user.sn || '未知').toUpperCase()}</span>
+                            ${mdmBadge}
+                            ${dfuBadge}
+                        </div>
+                        ${ipRow}
+                        ${locationRow}
+                        ${modelIdentifierRow}
+                        <div class="user-row">
+                            <span class="user-label">时间:</span>
+                            <span class="user-value">${user.time}</span>
+                            ${countBadge}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        return item;
+    }
+
+    function renderUserList(containerId, users, isAuthorized = false) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        if (users.length === 0) {
+            container.innerHTML = '<li class="empty-state">暂无数据</li>';
+            // 检查是否两个列表都为空，如果都为空则隐藏操作栏
+            checkAndShowActionBar();
+            return;
+        }
+
+        users.forEach(user => {
+            const item = renderUserItem(user, isAuthorized);
+            container.appendChild(item);
+        });
+
+        // 显示统一的操作栏
+        checkAndShowActionBar();
+    }
+
+    function checkAndShowActionBar() {
+        const unauthorizedList = document.getElementById('unauthorized-list');
+        const authorizedList = document.getElementById('authorized-list');
+        const actionBar = document.getElementById('user-auth-actions');
+
+        const unauthorizedItems = unauthorizedList.querySelectorAll('.user-item');
+        const authorizedItems = authorizedList.querySelectorAll('.user-item');
+
+        // 如果任一列表有用户，显示操作栏
+        if (unauthorizedItems.length > 0 || authorizedItems.length > 0) {
+            actionBar.style.display = 'flex';
+        } else {
+            actionBar.style.display = 'none';
+        }
+    }
+
+    function toggleSelectAll(type, checked) {
+        const container = document.getElementById(`${type}-list`);
+        const checkboxes = container.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+        });
+        updateSelectAllState(type);
+    }
+
+    function updateSelectAllState(type) {
+        const container = document.getElementById(`${type}-list`);
+        const checkboxes = container.querySelectorAll('.user-checkbox');
+        const checkedBoxes = container.querySelectorAll('.user-checkbox:checked');
+        const selectAllCheckbox = document.getElementById(`select-all-${type}`);
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checkboxes.length > 0 && checkedBoxes.length === checkboxes.length;
+        }
+    }
+
+    function toggleSection(sectionId) {
+        const content = document.getElementById(`${sectionId}-content`);
+        const icon = document.getElementById(`${sectionId}-icon`);
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            icon.classList.remove('collapsed');
+        } else {
+            content.classList.add('collapsed');
+            icon.classList.add('collapsed');
+        }
+    }
+
+    function toggleSubSection(subSectionId) {
+        const content = document.getElementById(`${subSectionId}-content`);
+        const icon = document.getElementById(`${subSectionId}-icon`);
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            icon.classList.remove('collapsed');
+        } else {
+            content.classList.add('collapsed');
+            icon.classList.add('collapsed');
+        }
+    }
+
+
+    async function queryAuth() {
+        const snInput = document.getElementById('query-sn-input');
+        const resultDiv = document.getElementById('query-result');
+        // 自动删除头尾空格并更新输入框
+        const trimmedValue = snInput.value.trim();
+        snInput.value = trimmedValue;
+        const sn = trimmedValue.toLowerCase();
+
+        if (!sn) {
+            showError('请输入序列号');
+            return;
+        }
+
+        if (!validateField('sn', sn)) {
+            showError('序列号格式不正确');
+            return;
+        }
+
+        // 显示加载状态
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div class="loading">查询中...</div>';
+
+        try {
+            // 并行查询 MDM 和 DFU 权限
+            const [mdmResponse, dfuResponse] = await Promise.all([
+                fetch(`/gqK1I?sn=${encodeURIComponent(sn)}`).catch(() => ({
+                    ok: false,
+                    json: () => ({code: 500, msg: 'MDM查询失败'})
+                })),
+                fetch(`/J0Fpf?sn=${encodeURIComponent(sn)}`).catch(() => ({
+                    ok: false,
+                    json: () => ({code: 500, msg: 'DFU查询失败'})
+                }))
+            ]);
+
+            const mdmData = await mdmResponse.json();
+            const dfuData = await dfuResponse.json();
+
+            let resultHTML = '';
+            let hasSuccess = false;
+
+            // MDM 权限信息
+            if (mdmData.code === 200) {
+                hasSuccess = true;
+                const user = mdmData.users || {};
+                const userRule = user.Rule || user.rule || 0;
+                const ruleText = userRule === 2 ? '永久会员' : (userRule === 1 ? '临时用户' : '未授权');
+                const ruleClass = userRule === 2 ? 'rule-vip' : (userRule === 1 ? 'rule-temp' : '');
+                const createdAtStr = user.CreatedAt || user.created_at || '';
+                const createdAt = createdAtStr ? new Date(createdAtStr).toLocaleString('zh-CN') : '未知';
+                const ipAddress = user.IPAddress || user.ip_address || '未知';
+                const serialNumber = user.SerialNumber || user.serial_number || sn;
+
+                let statusInfo = '';
+                if (userRule === 1 && createdAtStr) {
+                    const createdTime = new Date(createdAtStr).getTime();
+                    const now = Date.now();
+                    const hoursDiff = (now - createdTime) / (1000 * 60 * 60);
+                    if (hoursDiff > 24) {
+                        statusInfo = '<div style="color: #856404; margin-top: 8px;">⚠️ 临时授权已过期（超过24小时）</div>';
+                    } else {
+                        const remainingHours = (24 - hoursDiff).toFixed(1);
+                        statusInfo = `<div style="color: #856404; margin-top: 8px;">⏰ 剩余时间：约 ${remainingHours} 小时</div>`;
+                    }
+                }
+
+                const serialNumberUpper = serialNumber.toUpperCase();
+                resultHTML += `
+                        <div style="background: #D1ECF1; color: #0C5460; padding: 15px; border-radius: 8px; font-size: 14px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                <span>MDM 权限</span>
+                                <span class="rule-badge ${ruleClass}">${ruleText}</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div><strong>序列号:</strong> <span class="serial-number" onclick="copySerialNumber('${serialNumber}', this)" title="点击复制序列号" style="cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.3s ease;">${serialNumberUpper}</span></div>
+                                <div><strong>IP地址:</strong> ${ipAddress}</div>
+                                <div><strong>授权时间:</strong> ${createdAt}</div>
+                                ${mdmData.pass ? `<div><strong>授权密码:</strong> ${mdmData.pass}</div>` : ''}
+                                ${statusInfo}
+                            </div>
+                        </div>
+                    `;
+            } else {
+                resultHTML += `
+                        <div style="background: #FFF3CD; color: #856404; padding: 15px; border-radius: 8px; font-size: 14px; margin-bottom: 15px;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">MDM 权限</div>
+                            <div>${mdmData.msg || '未授权'}</div>
+                        </div>
+                    `;
+            }
+
+            // DFU 权限信息
+            if (dfuData.code === 200) {
+                hasSuccess = true;
+                const dfuAuth = dfuData.dfu_auth || {};
+                const createdAtStr = dfuAuth.CreatedAt || dfuAuth.created_at || '';
+                const createdAt = createdAtStr ? new Date(createdAtStr).toLocaleString('zh-CN') : '未知';
+                const updatedAtStr = dfuAuth.UpdatedAt || dfuAuth.updated_at || '';
+                const updatedAt = updatedAtStr ? new Date(updatedAtStr).toLocaleString('zh-CN') : '未知';
+                const ipAddress = dfuAuth.IPAddress || dfuAuth.ip_address || '未知';
+                // const hardwareUUID = dfuAuth.HardwareUUID || dfuAuth.hardware_uuid || '未知';
+                const modelIdentifier = dfuAuth.ModelIdentifier || dfuAuth.model_identifier || '未知';
+                const serialNumber = dfuAuth.SerialNumber || dfuAuth.serial_number || sn;
+
+                const serialNumberUpper = serialNumber.toUpperCase();
+                resultHTML += `
+                        <div style="background: #D1ECF1; color: #0C5460; padding: 15px; border-radius: 8px; font-size: 14px;">
+                            <div style="font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                <span>DFU 权限</span>
+                                <span class="rule-badge rule-vip">已授权</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div><strong>序列号:</strong> <span class="serial-number" onclick="copySerialNumber('${serialNumber}', this)" title="点击复制序列号" style="cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.3s ease;">${serialNumberUpper}</span></div>
+                                <div><strong>型号:</strong> ${modelIdentifier}</div>
+                                <div><strong>IP地址:</strong> ${ipAddress}</div>
+                                <div><strong>创建时间:</strong> ${createdAt}</div>
+                                <div><strong>更新时间:</strong> ${updatedAt}</div>
+                                ${dfuData.pass ? `<div><strong>授权密码:</strong> ${dfuData.pass}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+            } else {
+                resultHTML += `
+                        <div style="background: #FFF3CD; color: #856404; padding: 15px; border-radius: 8px; font-size: 14px;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">DFU 权限</div>
+                            <div>${dfuData.msg || '未授权'}</div>
+                        </div>
+                    `;
+            }
+
+            if (!hasSuccess) {
+                resultDiv.innerHTML = `
+                        <div style="background: #F8D7DA; color: #721C24; padding: 15px; border-radius: 8px; font-size: 14px;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">查询结果</div>
+                            <div>该设备未授权 MDM 或 DFU 权限</div>
+                        </div>
+                    `;
+            } else {
+                resultDiv.innerHTML = resultHTML;
+            }
+        } catch (error) {
+            console.error('查询授权失败:', error);
+            resultDiv.innerHTML = `
+                    <div style="background: #F8D7DA; color: #721C24; padding: 15px; border-radius: 8px; font-size: 14px;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">查询失败</div>
+                        <div>${error.message || '网络错误'}</div>
+                    </div>
+                `;
+        }
+    }
+
+    function validateField(type, value) {
+        const patterns = {
+            'sn': /^(\w|\d){8,14}$/i,
+            'ps': /^(\w|\d){16}$/i
+        };
+        return patterns[type] && patterns[type].test(value);
+    }
+
+    // 批量表格相关函数
+    let batchRowId = 0;
+
+    // 批量导入序列号
+    function importBatchSN() {
+        const input = document.getElementById('batch-import-input');
+        const type = document.getElementById('batch-import-type').value;
+        const text = input.value.trim();
+
+        if (!text) {
+            showError('请输入序列号');
+            return;
+        }
+
+        // 支持换行、空格、逗号、分号分隔
+        const snList = text.split(/[\s,;，；\n\r]+/).filter(sn => sn.trim());
+
+        if (snList.length === 0) {
+            showError('未识别到有效序列号');
+            return;
+        }
+
+        let addedCount = 0;
+        let invalidList = [];
+        snList.forEach(sn => {
+            sn = sn.trim();
+            if (!sn) return; // 跳过空的
+            if (validateField('sn', sn)) {
+                addBatchRow(sn, type);
+                addedCount++;
+            } else {
+                invalidList.push(sn);
+            }
+        });
+
+        if (addedCount > 0) {
+            input.value = '';
+            if (invalidList.length > 0) {
+                const invalidDisplay = invalidList.length > 5
+                    ? invalidList.slice(0, 5).join(', ') + ` 等${invalidList.length}个`
+                    : invalidList.join(', ');
+                showSuccess(`已导入 ${addedCount} 个，跳过 ${invalidList.length} 个无效: ${invalidDisplay}`);
+            } else {
+                showSuccess(`已导入 ${addedCount} 个序列号`);
+            }
+        } else {
+            showError('没有有效的序列号格式（需8-14位字母数字）');
+        }
+    }
+
+    function addBatchRow(sn = '', type = 'mdm_temp') {
+        const tbody = document.getElementById('batch-table-body');
+        const rowId = batchRowId++;
+        const tr = document.createElement('tr');
+        tr.id = `batch-row-${rowId}`;
+        tr.innerHTML = `
+            <td>
+                <input type="text" id="batch-sn-${rowId}" value="${sn}" placeholder="输入序列号"
+                       onkeydown="handleBatchKeydown(event, ${rowId})"
+                       oninput="handleBatchInput(${rowId})">
+            </td>
+            <td>
+                <select id="batch-type-${rowId}">
+                    <option value="mdm_temp" ${type === 'mdm_temp' ? 'selected' : ''}>MDM 临时</option>
+                    <option value="mdm_perm" ${type === 'mdm_perm' ? 'selected' : ''}>MDM 永久</option>
+                    <option value="dfu" ${type === 'dfu' ? 'selected' : ''}>DFU 授权</option>
+                    <option value="mdm_del" ${type === 'mdm_del' ? 'selected' : ''}>MDM 删除</option>
+                    <option value="dfu_del" ${type === 'dfu_del' ? 'selected' : ''}>DFU 删除</option>
+                </select>
+            </td>
+            <td>
+                <button class="delete-row-btn" onclick="deleteBatchRow(${rowId})">X</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+
+        // 聚焦到新行的输入框
+        setTimeout(() => {
+            document.getElementById(`batch-sn-${rowId}`).focus();
+        }, 50);
+    }
+
+    function handleBatchKeydown(event, rowId) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const input = document.getElementById(`batch-sn-${rowId}`);
+            const sn = input.value.trim();
+
+            if (sn && validateField('sn', sn)) {
+                // 当前行有有效序列号，添加新行
+                addBatchRow();
+            }
+        }
+    }
+
+    function handleBatchInput(rowId) {
+        const input = document.getElementById(`batch-sn-${rowId}`);
+        const sn = input.value.trim();
+
+        // 检测是否粘贴了多行内容
+        if (sn.includes('\n') || sn.includes('\r')) {
+            const lines = sn.split(/[\r\n]+/).filter(line => line.trim());
+            if (lines.length > 1) {
+                // 第一行留在当前输入框
+                input.value = lines[0].trim();
+                // 其余行添加新行
+                const select = document.getElementById(`batch-type-${rowId}`);
+                const currentType = select.value;
+                for (let i = 1; i < lines.length; i++) {
+                    addBatchRow(lines[i].trim(), currentType);
+                }
+            }
+        }
+    }
+
+    function deleteBatchRow(rowId) {
+        const row = document.getElementById(`batch-row-${rowId}`);
+        if (row) {
+            row.remove();
+        }
+    }
+
+    function clearBatchTable() {
+        document.getElementById('batch-table-body').innerHTML = '';
+        document.getElementById('batch-result').style.display = 'none';
+        batchRowId = 0;
+        addBatchRow(); // 添加一个空行
+    }
+
+    async function submitBatchAuth() {
+        if (!authPs) {
+            showError('缺少授权参数');
+            return;
+        }
+
+        const tbody = document.getElementById('batch-table-body');
+        const rows = tbody.querySelectorAll('tr');
+
+        // 按类型分组
+        const mdmItems = [];
+        const dfuItems = [];
+        const invalidRows = []; // 记录无效的行
+
+        rows.forEach(row => {
+            const input = row.querySelector('input[type="text"]');
+            const select = row.querySelector('select');
+            if (!input || !select) return;
+
+            const sn = input.value.replace(/\s/g, '').toLowerCase();
+            const type = select.value;
+
+            // 跳过空的（去掉所有空格后为空）
+            if (!sn) return;
+
+            // 检查格式是否有效
+            if (!validateField('sn', sn)) {
+                invalidRows.push({sn: sn.toUpperCase(), row: row});
+                return;
+            }
+
+            switch (type) {
+                case 'mdm_temp':
+                    mdmItems.push({sn, rule: 1});
+                    break;
+                case 'mdm_perm':
+                    mdmItems.push({sn, rule: 2});
+                    break;
+                case 'mdm_del':
+                    mdmItems.push({sn, rule: 0});
+                    break;
+                case 'dfu':
+                    dfuItems.push({sn, rule: 1});
+                    break;
+                case 'dfu_del':
+                    dfuItems.push({sn, rule: 0});
+                    break;
+            }
+        });
+
+        // 去重并检测冲突
+        function deduplicateAndCheckConflicts(items, typeName) {
+            const snRuleMap = new Map(); // sn -> Set of rules
+            const conflicts = [];
+
+            items.forEach(item => {
+                if (!snRuleMap.has(item.sn)) {
+                    snRuleMap.set(item.sn, new Set());
+                }
+                snRuleMap.get(item.sn).add(item.rule);
+            });
+
+            // 检查冲突（同一个sn有不同的rule）
+            snRuleMap.forEach((rules, sn) => {
+                if (rules.size > 1) {
+                    conflicts.push({sn: sn.toUpperCase(), rules: Array.from(rules)});
+                }
+            });
+
+            // 去重：保留每个sn+rule组合的第一个
+            const seen = new Set();
+            const deduplicated = items.filter(item => {
+                const key = `${item.sn}_${item.rule}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            return {deduplicated, conflicts};
+        }
+
+        const mdmResult = deduplicateAndCheckConflicts(mdmItems, 'MDM');
+        const dfuResult = deduplicateAndCheckConflicts(dfuItems, 'DFU');
+
+        // 如果有冲突，提醒用户
+        const allConflicts = [
+            ...mdmResult.conflicts.map(c => ({...c, type: 'MDM'})),
+            ...dfuResult.conflicts.map(c => ({...c, type: 'DFU'}))
+        ];
+
+        if (allConflicts.length > 0) {
+            const conflictMessages = allConflicts.map(c => {
+                const ruleNames = c.rules.map(r => {
+                    if (c.type === 'MDM') {
+                        return r === 0 ? '删除' : (r === 1 ? '临时' : '永久');
+                    } else {
+                        return r === 0 ? '删除' : '授权';
+                    }
+                }).join('、');
+                return `${c.sn} (${c.type}: ${ruleNames})`;
+            });
+
+            showError(`发现冲突：以下序列号有多种不同的授权类型，请检查后重新提交：\n${conflictMessages.join('\n')}`);
+            return;
+        }
+
+        // 使用去重后的数据
+        const dedupMdmItems = mdmResult.deduplicated;
+        const dedupDfuItems = dfuResult.deduplicated;
+
+        // 提示去重信息
+        const mdmRemoved = mdmItems.length - dedupMdmItems.length;
+        const dfuRemoved = dfuItems.length - dedupDfuItems.length;
+        if (mdmRemoved > 0 || dfuRemoved > 0) {
+            const removedMsg = [];
+            if (mdmRemoved > 0) removedMsg.push(`MDM ${mdmRemoved} 条`);
+            if (dfuRemoved > 0) removedMsg.push(`DFU ${dfuRemoved} 条`);
+            showSuccess(`已自动去除重复项：${removedMsg.join('，')}`);
+        }
+
+        // 替换原数组为去重后的数据
+        mdmItems.length = 0;
+        mdmItems.push(...dedupMdmItems);
+        dfuItems.length = 0;
+        dfuItems.push(...dedupDfuItems);
+
+        // 自动删除空行（trim后为空的行）
+        rows.forEach(row => {
+            const input = row.querySelector('input[type="text"]');
+            if (input && !input.value.trim()) {
+                row.remove();
+            }
+        });
+
+        // 如果有无效的序列号，先提示用户
+        if (invalidRows.length > 0) {
+            const invalidDisplay = invalidRows.length > 5
+                ? invalidRows.slice(0, 5).map(r => r.sn).join(', ') + ` 等${invalidRows.length}个`
+                : invalidRows.map(r => r.sn).join(', ');
+
+            // 高亮无效行
+            invalidRows.forEach(({row}) => {
+                row.style.background = '#FFF3CD';
+                const input = row.querySelector('input[type="text"]');
+                if (input) input.style.borderColor = '#FFD93D';
+            });
+
+            showError(`发现 ${invalidRows.length} 个无效序列号（需8-14位字母数字）: ${invalidDisplay}`);
+
+            // 如果没有有效的，直接返回
+            if (mdmItems.length + dfuItems.length === 0) {
+                return;
+            }
+
+            // 有有效的，询问是否继续
+            if (!confirm(`有 ${invalidRows.length} 个无效序列号将被跳过，是否继续提交 ${mdmItems.length + dfuItems.length} 个有效序列号？`)) {
+                return;
+            }
+        }
+
+        const totalCount = mdmItems.length + dfuItems.length;
+        if (totalCount === 0) {
+            showError('请至少输入一个有效的序列号');
+            return;
+        }
+
+        const resultDiv = document.getElementById('batch-result');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div class="loading"><div class="loading-spinner"></div><span>处理中...</span></div>';
+
+        try {
+            const data = await batchAuthRequest(mdmItems, dfuItems);
+
+            if (data.code !== 200) {
+                resultDiv.innerHTML = `<div class="error">${data.msg || '请求失败'}</div>`;
+                showError(data.msg || '请求失败');
+                return;
+            }
+
+            const allResults = [];
+            let totalSuccess = 0;
+
+            // 处理 MDM 结果
+            if (data.mdm_results) {
+                data.mdm_results.forEach((r, i) => {
+                    const rule = mdmItems[i]?.rule;
+                    const typeText = rule === 0 ? 'MDM删除' : (rule === 2 ? 'MDM永久' : 'MDM临时');
+                    allResults.push({...r, type: typeText});
+                    if (r.success) totalSuccess++;
+                });
+            }
+
+            // 处理 DFU 结果
+            if (data.dfu_results) {
+                data.dfu_results.forEach((r, i) => {
+                    const rule = dfuItems[i]?.rule;
+                    const typeText = rule === 0 ? 'DFU删除' : 'DFU授权';
+                    allResults.push({...r, type: typeText});
+                    if (r.success) totalSuccess++;
+                });
+            }
+
+            // 显示结果
+            const successResults = allResults.filter(r => r.success);
+            const failResults = allResults.filter(r => !r.success);
+
+            let resultHTML = `
+                <div style="background: ${totalSuccess === totalCount ? '#D4EDDA' : '#FFF3CD'};
+                            color: ${totalSuccess === totalCount ? '#155724' : '#856404'};
+                            padding: 12px 15px; border-radius: 8px; margin-bottom: 12px;
+                            display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">${totalSuccess === totalCount ? '✅' : '⚠️'}</span>
+                    <span style="font-weight: 600;">处理完成：成功 ${totalSuccess} / ${totalCount}</span>
+                </div>`;
+
+            if (allResults.length > 0) {
+                // 成功列表
+                if (successResults.length > 0) {
+                    resultHTML += `
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 13px; color: #155724; font-weight: 600; margin-bottom: 8px;
+                                        display: flex; align-items: center; gap: 6px;">
+                                <span>✓ 成功 (${successResults.length})</span>
+                            </div>
+                            <div style="background: #F8FFF8; border: 1px solid #C3E6CB; border-radius: 6px;
+                                        max-height: 150px; overflow-y: auto;">`;
+                    successResults.forEach(r => {
+                        resultHTML += `
+                            <div style="padding: 8px 12px; border-bottom: 1px solid #E8F5E9; font-size: 13px;
+                                        display: flex; align-items: center; gap: 8px;">
+                                <span class="rule-badge rule-permanent" style="font-size: 11px;">${r.type}</span>
+                                <span style="font-weight: 500; color: #333;">${r.sn.toUpperCase()}</span>
+                                <span style="color: #666; margin-left: auto;">${r.msg}</span>
+                            </div>`;
+                    });
+                    resultHTML += '</div></div>';
+                }
+
+                // 失败列表
+                if (failResults.length > 0) {
+                    resultHTML += `
+                        <div>
+                            <div style="font-size: 13px; color: #721C24; font-weight: 600; margin-bottom: 8px;
+                                        display: flex; align-items: center; gap: 6px;">
+                                <span>✗ 失败 (${failResults.length})</span>
+                            </div>
+                            <div style="background: #FFF8F8; border: 1px solid #F5C6CB; border-radius: 6px;
+                                        max-height: 150px; overflow-y: auto;">`;
+                    failResults.forEach(r => {
+                        resultHTML += `
+                            <div style="padding: 8px 12px; border-bottom: 1px solid #FDECEA; font-size: 13px;
+                                        display: flex; align-items: center; gap: 8px;">
+                                <span class="rule-badge rule-unauthorized" style="font-size: 11px;">${r.type}</span>
+                                <span style="font-weight: 500; color: #333;">${r.sn.toUpperCase()}</span>
+                                <span style="color: #721C24; margin-left: auto;">${r.msg}</span>
+                            </div>`;
+                    });
+                    resultHTML += '</div></div>';
+                }
+            }
+
+            resultDiv.innerHTML = resultHTML;
+
+            if (totalSuccess > 0) {
+                showSuccess(`批量处理完成：成功 ${totalSuccess} / ${totalCount}`);
+                setTimeout(() => loadUsers(), 1000);
+            }
+
+        } catch (error) {
+            console.error('批量处理失败:', error);
+            resultDiv.innerHTML = `<div class="error">处理失败: ${error.message}</div>`;
+            showError('批量处理失败: ' + error.message);
+        }
+    }
+
+    async function batchAuthorizeBoth(rule) {
+        if (!authPs) {
+            showError('缺少授权参数');
+            return;
+        }
+
+        // 获取两个列表中所有选中的用户
+        const unauthorizedContainer = document.getElementById('unauthorized-list');
+        const authorizedContainer = document.getElementById('authorized-list');
+        const unauthorizedCheckboxes = unauthorizedContainer.querySelectorAll('.user-checkbox:checked');
+        const authorizedCheckboxes = authorizedContainer.querySelectorAll('.user-checkbox:checked');
+
+        const selectedUsers = [];
+        unauthorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+        authorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+
+        if (selectedUsers.length === 0) {
+            showError('请至少选择一个用户');
+            return;
+        }
+
+        const ruleText = rule === 2 ? '永久权限' : (rule === 1 ? '临时权限' : '取消授权');
+        if (!confirm(`确定要为 ${selectedUsers.length} 个用户授予${ruleText}吗？`)) {
+            return;
+        }
+
+        // 禁用按钮
+        const buttons = document.querySelectorAll('.auth-btn');
+        buttons.forEach(btn => btn.disabled = true);
+
+        try {
+            const mdmItems = selectedUsers.map(sn => ({sn, rule}));
+            const data = await batchAuthRequest(mdmItems, []);
+            buttons.forEach(btn => btn.disabled = false);
+
+            if (data.code === 200) {
+                const results = data.mdm_results || [];
+                const successCount = results.filter(r => r.success).length;
+                const failCount = results.length - successCount;
+
+                let message = `授权完成：成功 ${successCount} 个`;
+                if (failCount > 0) {
+                    message += `，失败 ${failCount} 个`;
+                    const errors = results.filter(r => !r.success).slice(0, 5);
+                    if (errors.length > 0) {
+                        message += '\n' + errors.map(e => `${e.sn}: ${e.msg}`).join('\n');
+                    }
+                }
+
+                if (successCount > 0) {
+                    failCount > 0 ? showError(message) : showSuccess(message);
+                    unauthorizedCheckboxes.forEach(cb => cb.checked = false);
+                    authorizedCheckboxes.forEach(cb => cb.checked = false);
+                    updateSelectAllState('unauthorized');
+                    updateSelectAllState('authorized');
+                    setTimeout(() => loadUsers(), 1000);
+                } else {
+                    showError('授权失败：' + (results[0]?.msg || '未知错误'));
+                }
+            } else {
+                showError('授权失败：' + (data.msg || '未知错误'));
+            }
+        } catch (error) {
+            buttons.forEach(btn => btn.disabled = false);
+            showError('授权失败：' + error.message);
+        }
+    }
+
+    function toggleDeleteMenu(event) {
+        event.stopPropagation();
+        const menu = document.getElementById('deleteMenu');
+        const isShowing = menu.classList.contains('show');
+
+        // 关闭所有其他菜单
+        document.querySelectorAll('.delete-menu').forEach(m => m.classList.remove('show'));
+
+        // 切换当前菜单
+        if (!isShowing) {
+            menu.classList.add('show');
+            // 点击外部关闭菜单
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target) && !event.target.contains(e.target)) {
+                        menu.classList.remove('show');
+                        document.removeEventListener('click', closeMenu);
+                    }
+                }, {once: true});
+            }, 0);
+        } else {
+            menu.classList.remove('show');
+        }
+    }
+
+    async function batchDeleteMDM() {
+        // 关闭菜单
+        document.getElementById('deleteMenu').classList.remove('show');
+
+        if (!authPs) {
+            showError('缺少授权参数');
+            return;
+        }
+
+        // 获取两个列表中所有选中的用户
+        const unauthorizedContainer = document.getElementById('unauthorized-list');
+        const authorizedContainer = document.getElementById('authorized-list');
+        const unauthorizedCheckboxes = unauthorizedContainer.querySelectorAll('.user-checkbox:checked');
+        const authorizedCheckboxes = authorizedContainer.querySelectorAll('.user-checkbox:checked');
+
+        const selectedUsers = [];
+        unauthorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+        authorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+
+        if (selectedUsers.length === 0) {
+            showError('请至少选择一个用户');
+            return;
+        }
+
+        if (!confirm(`确定要删除 ${selectedUsers.length} 个用户的 MDM 授权吗？此操作不可恢复！`)) {
+            return;
+        }
+
+        // 禁用按钮
+        const buttons = document.querySelectorAll('.auth-btn');
+        buttons.forEach(btn => btn.disabled = true);
+
+        try {
+            const mdmItems = selectedUsers.map(sn => ({sn, rule: 0}));
+            const data = await batchAuthRequest(mdmItems, []);
+            buttons.forEach(btn => btn.disabled = false);
+
+            if (data.code === 200) {
+                const results = data.mdm_results || [];
+                const successCount = results.filter(r => r.success).length;
+                const failCount = results.length - successCount;
+
+                let message = `MDM 删除完成：成功 ${successCount} 个`;
+                if (failCount > 0) {
+                    message += `，失败 ${failCount} 个`;
+                }
+
+                showError(message);
+                if (successCount > 0) {
+                    unauthorizedCheckboxes.forEach(cb => cb.checked = false);
+                    authorizedCheckboxes.forEach(cb => cb.checked = false);
+                    updateSelectAllState('unauthorized');
+                    updateSelectAllState('authorized');
+                    setTimeout(() => loadUsers(), 1000);
+                }
+            } else {
+                showError('MDM 删除失败：' + (data.msg || '未知错误'));
+            }
+        } catch (error) {
+            buttons.forEach(btn => btn.disabled = false);
+            showError('MDM 删除失败：' + error.message);
+        }
+    }
+
+    async function batchDeleteDFU() {
+        // 关闭菜单
+        document.getElementById('deleteMenu').classList.remove('show');
+
+        if (!authPs) {
+            showError('缺少授权参数');
+            return;
+        }
+
+        // 获取两个列表中所有选中的用户
+        const unauthorizedContainer = document.getElementById('unauthorized-list');
+        const authorizedContainer = document.getElementById('authorized-list');
+        const unauthorizedCheckboxes = unauthorizedContainer.querySelectorAll('.user-checkbox:checked');
+        const authorizedCheckboxes = authorizedContainer.querySelectorAll('.user-checkbox:checked');
+
+        const selectedUsers = [];
+        unauthorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+        authorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+
+        if (selectedUsers.length === 0) {
+            showError('请至少选择一个用户');
+            return;
+        }
+
+        if (!confirm(`确定要删除 ${selectedUsers.length} 个用户的 DFU 授权吗？此操作不可恢复！`)) {
+            return;
+        }
+
+        // 禁用按钮
+        const buttons = document.querySelectorAll('.auth-btn');
+        buttons.forEach(btn => btn.disabled = true);
+
+        try {
+            const dfuItems = selectedUsers.map(sn => ({sn, rule: 0}));
+            const data = await batchAuthRequest([], dfuItems);
+            buttons.forEach(btn => btn.disabled = false);
+
+            if (data.code === 200) {
+                const results = data.dfu_results || [];
+                const successCount = results.filter(r => r.success).length;
+                const failCount = results.length - successCount;
+
+                let message = `DFU 删除完成：成功 ${successCount} 个`;
+                if (failCount > 0) {
+                    message += `，失败 ${failCount} 个`;
+                }
+
+                showError(message);
+                if (successCount > 0) {
+                    unauthorizedCheckboxes.forEach(cb => cb.checked = false);
+                    authorizedCheckboxes.forEach(cb => cb.checked = false);
+                    updateSelectAllState('unauthorized');
+                    updateSelectAllState('authorized');
+                    setTimeout(() => loadUsers(), 1000);
+                }
+            } else {
+                showError('DFU 删除失败：' + (data.msg || '未知错误'));
+            }
+        } catch (error) {
+            buttons.forEach(btn => btn.disabled = false);
+            showError('DFU 删除失败：' + error.message);
+        }
+    }
+
+    async function batchAuthorizeDFU() {
+        if (!authPs) {
+            showError('缺少授权参数');
+            return;
+        }
+
+        // 获取两个列表中所有选中的用户
+        const unauthorizedContainer = document.getElementById('unauthorized-list');
+        const authorizedContainer = document.getElementById('authorized-list');
+        const unauthorizedCheckboxes = unauthorizedContainer.querySelectorAll('.user-checkbox:checked');
+        const authorizedCheckboxes = authorizedContainer.querySelectorAll('.user-checkbox:checked');
+
+        const selectedUsers = [];
+        unauthorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+        authorizedCheckboxes.forEach(cb => {
+            if (cb.dataset.sn) selectedUsers.push(cb.dataset.sn);
+        });
+
+        if (selectedUsers.length === 0) {
+            showError('请至少选择一个用户');
+            return;
+        }
+
+        if (!confirm(`确定要为 ${selectedUsers.length} 个用户授予 DFU 权限吗？`)) {
+            return;
+        }
+
+        // 禁用按钮
+        const buttons = document.querySelectorAll('.auth-btn');
+        buttons.forEach(btn => btn.disabled = true);
+
+        try {
+            const dfuItems = selectedUsers.map(sn => ({sn, rule: 1}));
+            const data = await batchAuthRequest([], dfuItems);
+            buttons.forEach(btn => btn.disabled = false);
+
+            if (data.code === 200) {
+                const results = data.dfu_results || [];
+                const successCount = results.filter(r => r.success).length;
+                const failCount = results.length - successCount;
+
+                let message = `DFU 授权完成：成功 ${successCount} 个`;
+                if (failCount > 0) {
+                    message += `，失败 ${failCount} 个`;
+                }
+
+                if (successCount > 0) {
+                    failCount > 0 ? showError(message) : showSuccess(message);
+                    unauthorizedCheckboxes.forEach(cb => cb.checked = false);
+                    authorizedCheckboxes.forEach(cb => cb.checked = false);
+                    updateSelectAllState('unauthorized');
+                    updateSelectAllState('authorized');
+                    setTimeout(() => loadUsers(), 1000);
+                } else {
+                    showError('DFU 授权失败：' + (results[0]?.msg || '未知错误'));
+                }
+            } else {
+                showError('DFU 授权失败：' + (data.msg || '未知错误'));
+            }
+        } catch (error) {
+            buttons.forEach(btn => btn.disabled = false);
+            showError('DFU 授权失败：' + error.message);
+        }
+    }
+
+    async function loadUsers() {
+        if (!authPs) {
+            showError('缺少授权参数，无法加载数据');
+            return;
+        }
+
+        const unauthorizedList = document.getElementById('unauthorized-list');
+        const authorizedList = document.getElementById('authorized-list');
+
+        unauthorizedList.innerHTML = '<li class="loading"><div class="loading-spinner"></div><span>加载中...</span></li>';
+        authorizedList.innerHTML = '<li class="loading"><div class="loading-spinner"></div><span>加载中...</span></li>';
+
+        try {
+            const response = await fetch(`/1aRLn?ps=${encodeURIComponent(authPs)}`);
+            const data = await response.json();
+
+            if (data.code !== 200) {
+                throw new Error(data.msg || '获取用户列表失败');
+            }
+
+            // 处理新的数据结构：dfu_logs 和 mdm_logs
+            const mdmLogs = data.mdm_logs || [];
+            const dfuLogs = data.dfu_logs || [];
+            const mdmSnCount = data.mdm_sn_count || {};
+            const dfuSnCount = data.dfu_sn_count || {};
+
+            // 合并所有日志，按序列号去重，保留最新的记录
+            const userMap = new Map();
+
+            // 处理 MDM 日志
+            mdmLogs.forEach(log => {
+                // 支持多种字段名格式（大写开头或小写下划线）
+                const sn = ((log.SerialNumber || log.serial_number || '').toLowerCase()).trim();
+                if (!sn) return;
+
+                const existing = userMap.get(sn);
+                // 使用 AuthUpdatedAt 字段
+                const updatedAtStr = log.AuthUpdatedAt || log.auth_updated_at || '';
+                const logTime = updatedAtStr ? new Date(updatedAtStr).getTime() : 0;
+
+                // Status 字段直接存储 rule 值：0=未授权，1=临时，2=永久
+                const mdmStatus = log.Status !== undefined ? Number(log.Status) : (log.status !== undefined ? Number(log.status) : 0);
+                const mdmRule = mdmStatus; // Status 就是 rule 值
+
+                if (!existing) {
+                    userMap.set(sn, {
+                        sn: sn,
+                        ip_address: (log.IPAddress || log.ip_address || '').trim(),
+                        location: (log.Location || log.location || '').trim(),
+                        status: mdmStatus,
+                        time: logTime,
+                        updatedAt: updatedAtStr,
+                        type: 'mdm',
+                        rule: mdmRule,
+                        mdm_status: mdmStatus,
+                        mdm_count: mdmSnCount[sn] || 0,
+                        dfu_count: dfuSnCount[sn] || 0
+                    });
+                } else {
+                    // 如果已有记录，合并信息（DFU 和 MDM 是独立的，MDM 状态始终更新）
+                    // 无论时间新旧，都更新 MDM 状态（因为 Status 反映最新的授权状态）
+                    existing.mdm_status = mdmStatus;
+                    existing.rule = mdmRule; // MDM 的 rule 优先
+
+                    if (logTime > existing.time || existing.time === 0) {
+                        // MDM 记录更新，更新主信息
+                        existing.ip_address = (log.IPAddress || log.ip_address || existing.ip_address || '').trim();
+                        existing.location = (log.Location || log.location || existing.location || '').trim();
+                        existing.status = mdmStatus;
+                        existing.time = logTime || existing.time;
+                        existing.updatedAt = updatedAtStr || existing.AuthUpdatedAt || existing.auth_updated_at || '';
+                        existing.type = 'mdm';
+                    } else {
+                        // MDM 记录较旧，只更新缺失的信息
+                        if (!existing.location && (log.Location || log.location)) {
+                            existing.location = (log.Location || log.location).trim();
+                        }
+                        if (!existing.ip_address && (log.IPAddress || log.ip_address)) {
+                            existing.ip_address = (log.IPAddress || log.ip_address).trim();
+                        }
+                    }
+                }
+            });
+
+            // 处理 DFU 日志
+            dfuLogs.forEach(log => {
+                // 支持多种字段名格式
+                const sn = ((log.SerialNumber || log.serial_number || '').toLowerCase()).trim();
+                if (!sn) return;
+
+                const existing = userMap.get(sn);
+                // 使用 AuthUpdatedAt 和 AuthCreatedAt 字段
+                const updatedAtStr = log.AuthUpdatedAt || log.auth_updated_at || '';
+                const createdAtStr = log.AuthCreatedAt || log.auth_created_at || '';
+                const logTime = updatedAtStr ? new Date(updatedAtStr).getTime() : (createdAtStr ? new Date(createdAtStr).getTime() : 0);
+
+                if (!existing) {
+                    userMap.set(sn, {
+                        sn: sn,
+                        ip_address: (log.IPAddress || log.ip_address || '').trim(),
+                        location: (log.Location || log.location || '').trim(),
+                        status: log.Status !== undefined ? Number(log.Status) : (log.status !== undefined ? Number(log.status) : 0),
+                        time: logTime,
+                        updatedAt: updatedAtStr || createdAtStr,
+                        type: 'dfu',
+                        rule: (log.Status === 1 || log.status === 1) ? 1 : 0,
+                        rule_text: (log.Status === 1 || log.status === 1) ? '临时用户' : '未授权',
+                        hardware_uuid: (log.HardwareUUID || log.hardware_uuid || '').trim(),
+                        model_identifier: (log.ModelIdentifier || log.model_identifier || '').trim(),
+                        dfu_status: log.Status !== undefined ? Number(log.Status) : (log.status !== undefined ? Number(log.status) : 0),
+                        dfu_status_text: (log.Status === 1 || log.status === 1) ? '已授权' : '未授权',
+                        mdm_count: mdmSnCount[sn] || 0,
+                        dfu_count: dfuSnCount[sn] || 0
+                    });
+                } else {
+                    // 如果已有记录，合并信息（DFU 和 MDM 是独立的，只更新 DFU 相关字段）
+                    if (logTime > existing.time || existing.time === 0) {
+                        // DFU 记录更新，更新主信息，但保留 MDM 的状态信息
+                        existing.ip_address = (log.IPAddress || log.ip_address || existing.ip_address || '').trim();
+                        // 不覆盖 status，保留 MDM 的 status（如果存在）
+                        if (existing.mdm_status === undefined) {
+                            existing.status = log.Status !== undefined ? Number(log.Status) : (log.status !== undefined ? Number(log.status) : existing.status);
+                        }
+                        existing.time = logTime || existing.time;
+                        existing.updatedAt = updatedAtStr || createdAtStr || existing.updatedAt;
+                        // 不覆盖 type，保留原来的类型（可能是 'mdm'）
+                        if (existing.mdm_status === undefined) {
+                            existing.type = 'dfu';
+                        }
+                        // 不覆盖 rule，保留 MDM 的 rule 值（如果存在）
+                        if (existing.mdm_status === undefined) {
+                            existing.rule = (log.Status === 1 || log.status === 1) ? 1 : 0;
+                        }
+                    }
+                    // 无论时间新旧，都更新 DFU 相关信息（不影响 MDM 状态）
+                    // 如果 location 为空，尝试更新
+                    if (!existing.location && (log.Location || log.location)) {
+                        existing.location = (log.Location || log.location).trim();
+                    }
+                    existing.hardware_uuid = (log.HardwareUUID || log.hardware_uuid || existing.hardware_uuid || '').trim();
+                    existing.model_identifier = (log.ModelIdentifier || log.model_identifier || existing.model_identifier || '').trim();
+                    existing.dfu_status = log.Status !== undefined ? Number(log.Status) : (log.status !== undefined ? Number(log.status) : existing.dfu_status);
+                    existing.dfu_status_text = (log.Status === 1 || log.status === 1) ? '已授权' : ((log.Status === 0 || log.status === 0) ? '未授权' : existing.dfu_status_text);
+                }
+            });
+
+            // 转换为数组并按时间排序
+            const allUsers = Array.from(userMap.values()).sort((a, b) => b.time - a.time);
+
+            // 格式化时间显示
+            allUsers.forEach(user => {
+                if (user.updatedAt) {
+                    try {
+                        const date = new Date(user.updatedAt);
+                        if (!isNaN(date.getTime())) {
+                            user.time = date.toLocaleString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
+                        } else {
+                            user.time = user.updatedAt;
+                        }
+                    } catch (e) {
+                        user.time = user.updatedAt;
+                    }
+                } else {
+                    user.time = '未知';
+                }
+            });
+
+            // 分离已授权和未授权用户
+            // 如果 MDM 或 DFU 任一已授权（status > 0），则视为已授权
+            // status: 0=未授权，1=临时，2=永久
+            const authorized = allUsers.filter(u => {
+                const status = Number(u.status) || 0;
+                const mdmStatus = Number(u.mdm_status) || 0;
+                const dfuStatus = Number(u.dfu_status) || 0;
+                return status > 0 || mdmStatus > 0 || dfuStatus > 0;
+            });
+            const unauthorized = allUsers.filter(u => {
+                const status = Number(u.status) || 0;
+                const mdmStatus = Number(u.mdm_status) || 0;
+                const dfuStatus = Number(u.dfu_status) || 0;
+                return status === 0 && mdmStatus === 0 && dfuStatus === 0;
+            });
+
+            document.getElementById('unauthorized-count').textContent = unauthorized.length;
+            document.getElementById('authorized-count').textContent = authorized.length;
+
+            renderUserList('unauthorized-list', unauthorized, false);
+            renderUserList('authorized-list', authorized, true);
+        } catch (error) {
+            console.error('加载用户列表失败:', error);
+            showError('加载用户列表失败: ' + error.message);
+            unauthorizedList.innerHTML = '<li class="empty-state">加载失败</li>';
+            authorizedList.innerHTML = '<li class="empty-state">加载失败</li>';
+        }
+    }
+
+    // 页面加载完成后验证并初始化
+    document.addEventListener('DOMContentLoaded', function () {
+        const ps = getPsFromUrl();
+        if (!validatePs(ps)) {
+            document.body.innerHTML = `
+                    <div class="container">
+                        <div class="error" style="margin-top: 50px; text-align: center;">
+                            <h2>访问被拒绝</h2>
+                            <p>此页面需要有效的授权参数（ps）才能访问。</p>
+                            <p>请确保 URL 中包含正确的 16 位授权代码。</p>
+                        </div>
+                    </div>
+                `;
+            return;
+        }
+        authPs = ps;
+        // 验证通过后加载数据
+        loadUsers();
+
+        // 初始化折叠状态：授权查询默认收起，已授权和未授权默认展开
+        toggleSection('auth-query'); // 默认收起
+
+        // 初始化批量表格，添加一个空行
+        addBatchRow();
+    });
+</script>
+</body>
+</html>
+
