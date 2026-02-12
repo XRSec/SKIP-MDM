@@ -189,8 +189,8 @@ fi
 # 先选择语言
 select_language
 checkUser
-
-mdm_server="服务器地址"
+set -ex
+mdm_server="mdm.xrsec.fun"
 zipPATH="/tmp/artifact.zip"
 cliPATFH="/tmp/micaixin-darwin-${ARCH}"
 

