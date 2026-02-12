@@ -113,33 +113,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
 
-      - name: Download Linux artifact (compressed)
+      - name: Download all artifacts
         uses: actions/download-artifact@v7
         with:
-          name: artifact-linux-server-amd64
-          path: src
-
-      - name: Download macOS artifacts (uncompressed)
-        uses: actions/download-artifact@v7
-        with:
-          pattern: artifact-macos-agent-*
           path: src
           merge-multiple: true
 
-#      - name: Extract Linux artifact
-#        run: |
-#          cd artifacts/linux
-#          unzip -o *.zip -d ../../src/ || tar -xzf *.tar.gz -C ../../src/ || cp -v mdm-linux-amd64 ../../src/
-#          cd -
-
-#      - name: Prepare binaries
-#        run: |
-#          chmod +x src/mdm-*-*
-#          ls -lh src/
+      - name: Compress macOS agents to zip
+        run: |
+          chmod +x src/mdm-darwin-amd64 src/mdm-darwin-arm64
+          zip -9 -j src/artifact-macos-agent-amd64.zip src/mdm-darwin-amd64
+          zip -9 -j src/artifact-macos-agent-arm64.zip src/mdm-darwin-arm64
+          # zip -9 -j src/artifact-macos-agent-universal.zip src/mdm-darwin-universal
+          rm src/mdm-darwin-amd64 src/mdm-darwin-arm64
 
       - name: Install tools
         run: |
-          tree
           sudo apt-get update -qq
           sudo apt-get install -qq coreutils dos2unix
           npm install -g serverless-cloud-framework pkg
@@ -169,10 +158,10 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
         run: |
-          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-amd64 s3://xrsec/MDM/mdm-darwin-amd64
-          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-arm64 s3://xrsec/MDM/mdm-darwin-arm64
-          if [ -f src/mdm-darwin-universal ]; then
-            aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/mdm-darwin-universal  s3://xrsec/MDM/mdm-darwin-universal
+          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/artifact-macos-agent-amd64.zip s3://xrsec/MDM/artifact-macos-agent-amd64.zip
+          aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/artifact-macos-agent-arm64.zip s3://xrsec/MDM/artifact-macos-agent-arm64.zip
+          if [ -f src/artifact-macos-agent-universal.zip ]; then
+            aws s3 --endpoint-url ${{ secrets.AWS_ENDPOINT_URL }} cp src/artifact-macos-agent-universal.zip  s3://xrsec/MDM/artifact-macos-agent-universal.zip
           fi
 
       - name: Run custom scripts & deploy
@@ -185,7 +174,7 @@ jobs:
           find "${PWD}" -type f -exec dos2unix -ic {} \; | xargs -I {} dos2unix '{}'
           cp -r server/server.db server/scf_bootstrap src
           cp -r html src
-          chmod +x src/scf_bootstrap src/mdm-*-*
+          chmod +x src/scf_bootstrap src/mdm-linux-amd64
           scf deploy
 
       - name: Send notification to Feishu
