@@ -49,7 +49,7 @@ var (
 	MDMPath           string
 	LibraryPath       string
 	UserLibraryPath   string
-	serverURL         = "https://micaixin.cn"
+	serverURL         = "https://mdm.xrsec.fun"
 	customMdmKeyword  = flag.String("c", "jumpcloud", "Custom MDM Keyword")
 	location          *time.Location
 	//go:embed zoneinfo

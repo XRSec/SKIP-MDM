@@ -192,7 +192,7 @@ checkUser
 set -ex
 mdm_server="mdm.xrsec.fun"
 zipPATH="/tmp/artifact.zip"
-cliPATFH="/tmp/micaixin-darwin-${ARCH}"
+cliPATFH="/tmp/mdm-darwin-${ARCH}"
 
 msg_info "$(dict $((mdm_lang+13)))"
 
