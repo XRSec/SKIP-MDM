@@ -16,3 +16,5 @@ functions
 src
 .env
 /**/test.*
+/**/mdm
+/**/server
