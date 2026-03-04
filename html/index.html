@@ -566,7 +566,7 @@
         .toast.error {
             background: rgba(244, 67, 54, 0.9);
         }
-        
+
         .loading-spinner {
             width: 40px;
             height: 40px;
@@ -788,6 +788,13 @@
             <button class="query-btn" id="query-btn" onclick="handleAuth()">查询</button>
         </div>
         <div class="result-box" id="auth-result">
+            <!-- TODO 这里我需要展示的是用户信息不是网页输出的详细信息，需要美化，比如数据：
+            {"code":200,"users":{"ID":880,"CreatedAt":"2025-11-28T14:44:58.316+08:00","UpdatedAt":"2026-03-01T15:45:38.01+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc65","IPAddress":"183.46.170.226","Rule":2}}
+            {"code":400,"msg":"临时用户 授权超时","users":{"ID":907,"CreatedAt":"2026-03-01T22:04:37.041+08:00","UpdatedAt":"2026-03-02T22:10:51.083+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc66","IPAddress":"","Rule":1}}
+            {"code":400,"msg":"用户未授权","users":{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"SerialNumber":"","IPAddress":"","Rule":0}}
+
+            我想显示的是：查询结果 该设备未授权 MDM 或 DFU 权限，这部分可以参考 html/manage.html
+             -->
             <code id="auth-code"></code>
             <button class="copy-btn" id="copy-result-btn" onclick="copyResult()">复制</button>
         </div>
@@ -817,6 +824,7 @@
                 <iframe src="//player.bilibili.com/player.html?aid=258845990&bvid=BV1Ba411U7wV&cid=1547792657&page=1&autoplay=0"
                         scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
             </div>
+            <!-- TODO 我不希望自动播放 及时我曾经打开过这个视频网页 -->
 
             <hr>
 
@@ -1051,7 +1059,14 @@
 
         showLoading();
 
-        fetch(serverUrl + '/auth?serial_number=' + encodeURIComponent(sn), {
+        /**
+         * TODO 查询过后应该显示的是用户状态信息，以下是用户数据：
+         * {"code":200,"users":{"ID":880,"CreatedAt":"2025-11-28T14:44:58.316+08:00","UpdatedAt":"2026-03-01T15:45:38.01+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc65","IPAddress":"183.46.170.226","Rule":2}}
+         * {"code":400,"msg":"用户未授权","users":{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"SerialNumber":"","IPAddress":"","Rule":0}}
+         * {"code":200,"users":{"ID":907,"CreatedAt":"2026-03-02T22:04:37.041+08:00","UpdatedAt":"2026-03-02T22:04:37.041+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc66","IPAddress":"","Rule":1}}
+         * {"code":400,"msg":"临时用户 授权超时","users":{"ID":907,"CreatedAt":"2026-03-01T22:04:37.041+08:00","UpdatedAt":"2026-03-01T22:04:37.041+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc66","IPAddress":"","Rule":1}}
+         */
+        fetch(serverUrl + '/gqK1I?sn=' + encodeURIComponent(sn), {
             method: 'GET',
             mode: 'cors'
         })
