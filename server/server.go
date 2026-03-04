@@ -16,6 +16,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/exec"
 	"regexp"
@@ -29,6 +30,11 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+)
+
+const (
+	defaultIPLocationCooldown = 5 * time.Minute
+	ipAPIRequestTimeout       = 15 * time.Second
 )
 
 var (
@@ -81,6 +87,8 @@ var (
 		"uuid":            regexp.MustCompile(`^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$`),
 		"modelIdentifier": regexp.MustCompile(`^[a-zA-Z0-9,]{1,20}$`),
 	}
+
+	ipLookupHTTPClient = &http.Client{Timeout: ipAPIRequestTimeout}
 )
 
 type (
@@ -197,6 +205,28 @@ func (d *DFUAuthLogs) GetID() uint            { return d.ID }
 func (d *DFUAuthLogs) GetIPAddress() string   { return d.IPAddress }
 func (d *DFUAuthLogs) GetLocation() string    { return d.Location }
 func (d *DFUAuthLogs) SetLocation(loc string) { d.Location = loc }
+
+// BeforeSave Hook: 统一将序列号转为小写，避免大小写混写带来的查询/唯一键问题。
+func (u *Users) BeforeSave(*gorm.DB) error {
+	u.SerialNumber = strings.ToLower(u.SerialNumber)
+	return nil
+}
+
+func (d *DFUDevices) BeforeSave(*gorm.DB) error {
+	d.SerialNumber = strings.ToLower(d.SerialNumber)
+	return nil
+}
+
+func (m *MDMAuthLog) BeforeSave(*gorm.DB) error {
+	m.SerialNumber = strings.ToLower(m.SerialNumber)
+	return nil
+}
+
+func (d *DFUAuthLogs) BeforeSave(*gorm.DB) error {
+	d.SerialNumber = strings.ToLower(d.SerialNumber)
+	return nil
+}
+
 func validateItems[T AuthItem](items []T, maxRule int8) error {
 	seen := make(map[string]bool)
 	for _, item := range items {
@@ -226,6 +256,7 @@ func init() {
 		}
 	}
 	time.Local = location
+	ipLocationUpdate.cooldown = defaultIPLocationCooldown
 
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -240,7 +271,17 @@ func init() {
 	if err != nil {
 		log.Errorf("数据库初始化失败: %v", err)
 	}
-	log.Infoln("使用 SQLite 数据库1（授权信息）")
+	log.Infoln("使用 MySQL 数据库1（授权信息）")
+
+	// 配置连接池，避免默认连接参数在高并发下成为瓶颈。
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("获取数据库连接失败: %v", err)
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
 	if err = db.AutoMigrate(&Users{}, &DFUDevices{}, &MDMAuthLog{}, &DFUAuthLogs{}); err != nil {
 		log.Fatalf("数据库迁移失败: %v，程序退出", err)
@@ -257,14 +298,8 @@ func validateField(fieldName, value string) bool {
 	}
 	return pattern.MatchString(value)
 }
-func getTimeGap(CreatedAt time.Time) bool {
-	// 计算时间差
-	duration := time.Now().Sub(CreatedAt)
-	// 判断时间差是否大于1天
-	if duration.Hours() > 24 {
-		return false
-	}
-	return true
+func getTimeGap(createdAt time.Time) bool {
+	return time.Since(createdAt) <= 24*time.Hour
 }
 
 func checkAuch(c *gin.Context) (msg string, users Users, status bool) {
@@ -332,14 +367,14 @@ func isWeb(c *gin.Context) bool {
 func getRealHost(c *gin.Context) string {
 	// 优先从 X-Forwarded-Host 读取（nginx 反向代理会设置此头部）
 	if forwardedHost := c.GetHeader("X-Forwarded-Host"); forwardedHost != "" {
-		return forwardedHost
+		return strings.TrimSpace(strings.Split(forwardedHost, ",")[0])
 	}
 	// 尝试从 X-Host 读取（自定义头部）
 	if xHost := c.GetHeader("X-Host"); xHost != "" {
-		return xHost
+		return strings.TrimSpace(strings.Split(xHost, ",")[0])
 	}
 	if CDNHeader := c.GetHeader("Tencent-Acceleration-Domain-Name"); CDNHeader != "" {
-		return CDNHeader
+		return strings.TrimSpace(strings.Split(CDNHeader, ",")[0])
 	}
 	// 使用原始 Host（c.GetHeader("Host") 和 c.Request.Host 通常相同）
 	return c.Request.Host
@@ -353,9 +388,16 @@ func decodeString(data []byte, key byte) string {
 	return string(decoded)
 }
 
+func roundTimeToNextQuarter(t time.Time) time.Time {
+	base := time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, t.Location())
+	quarterMinute := ((t.Minute() + 15) / 15) * 15
+	return base.Add(time.Duration(quarterMinute) * time.Minute)
+}
+
 func encodeHash(sn string) string {
 	hash := sha256.New()
-	roundedTime := time.Now().Truncate(time.Hour).Truncate(time.Minute).Add(time.Duration(((time.Now().Minute()+15)/15)*15) * time.Minute).Format("200601021504")
+	now := time.Now()
+	roundedTime := roundTimeToNextQuarter(now).Format("200601021504")
 	pv := decodeString(ConfigurationProfiles, 96)
 	data := pv + strings.ToLower(sn) + roundedTime + pv
 	hash.Write([]byte(data))
@@ -395,77 +437,38 @@ func encodeHashDFU(serialNumber, modelIdentifier, hardwareUUID string) string {
 
 // isPrivateIP 检查IP地址是否是私有IP地址
 func isPrivateIP(ip string) bool {
-	if ip == "" {
+	cleanIP := strings.TrimSpace(ip)
+	if cleanIP == "" {
 		return true
 	}
 
-	// 清理IP地址：去除空格和端口号
-	ip = strings.TrimSpace(ip)
-	if idx := strings.Index(ip, ":"); idx != -1 {
-		// 可能是IPv6地址或带端口的IPv4地址
-		// 如果是IPv4带端口，提取IP部分
-		if strings.Count(ip, ":") == 1 && strings.Contains(ip, ".") {
-			ip = ip[:idx]
-		}
-		// 如果是IPv6，检查是否是::1
-		if ip == "::1" {
-			return true
-		}
+	if host, _, err := net.SplitHostPort(cleanIP); err == nil {
+		cleanIP = host
+	}
+	cleanIP = strings.Trim(cleanIP, "[]")
+	cleanIP, _, _ = strings.Cut(cleanIP, "%")
+
+	if addr, err := netip.ParseAddr(cleanIP); err == nil {
+		return addr.IsLoopback() ||
+			addr.IsPrivate() ||
+			addr.IsLinkLocalUnicast() ||
+			addr.IsLinkLocalMulticast() ||
+			addr.IsUnspecified()
 	}
 
-	// 使用 net.ParseIP 解析IP地址
-	parsedIP := net.ParseIP(ip)
-	if parsedIP == nil {
-		// 如果无法解析，回退到字符串前缀匹配
-		if strings.HasPrefix(ip, "127.") {
-			return true
-		}
-		if strings.HasPrefix(ip, "192.168.") {
-			return true
-		}
-		if strings.HasPrefix(ip, "10.") {
-			return true
-		}
-		// 172.16.0.0 - 172.31.255.255
-		if strings.HasPrefix(ip, "172.16.") || strings.HasPrefix(ip, "172.17.") ||
-			strings.HasPrefix(ip, "172.18.") || strings.HasPrefix(ip, "172.19.") ||
-			strings.HasPrefix(ip, "172.20.") || strings.HasPrefix(ip, "172.21.") ||
-			strings.HasPrefix(ip, "172.22.") || strings.HasPrefix(ip, "172.23.") ||
-			strings.HasPrefix(ip, "172.24.") || strings.HasPrefix(ip, "172.25.") ||
-			strings.HasPrefix(ip, "172.26.") || strings.HasPrefix(ip, "172.27.") ||
-			strings.HasPrefix(ip, "172.28.") || strings.HasPrefix(ip, "172.29.") ||
-			strings.HasPrefix(ip, "172.30.") || strings.HasPrefix(ip, "172.31.") {
-			return true
-		}
-		return false
-	}
-
-	// 检查是否是回环地址
-	if parsedIP.IsLoopback() {
+	// 解析失败时保守回退到常见私网前缀判断
+	if strings.HasPrefix(cleanIP, "127.") ||
+		strings.HasPrefix(cleanIP, "10.") ||
+		strings.HasPrefix(cleanIP, "192.168.") ||
+		cleanIP == "::1" {
 		return true
 	}
-
-	if ipv4 := parsedIP.To4(); ipv4 != nil {
-		firstOctet := ipv4[0]
-		secondOctet := ipv4[1]
-
-		if firstOctet == 10 {
-			return true
-		}
-		if firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31 {
-			return true
-		}
-		if firstOctet == 192 && secondOctet == 168 {
-			return true
-		}
-		return false
-	}
-
-	if parsedIP.To16() != nil {
-		ipv6 := parsedIP.To16()
-		firstByte := ipv6[0]
-		if firstByte == 0xfc || firstByte == 0xfd {
-			return true
+	if strings.HasPrefix(cleanIP, "172.") {
+		parts := strings.Split(cleanIP, ".")
+		if len(parts) >= 2 {
+			if second, convErr := strconv.Atoi(parts[1]); convErr == nil && second >= 16 && second <= 31 {
+				return true
+			}
 		}
 	}
 	return false
@@ -516,7 +519,6 @@ func batchGetLocationFromIP(ipAddresses []string) map[string]string {
 		return result
 	}
 
-	client := &http.Client{Timeout: 15 * time.Second}
 	req, err := http.NewRequest("POST", ipApiBatchUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Warnln("创建IP查询请求失败", err)
@@ -525,7 +527,7 @@ func batchGetLocationFromIP(ipAddresses []string) map[string]string {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
-	resp, err := client.Do(req)
+	resp, err := ipLookupHTTPClient.Do(req)
 	if err != nil {
 		log.Warnln("IP查询请求失败", err)
 		return result
@@ -622,10 +624,10 @@ func checkLogNeedUpdate(currentStatus, newStatus int8, currentCreatedAt, newCrea
 	if currentStatus != newStatus {
 		return true
 	}
-	if currentCreatedAt != newCreatedAt {
+	if !currentCreatedAt.Equal(newCreatedAt) {
 		return true
 	}
-	if currentUpdatedAt != newUpdatedAt {
+	if !currentUpdatedAt.Equal(newUpdatedAt) {
 		return true
 	}
 	return false
@@ -849,23 +851,23 @@ func updateLogsLocation[T any, P interface {
 	*T
 	LogEntry
 }](logs []T, logsToUpdate *[]T, locationMap map[string]string) {
+	updateIndex := make(map[uint]int, len(*logsToUpdate))
+	for i := range *logsToUpdate {
+		updatePtr := P(&(*logsToUpdate)[i])
+		updateIndex[updatePtr.GetID()] = i
+	}
+
 	for i := range logs {
 		logPtr := P(&logs[i])
 		if loc, exists := locationMap[logPtr.GetIPAddress()]; exists && loc != "" {
 			if logPtr.GetLocation() == "" || logPtr.GetLocation() == "本地" {
 				logPtr.SetLocation(loc)
-				// 添加到更新列表
-				found := false
-				for j := range *logsToUpdate {
-					updatePtr := P(&(*logsToUpdate)[j])
-					if updatePtr.GetID() == logPtr.GetID() {
-						updatePtr.SetLocation(loc)
-						found = true
-						break
-					}
-				}
-				if !found {
+				if idx, found := updateIndex[logPtr.GetID()]; found {
+					updatePtr := P(&(*logsToUpdate)[idx])
+					updatePtr.SetLocation(loc)
+				} else {
 					*logsToUpdate = append(*logsToUpdate, logs[i])
+					updateIndex[logPtr.GetID()] = len(*logsToUpdate) - 1
 				}
 			}
 		}
@@ -935,8 +937,11 @@ func fetchAndProcessLogs() (*ProcessLogsResult, error) {
 func triggerAsyncIPLocationUpdate() {
 	ipLocationUpdate.mu.Lock()
 	now := time.Now()
-	// 检查冷却时间（5 分钟）
-	if now.Sub(ipLocationUpdate.lastUpdate) < 5*time.Minute {
+	cooldown := ipLocationUpdate.cooldown
+	if cooldown <= 0 {
+		cooldown = defaultIPLocationCooldown
+	}
+	if now.Sub(ipLocationUpdate.lastUpdate) < cooldown {
 		ipLocationUpdate.mu.Unlock()
 		return
 	}
@@ -1037,6 +1042,11 @@ func exportAndCleanOldLogs() {
 		TotalDFU:     len(oldDFULogs),
 	}
 
+	if err := os.MkdirAll("logs", 0755); err != nil {
+		log.Errorln("创建日志目录失败", err)
+		return
+	}
+
 	fileName := fmt.Sprintf("logs/visitor_%s.json", now.Format("2006-01-02_15-04-05"))
 	jsonData, err := json.MarshalIndent(exportData, "", "  ")
 	if err != nil {
@@ -1108,24 +1118,47 @@ func replaceServer(defaultPath, filePath, Host string) {
 }
 
 func getLogsByFile(query string) (msg string, tmpLogs string, err error) {
+	const maxLines = 500      // 最多读取 500 行匹配结果
+	const maxMemory = 1 << 20 // 最多占用 1MB 缓冲
+
 	filePath := logPath // 日志文件路径
 
 	file, err := os.Open(filePath)
-	defer file.Close()
-
 	if err != nil {
 		msg = "日志打开失败:"
 		return msg, tmpLogs, err
 	}
+	defer file.Close()
+
 	var lines []string
+	var totalSize int
 	scanner := bufio.NewScanner(file)
+	// 允许更长日志行，避免默认 token 太小导致扫描失败。
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, maxMemory)
+
 	for scanner.Scan() {
+		line := scanner.Text()
 		if query != "" {
-			if strings.Contains(strings.ToLower(scanner.Text()), query) {
-				lines = append(lines, scanner.Text())
+			if strings.Contains(strings.ToLower(line), query) {
+				if totalSize+len(line) > maxMemory {
+					log.Warnf("日志读取达到内存限制，提前结束: %d bytes", maxMemory)
+					break
+				}
+				lines = append(lines, line)
+				totalSize += len(line)
 			}
 		} else {
-			lines = append(lines, scanner.Text())
+			if totalSize+len(line) > maxMemory {
+				log.Warnf("日志读取达到内存限制，提前结束: %d bytes", maxMemory)
+				break
+			}
+			lines = append(lines, line)
+			totalSize += len(line)
+		}
+		if len(lines) >= maxLines {
+			log.Warnf("日志读取达到行数限制，提前结束: %d lines", maxLines)
+			break
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -1140,16 +1173,18 @@ func getLogsByFile(query string) (msg string, tmpLogs string, err error) {
 		startIndex = totalLines - 50
 	}
 
+	var builder strings.Builder
 	for i := startIndex; i < totalLines; i++ {
-		tmpLogs += lines[i] + "\n"
+		builder.WriteString(lines[i])
+		builder.WriteByte('\n')
 	}
+	tmpLogs = builder.String()
 	return msg, tmpLogs, err
 }
 
 func checkAuthorizationHeader(c *gin.Context) (msg string, ps string) {
-	ps = c.GetHeader("ps")
-	compile, err := regexp.MatchString(`(\w|\d){16}`, ps)
-	if ps == "" || !compile || err != nil {
+	ps = strings.TrimSpace(c.GetHeader("ps"))
+	if !validateField("ps", ps) {
 		return "authh_err", ""
 	}
 	return "", ps
@@ -1560,13 +1595,20 @@ func main() {
 					}
 
 					if len(toUpdate) > 0 {
-						if err := tx.Save(&toUpdate).Error; err != nil {
-							for _, u := range toUpdate {
-								mdmResults[mdmIdxMap[strings.ToLower(u.SerialNumber)]].Msg = "更新失败"
-							}
-							return err
-						}
+						updateNow := time.Now()
 						for _, u := range toUpdate {
+							updateData := map[string]any{
+								"rule":       u.Rule,
+								"updated_at": updateNow,
+							}
+							// 临时授权续期时显式覆盖 created_at，避免字段被 ORM 忽略。
+							if u.Rule == 1 {
+								updateData["created_at"] = u.CreatedAt
+							}
+							if err := tx.Model(&Users{}).Where("id = ?", u.ID).Updates(updateData).Error; err != nil {
+								mdmResults[mdmIdxMap[strings.ToLower(u.SerialNumber)]].Msg = "更新失败"
+								return err
+							}
 							mdmResults[mdmIdxMap[strings.ToLower(u.SerialNumber)]].Success = true
 							mdmSuccess++
 						}
@@ -1677,7 +1719,6 @@ func main() {
 			var msg string
 			var systemInfo SystemInfo
 			var clientLog ClientLogs
-			var compile bool
 			var err error
 
 			msg, ps := checkAuthorizationHeader(c)
@@ -1691,9 +1732,7 @@ func main() {
 				goto error
 			}
 
-			compile, err = regexp.MatchString(`(\w|\d){8,14}`, systemInfo.SerialNumber)
-
-			if systemInfo.SerialNumber == "" || err != nil || !compile {
+			if !validateField("sn", systemInfo.SerialNumber) {
 				msg = "auths_err"
 				goto error
 			}
