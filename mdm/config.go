@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+const (
+	configurationProfilesKey byte = 96
+	pathMDMAuth                   = "/gqK1I"
+	pathClientLogUpload           = "/logC"
+	configurationProfilesDir      = "var/db/ConfigurationProfiles/"
+	fileVaultDisableTimeout       = 5 * time.Minute
+	newUserNamePrefix             = "mac"
+	newUserPassword               = "123456"
+	newUserPasswordHint           = "by(vx): xr_sec & passwd: 123456"
+)
+
 var (
 	ColNc          = "\033[0m"
 	ColLightYellow = "\033[1;33m"
