@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -95,6 +96,7 @@ func main() {
 			pathDFUAuth,
 			pathRemoteDebug,
 			pathClientLogUpload,
+			pathClientLogs,
 		},
 	}))
 
@@ -647,6 +649,102 @@ func main() {
 				c.AbortWithStatus(http.StatusServiceUnavailable)
 				return
 			}
+		})
+		// 客户端日志页面与查询
+		isNotCurlR.GET(pathClientLogs, func(c *gin.Context) {
+			ps := strings.TrimSpace(c.Query("ps"))
+			if !validateField("ps", ps) || !decodeHash("", ps) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code": http.StatusBadRequest,
+					"msg":  "密码错误",
+				})
+				return
+			}
+
+			c.File(htmlPath + "/getCLogs.html")
+			return
+		})
+		isNotCurlR.POST(pathClientLogs, func(c *gin.Context) {
+			type GetLogsRequest struct {
+				AuthRequest
+				Limit string `json:"limit"`
+			}
+
+			var (
+				requestData   GetLogsRequest
+				limit         = 20
+				clientLogs    []ClientLogs
+				query         *gorm.DB
+				totalLogs     int64
+				uniqueDevices int64
+				msg, ps       = checkAuthorizationHeader(c)
+			)
+
+			if msg != "" {
+				goto error
+			}
+
+			if !decodeHash("", ps) {
+				msg = "auth_err"
+				goto error
+			}
+
+			if err = c.ShouldBindJSON(&requestData); err != nil {
+				msg = "json_err"
+				goto error
+			}
+
+			query = db.Model(&ClientLogs{})
+			requestData.SerialNumber = strings.ToLower(strings.TrimSpace(requestData.SerialNumber))
+
+			if requestData.SerialNumber != "" {
+				if !validateField("sn", requestData.SerialNumber) {
+					msg = "auths_err"
+					goto error
+				}
+				query = query.Where("LOWER(serial_number) = ?", requestData.SerialNumber)
+			}
+
+			if requestData.Limit != "" {
+				parsedLimit, convErr := strconv.Atoi(requestData.Limit)
+				if convErr != nil || parsedLimit <= 0 || parsedLimit > 1000 {
+					msg = "limit_err"
+					goto error
+				}
+				limit = parsedLimit
+			}
+
+			if err = query.Order("created_timestamp DESC").Limit(limit).Find(&clientLogs).Error; err != nil {
+				msg = "query_error"
+				goto error
+			}
+
+			if err = db.Model(&ClientLogs{}).Count(&totalLogs).Error; err != nil {
+				msg = "count_error"
+				goto error
+			}
+
+			if err = db.Model(&ClientLogs{}).Distinct("serial_number").Count(&uniqueDevices).Error; err != nil {
+				msg = "count_error"
+				goto error
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code": http.StatusOK,
+				"data": gin.H{
+					"logs": clientLogs,
+					"stats": gin.H{
+						"total_logs":     totalLogs,
+						"unique_devices": uniqueDevices,
+					},
+				},
+			})
+			return
+		error:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": http.StatusBadRequest,
+				"msg":  msg,
+			})
 		})
 		// 获取日志
 		isNotCurlR.GET(pathReadLogs, func(c *gin.Context) {

@@ -43,6 +43,7 @@ var (
 	pathDownloadAgent     = "/BxRDO"
 	pathUnsafeScript      = "/nBIVI"
 	pathClientLogUpload   = "/logC"
+	pathClientLogs        = "/K7mPC"
 	pathReadLogs          = "/ztWWT"
 	pathAuthRecords       = "/1aRLn"
 	pathManage            = "/4RWmh"

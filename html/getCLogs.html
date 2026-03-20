@@ -1111,7 +1111,7 @@
             if (parsedLimit > 0 && parsedLimit <= 1000) {
                 requestData.limit = limit;
             }
-            const response = await fetch('/getCLogs', {
+            const response = await fetch(window.location.pathname, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
