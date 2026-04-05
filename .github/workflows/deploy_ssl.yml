@@ -54,7 +54,7 @@ jobs:
           done
 
       - name: 上传最新证书到工作流工件（7 天保留）
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: latest-ssl-certs
           path: ~/certs.zip

@@ -43,7 +43,7 @@ jobs:
         run: echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       - name: Upload backup as artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: mysql-backup-${{ steps.date.outputs.date }}
           path: mdm.sql.bz2
