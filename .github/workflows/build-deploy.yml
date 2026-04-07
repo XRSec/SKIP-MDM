@@ -108,6 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-linux-server
+      - build-macos-agent
       # - create-universal-binary
     steps:
       - name: Checkout code

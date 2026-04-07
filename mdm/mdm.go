@@ -132,7 +132,7 @@ func main() {
 					msgOk(t("PleaseRestartComputer"))
 				} else {
 					msgOk(t("Done"))
-					execCmd("open", fmt.Sprintf("%v/?q=%v", serverURL, SN))
+					execCmd("open", fmt.Sprintf("%v/?show_doc", serverURL))
 				}
 			},
 		},

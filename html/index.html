@@ -254,8 +254,11 @@
             display: flex;
         }
 
-        .query-section .result-box code {
-            padding-right: 0;
+        .result-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
         }
 
         .query-section .result-box .copy-btn {
@@ -263,6 +266,159 @@
             width: 100%;
             padding: 10px;
             text-align: center;
+            display: none;
+        }
+
+        .query-section .result-box.has-copy .copy-btn {
+            display: block;
+        }
+
+        .query-result-heading {
+            font-size: 15px;
+            font-weight: 600;
+            color: #5A4A3A;
+        }
+
+        .auth-card {
+            border-radius: 14px;
+            padding: 16px;
+            border: 1px solid transparent;
+        }
+
+        .auth-card-success {
+            background: rgba(209, 236, 241, 0.8);
+            border-color: rgba(12, 84, 96, 0.12);
+            color: #0C5460;
+        }
+
+        .auth-card-warn {
+            background: rgba(255, 243, 205, 0.82);
+            border-color: rgba(133, 100, 4, 0.12);
+            color: #856404;
+        }
+
+        .auth-card-error {
+            background: rgba(248, 215, 218, 0.82);
+            border-color: rgba(114, 28, 36, 0.12);
+            color: #721C24;
+        }
+
+        .auth-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .auth-card-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .auth-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .auth-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .auth-label {
+            min-width: 72px;
+            color: #8B7355;
+            font-weight: 600;
+        }
+
+        .auth-value {
+            flex: 1;
+            color: #333;
+            word-break: break-all;
+        }
+
+        .serial-number {
+            font-weight: 600;
+            color: #5A4A3A;
+            font-size: 15px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+            display: inline-block;
+            padding: 2px 6px;
+        }
+
+        .serial-number:hover {
+            background: #F5E6D3;
+            color: #8B7355;
+            transform: scale(1.03);
+        }
+
+        .serial-number:active {
+            transform: scale(0.98);
+        }
+
+        .serial-number.copied {
+            background: #D4EDDA;
+            color: #155724;
+        }
+
+        .rule-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .rule-temp {
+            background: #FFF3CD;
+            color: #856404;
+        }
+
+        .rule-vip {
+            background: #D1ECF1;
+            color: #0C5460;
+        }
+
+        .rule-unauthorized {
+            background: #F8D7DA;
+            color: #721C24;
+        }
+
+        .status-tip {
+            margin-top: 4px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .status-tip.warn {
+            background: rgba(255, 243, 205, 0.9);
+            color: #856404;
+        }
+
+        .status-tip.error {
+            background: rgba(248, 215, 218, 0.9);
+            color: #721C24;
+        }
+
+        .status-tip.info {
+            background: rgba(255, 255, 255, 0.55);
+            color: inherit;
+        }
+
+        .legacy-result {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
         }
 
         /* 复制命令按钮（始终显示） */
@@ -647,11 +803,6 @@
                 margin-top: 16px;
             }
 
-            .result-box code {
-                font-size: 12px;
-                padding-right: 50px;
-            }
-
             .copy-btn {
                 padding: 5px 10px;
                 font-size: 11px;
@@ -674,6 +825,24 @@
 
             .query-section .result-box .copy-btn {
                 padding: 10px;
+            }
+
+            .auth-card {
+                padding: 14px;
+            }
+
+            .auth-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .auth-row {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .auth-label {
+                min-width: auto;
             }
 
             .copy-command-btn {
@@ -788,14 +957,7 @@
             <button class="query-btn" id="query-btn" onclick="handleAuth()">查询</button>
         </div>
         <div class="result-box" id="auth-result">
-            <!-- TODO 这里我需要展示的是用户信息不是网页输出的详细信息，需要美化，比如数据：
-            {"code":200,"users":{"ID":880,"CreatedAt":"2025-11-28T14:44:58.316+08:00","UpdatedAt":"2026-03-01T15:45:38.01+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc65","IPAddress":"183.46.170.226","Rule":2}}
-            {"code":400,"msg":"临时用户 授权超时","users":{"ID":907,"CreatedAt":"2026-03-01T22:04:37.041+08:00","UpdatedAt":"2026-03-02T22:10:51.083+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc66","IPAddress":"","Rule":1}}
-            {"code":400,"msg":"用户未授权","users":{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"SerialNumber":"","IPAddress":"","Rule":0}}
-
-            我想显示的是：查询结果 该设备未授权 MDM 或 DFU 权限，这部分可以参考 html/manage.html
-             -->
-            <code id="auth-code"></code>
+            <div class="result-content" id="auth-result-content"></div>
             <button class="copy-btn" id="copy-result-btn" onclick="copyResult()">复制</button>
         </div>
     </div>
@@ -933,6 +1095,23 @@
             "query_btn": "查询",
             "copy": "复制",
             "copy_command": "点击复制",
+            "query_result": "查询结果",
+            "mdm_permission": "MDM 权限",
+            "serial_number": "序列号",
+            "ip_address": "IP地址",
+            "auth_time": "授权时间",
+            "status": "状态",
+            "unknown": "未知",
+            "badge_authorized": "已授权",
+            "badge_permanent": "永久会员",
+            "badge_temp": "临时用户",
+            "badge_unauthorized": "未授权",
+            "mdm_unauthorized": "该设备未授权 MDM 权限",
+            "temp_expired": "临时授权已过期（超过24小时）",
+            "temp_remaining": "剩余时间：约 {hours} 小时",
+            "legacy_result": "返回结果",
+            "query_failed": "查询失败",
+            "serial_copied": "✅ 已复制",
             "doc": "说明文档",
             "wechat": "微信 xr_sec",
             "lang_toggle": "English",
@@ -953,6 +1132,23 @@
             "query_btn": "Query",
             "copy": "Copy",
             "copy_command": "Click to Copy",
+            "query_result": "Query Result",
+            "mdm_permission": "MDM Access",
+            "serial_number": "Serial Number",
+            "ip_address": "IP Address",
+            "auth_time": "Authorized At",
+            "status": "Status",
+            "unknown": "Unknown",
+            "badge_authorized": "Authorized",
+            "badge_permanent": "Permanent",
+            "badge_temp": "Temporary",
+            "badge_unauthorized": "Unauthorized",
+            "mdm_unauthorized": "This device is not authorized for MDM",
+            "temp_expired": "Temporary authorization has expired (over 24 hours)",
+            "temp_remaining": "Remaining time: about {hours} hours",
+            "legacy_result": "Response",
+            "query_failed": "Query Failed",
+            "serial_copied": "✅ Copied",
             "doc": "Docs",
             "wechat": "WeChat xr_sec",
             "lang_toggle": "中文",
@@ -968,11 +1164,17 @@
     };
 
     let lang = "zh-CN";
+    let lastAuthResult = null;
     const serverUrl = "https://mdm.xrsec.fun";
 
     // 初始化
     document.addEventListener('DOMContentLoaded', function () {
         updateLanguage();
+
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has('show_doc')) {
+            showDocModal();
+        }
 
         // 回车键查询
         document.getElementById('auth-sn').addEventListener('keypress', function (e) {
@@ -1001,7 +1203,7 @@
         if (!input.value.trim()) {
             toggle.classList.remove('hidden');
             inputRow.classList.remove('show');
-            document.getElementById('auth-result').classList.remove('show');
+            clearQueryResult();
         }
     }
 
@@ -1019,6 +1221,10 @@
         document.getElementById('wechat-text').textContent = d.wechat;
         document.getElementById('lang-toggle').textContent = d.lang_toggle;
         document.title = d.title;
+
+        if (lastAuthResult) {
+            renderMdmQueryResult(lastAuthResult.payload, lastAuthResult.sn);
+        }
     }
 
     // 切换语言
@@ -1047,9 +1253,232 @@
         }, 2000);
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function getLocale() {
+        return lang === "zh-CN" ? "zh-CN" : "en-US";
+    }
+
+    function formatDateTime(value) {
+        const d = dictionary[lang];
+        if (!value || String(value).startsWith('0001-01-01')) {
+            return d.unknown;
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        return date.toLocaleString(getLocale());
+    }
+
+    function setQueryResult(html, copyText = '') {
+        const resultBox = document.getElementById('auth-result');
+        const resultContent = document.getElementById('auth-result-content');
+        resultContent.innerHTML = html;
+        resultBox.dataset.copyText = copyText;
+        resultBox.classList.add('show');
+        resultBox.classList.toggle('has-copy', Boolean(copyText));
+    }
+
+    function clearQueryResult() {
+        const resultBox = document.getElementById('auth-result');
+        const resultContent = document.getElementById('auth-result-content');
+        resultContent.innerHTML = '';
+        resultBox.dataset.copyText = '';
+        resultBox.classList.remove('show', 'has-copy');
+        lastAuthResult = null;
+    }
+
+    function copySerialNumber(sn, element) {
+        const serialNumber = (sn || '').trim().toUpperCase();
+        if (!serialNumber) {
+            return;
+        }
+
+        copyToClipboard(serialNumber, () => {
+            const originalText = element.textContent;
+            element.classList.add('copied');
+            element.textContent = dictionary[lang].serial_copied;
+            setTimeout(() => {
+                element.classList.remove('copied');
+                element.textContent = originalText;
+            }, 1500);
+        });
+    }
+
+    function renderLegacyResult(rawText, sn) {
+        const d = dictionary[lang];
+        const upperSn = escapeHtml(sn.toUpperCase());
+        const safeRaw = escapeHtml(rawText);
+
+        let badgeClass = 'rule-vip';
+        let badgeText = d.badge_authorized;
+        let cardClass = 'auth-card-success';
+        let detailText = safeRaw;
+
+        if (!rawText || rawText === 'error') {
+            badgeClass = 'rule-unauthorized';
+            badgeText = d.badge_unauthorized;
+            cardClass = 'auth-card-error';
+            detailText = escapeHtml(d.mdm_unauthorized);
+        } else if (rawText === 'time_error') {
+            badgeClass = 'rule-temp';
+            badgeText = d.badge_temp;
+            cardClass = 'auth-card-warn';
+            detailText = escapeHtml(d.time_error);
+        }
+
+        const html = `
+            <div class="query-result-heading">${escapeHtml(d.query_result)}</div>
+            <div class="auth-card ${cardClass}">
+                <div class="auth-card-header">
+                    <span class="auth-card-title">${escapeHtml(d.mdm_permission)}</span>
+                    <span class="rule-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+                </div>
+                <div class="auth-card-body">
+                    <div class="auth-row">
+                        <span class="auth-label">${escapeHtml(d.serial_number)}</span>
+                        <span class="auth-value">
+                            <span class="serial-number" onclick="copySerialNumber('${upperSn}', this)">${upperSn}</span>
+                        </span>
+                    </div>
+                    <div class="auth-row">
+                        <span class="auth-label">${escapeHtml(d.legacy_result)}</span>
+                        <span class="auth-value legacy-result">${detailText}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        setQueryResult(html, `${d.mdm_permission}: ${badgeText}\n${d.serial_number}: ${sn.toUpperCase()}\n${d.legacy_result}: ${rawText || d.mdm_unauthorized}`);
+    }
+
+    function renderMdmQueryResult(payload, sn) {
+        const d = dictionary[lang];
+
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            renderLegacyResult(String(payload || ''), sn);
+            return;
+        }
+
+        const user = payload.users || {};
+        const userRule = Number(user.Rule ?? user.rule ?? 0);
+        const createdAtRaw = user.CreatedAt || user.created_at || '';
+        const serialNumber = String(user.SerialNumber || user.serial_number || sn).toUpperCase();
+        const ipAddress = String(user.IPAddress || user.ip_address || d.unknown);
+        const createdAt = formatDateTime(createdAtRaw);
+        const isAuthorized = payload.code === 200;
+        const isExpiredTemp = userRule === 1 && (String(payload.msg || '').includes('超时') || String(payload.msg || '').toLowerCase().includes('expired'));
+
+        let badgeText = d.badge_unauthorized;
+        let badgeClass = 'rule-unauthorized';
+        let cardClass = 'auth-card-error';
+        let statusText = payload.msg || d.mdm_unauthorized;
+        let statusClass = 'error';
+
+        if (isAuthorized && userRule === 2) {
+            badgeText = d.badge_permanent;
+            badgeClass = 'rule-vip';
+            cardClass = 'auth-card-success';
+            statusText = d.badge_authorized;
+            statusClass = 'info';
+        } else if (userRule === 1) {
+            badgeText = d.badge_temp;
+            badgeClass = 'rule-temp';
+            cardClass = isAuthorized ? 'auth-card-success' : 'auth-card-warn';
+
+            if (createdAtRaw && !String(createdAtRaw).startsWith('0001-01-01')) {
+                const createdTime = new Date(createdAtRaw).getTime();
+                const hoursDiff = (Date.now() - createdTime) / (1000 * 60 * 60);
+                if (!Number.isNaN(hoursDiff) && hoursDiff <= 24 && isAuthorized) {
+                    const remainingHours = Math.max(0, 24 - hoursDiff).toFixed(1);
+                    statusText = d.temp_remaining.replace('{hours}', remainingHours);
+                    statusClass = 'warn';
+                } else {
+                    statusText = d.temp_expired;
+                    statusClass = 'warn';
+                }
+            } else {
+                statusText = isExpiredTemp ? d.temp_expired : (payload.msg || d.badge_temp);
+                statusClass = 'warn';
+            }
+        } else if (isAuthorized) {
+            badgeText = d.badge_authorized;
+            badgeClass = 'rule-vip';
+            cardClass = 'auth-card-success';
+            statusText = d.badge_authorized;
+            statusClass = 'info';
+        }
+
+        const safeSerial = escapeHtml(serialNumber);
+        const safeIpAddress = escapeHtml(ipAddress);
+        const safeCreatedAt = escapeHtml(createdAt);
+        const safeStatus = escapeHtml(statusText);
+        const html = `
+            <div class="query-result-heading">${escapeHtml(d.query_result)}</div>
+            <div class="auth-card ${cardClass}">
+                <div class="auth-card-header">
+                    <span class="auth-card-title">${escapeHtml(d.mdm_permission)}</span>
+                    <span class="rule-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+                </div>
+                <div class="auth-card-body">
+                    <div class="auth-row">
+                        <span class="auth-label">${escapeHtml(d.serial_number)}</span>
+                        <span class="auth-value">
+                            <span class="serial-number" onclick="copySerialNumber('${safeSerial}', this)">${safeSerial}</span>
+                        </span>
+                    </div>
+                    <div class="auth-row">
+                        <span class="auth-label">${escapeHtml(d.ip_address)}</span>
+                        <span class="auth-value">${safeIpAddress}</span>
+                    </div>
+                    <div class="auth-row">
+                        <span class="auth-label">${escapeHtml(d.auth_time)}</span>
+                        <span class="auth-value">${safeCreatedAt}</span>
+                    </div>
+                    <div class="status-tip ${statusClass}">${safeStatus}</div>
+                </div>
+            </div>
+        `;
+
+        const copyLines = [
+            `${d.mdm_permission}: ${badgeText}`,
+            `${d.serial_number}: ${serialNumber}`,
+            `${d.ip_address}: ${ipAddress}`,
+            `${d.auth_time}: ${createdAt}`,
+            `${d.status}: ${statusText}`
+        ];
+
+        setQueryResult(html, copyLines.join('\n'));
+    }
+
+    async function fetchAuthPayload(sn) {
+        const response = await fetch(serverUrl + '/gqK1I?sn=' + encodeURIComponent(sn), {
+            method: 'GET',
+            mode: 'cors'
+        });
+        const rawText = (await response.text()).trim();
+
+        try {
+            return JSON.parse(rawText);
+        } catch (err) {
+            return rawText;
+        }
+    }
+
     // 验证权限
-    function handleAuth() {
-        const sn = document.getElementById('auth-sn').value.trim().toUpperCase();
+    async function handleAuth() {
+        const snInput = document.getElementById('auth-sn');
+        const sn = snInput.value.trim().toUpperCase();
         const d = dictionary[lang];
 
         if (sn.length < 8 || sn.length > 14) {
@@ -1057,41 +1486,42 @@
             return;
         }
 
+        snInput.value = sn;
         showLoading();
-
-        /**
-         * TODO 查询过后应该显示的是用户状态信息，以下是用户数据：
-         * {"code":200,"users":{"ID":880,"CreatedAt":"2025-11-28T14:44:58.316+08:00","UpdatedAt":"2026-03-01T15:45:38.01+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc65","IPAddress":"183.46.170.226","Rule":2}}
-         * {"code":400,"msg":"用户未授权","users":{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"SerialNumber":"","IPAddress":"","Rule":0}}
-         * {"code":200,"users":{"ID":907,"CreatedAt":"2026-03-02T22:04:37.041+08:00","UpdatedAt":"2026-03-02T22:04:37.041+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc66","IPAddress":"","Rule":1}}
-         * {"code":400,"msg":"临时用户 授权超时","users":{"ID":907,"CreatedAt":"2026-03-01T22:04:37.041+08:00","UpdatedAt":"2026-03-01T22:04:37.041+08:00","DeletedAt":null,"SerialNumber":"cvvrcjpc66","IPAddress":"","Rule":1}}
-         */
-        fetch(serverUrl + '/gqK1I?sn=' + encodeURIComponent(sn), {
-            method: 'GET',
-            mode: 'cors'
-        })
-            .then(response => response.text())
-            .then(data => {
-                hideLoading();
-                if (data && data !== 'error' && data !== 'time_error') {
-                    document.getElementById('auth-code').textContent = data;
-                    document.getElementById('auth-result').classList.add('show');
-                } else if (data === 'time_error') {
-                    showToast(d.time_error, 'error');
-                } else {
-                    showToast(d.auth_error, 'error');
-                }
-            })
-            .catch(err => {
-                hideLoading();
-                showToast(d.net_error, 'error');
-            });
+        try {
+            const payload = await fetchAuthPayload(sn);
+            lastAuthResult = {payload, sn};
+            renderMdmQueryResult(payload, sn);
+        } catch (err) {
+            lastAuthResult = null;
+            const html = `
+                <div class="query-result-heading">${escapeHtml(d.query_result)}</div>
+                <div class="auth-card auth-card-error">
+                    <div class="auth-card-header">
+                        <span class="auth-card-title">${escapeHtml(d.query_failed)}</span>
+                        <span class="rule-badge rule-unauthorized">${escapeHtml(d.badge_unauthorized)}</span>
+                    </div>
+                    <div class="auth-card-body">
+                        <div class="status-tip error">${escapeHtml(err.message || d.net_error)}</div>
+                    </div>
+                </div>
+            `;
+            setQueryResult(html, `${d.query_failed}: ${err.message || d.net_error}`);
+            showToast(d.net_error, 'error');
+        } finally {
+            hideLoading();
+        }
     }
 
     // 复制结果
     function copyResult() {
-        const code = document.getElementById('auth-code').textContent;
-        copyToClipboard(code, () => {
+        const resultBox = document.getElementById('auth-result');
+        const copyText = resultBox.dataset.copyText || document.getElementById('auth-result-content').innerText.trim();
+        if (!copyText) {
+            return;
+        }
+
+        copyToClipboard(copyText, () => {
             showToast(dictionary[lang].copy_ok, 'success');
         });
     }
