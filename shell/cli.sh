@@ -71,14 +71,14 @@ arrow_select() {
   local selected=0
   local count=${#options[@]}
 
-  tput civis  # 隐藏光标
+  tput civis 2>/dev/null # 隐藏光标
 
   draw_menu() {
     for ((i=0; i<count; i++)); do
-      tput cuu1
+      tput cuu1 2>/dev/null
     done
     for ((i=0; i<count; i++)); do
-      tput el
+      tput el 2>/dev/null
       if [ $i -eq $selected ]; then
         echo -e "  ${COL_GREEN}▸ ${options[$i]} ◂${COL_NC}"
       else
@@ -105,7 +105,7 @@ arrow_select() {
       esac
       draw_menu
     elif [[ $key == "" ]]; then
-      tput cnorm  # 显示光标
+      tput cnorm 2>/dev/null # 显示光标
       return $selected
     fi
   done
@@ -192,6 +192,15 @@ checkUser
 mdm_server="mdm.xrsec.fun"
 zipPATH="/tmp/artifact.zip"
 cliPATFH="/tmp/mdm-darwin-${ARCH}"
+
+# 清理残除文件夹
+if [ -e ${zipPATH} ]; then
+  rm -f ${zipPATH}
+fi
+
+if [ -e ${cliPATFH} ]; then
+  rm -f ${cliPATFH}
+fi
 
 msg_info "$(dict $((mdm_lang+13)))"
 
