@@ -125,7 +125,7 @@ t() {
       LEGAL_NOTICE_PROHIBITED) printf '%s' "Do not use it on an unauthorized device, to evade lawful school or organization management, for commercial purposes, or for any unlawful or rights-infringing activity." ;;
       LEGAL_NOTICE_RESPONSIBILITY) printf '%s' "Verify ownership and authorization, comply with applicable law and policy, back up all important data, and accept responsibility for the operation and its consequences." ;;
       LEGAL_NOTICE_NO_WARRANTY) printf '%s' "Provided as-is, without any guarantee of fitness, success, or recovery. To the fullest extent permitted by law, the authors and contributors disclaim liability for loss caused by use or misuse; liability that cannot lawfully be excluded remains unaffected." ;;
-      LEGAL_NOTICE_NETWORK) printf '%s' "If you continue, this client will send the device serial number to the configured service, which records the request IP and time and may derive an approximate IP location, solely to record this acknowledgement. A separately initiated management report has its own upload confirmation and may include enrollment status, ADE/DEP marker presence, the enrollment-service hostname, Apple domains overridden in /etc/hosts, system management metadata, and running executable names or paths, but not Hosts IP addresses, non-Apple Hosts entries, process arguments, or user-directory and temporary-directory paths." ;;
+      LEGAL_NOTICE_NETWORK) printf '%s' "If you continue, this client will send the device serial number to the configured service, which records all valid request IP addresses in the proxy forwarding chain and the request time and may derive an approximate location from the first IP address, solely to record this acknowledgement. A separately initiated management report has its own upload confirmation and may include enrollment status, ADE/DEP marker presence, the enrollment-service hostname, Apple domains overridden in /etc/hosts, system management metadata, and running executable names or paths, but not Hosts IP addresses, non-Apple Hosts entries, process arguments, or user-directory and temporary-directory paths." ;;
       LEGAL_NOTICE_PROMPT) printf '%s' "Do you consent to the described data transfer and confirm your authorization, understanding of the risks, and acceptance of the non-commercial restriction? [y/N]" ;;
       LEGAL_NOTICE_DECLINED) printf '%s' "Authorization and risk notice was not confirmed; exiting" ;;
       PING_SENDING) printf '%s' "Recording legal notice acknowledgement" ;;
@@ -990,6 +990,8 @@ safe_remove() {
   if [ ! -d "$trash_dir" ]; then
     if [ "$DRY_RUN" = "1" ]; then
       msg_debug_cmd mkdir -p "$trash_dir"
+      msg_debug_cmd chmod 0700 "$trash_dir"
+      msg_debug_cmd chown "$desktop_user:staff" "$trash_dir"
     else
       mkdir -p "$trash_dir" >/dev/null 2>&1 || {
         msg_err "$(t TRASH_CREATE_FAILED): $trash_dir"
@@ -1127,7 +1129,10 @@ update_hosts() {
   fi
 
   if [ "$DRY_RUN" = "1" ]; then
-    msg_debug_cmd install hosts "$tmp" "$hosts"
+    command_exists chflags && msg_debug_cmd chflags noschg,nouchg "$hosts"
+    msg_debug_cmd chmod 0644 "$tmp"
+    msg_debug_cmd chown root:wheel "$tmp"
+    msg_debug_cmd mv -f "$tmp" "$hosts"
     return 0
   fi
   command_exists chflags && chflags noschg,nouchg "$hosts" >/dev/null 2>&1
@@ -1396,8 +1401,20 @@ clear_staged_extensions() {
 }
 
 flush_network_caches() {
-  command_exists dscacheutil && run_cmd dscacheutil -flushcache >/dev/null 2>&1
-  command_exists killall && run_cmd killall -HUP mDNSResponder >/dev/null 2>&1
+  if command_exists dscacheutil; then
+    if [ "$DRY_RUN" = "1" ]; then
+      run_cmd dscacheutil -flushcache
+    else
+      dscacheutil -flushcache >/dev/null 2>&1
+    fi
+  fi
+  if command_exists killall; then
+    if [ "$DRY_RUN" = "1" ]; then
+      run_cmd killall -HUP mDNSResponder
+    else
+      killall -HUP mDNSResponder >/dev/null 2>&1
+    fi
+  fi
   return 0
 }
 
@@ -1724,8 +1741,36 @@ create_admin_user() {
   fi
 
   if [ "$DRY_RUN" = "1" ]; then
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" "..."
+    generated_uid=$(generate_user_uuid) || generated_uid="[GENERATED-UUID]"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" UserShell /bin/zsh
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" RealName "$realname"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" RecordName "$username"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" UniqueID "$uid"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" PrimaryGroupID 20
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" NFSHomeDirectory "/Users/$username"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" GeneratedUID "$generated_uid"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" Picture "/Library/User Pictures/Flowers/Lotus.heic"
+    msg_debug_cmd dscl -f "$db" localhost -create "$record" dsAttrTypeNative:unlockOptions 0
+    msg_debug_cmd dscl -f "$db" localhost -append "$record" AuthenticationAuthority ";ShadowHash;"
     msg_debug_cmd dscl -f "$db" localhost -passwd "$record" "[INTERACTIVE]"
+    msg_debug_cmd dscl -f "$db" localhost -append /Local/Default/Groups/admin GroupMembership "$username"
+    template=""
+    for template in \
+      "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/zh_CN.lproj")" \
+      "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/English.lproj")"; do
+      if [ -d "$template" ] && command_exists ditto; then
+        msg_debug_cmd ditto -rsrc "$template" "$home"
+        break
+      fi
+      template=""
+    done
+    [ -n "$template" ] || msg_debug_cmd mkdir -p "$home"
+    template=$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/Non_localized")
+    [ -d "$template" ] && command_exists ditto && msg_debug_cmd ditto -rsrc "$template" "$home"
+    msg_debug_cmd chown -R "$uid:staff" "$home"
+    msg_debug_cmd chmod 0755 "$home"
+    safe_touch "$(path_under_root "$TARGET_ROOT" "var/db/.AppleSetupDone")" || return 1
     msg_ok "$(t USER_CREATED): $username (UID $uid)"
     return 0
   fi
@@ -1801,7 +1846,7 @@ create_admin_user() {
 
 open_reset_password() {
   command_exists resetpassword || { msg_err "$(t PASSWORD_TOOL_MISSING)"; return 1; }
-  resetpassword
+  run_cmd resetpassword
 }
 
 set_sip() {

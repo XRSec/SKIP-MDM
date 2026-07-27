@@ -9,6 +9,7 @@ const CREATE_TABLE_SQL = `
     serial_number VARCHAR(32) NOT NULL,
     ping_time TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     ip VARCHAR(45) NOT NULL,
+    ip_chain TEXT NOT NULL,
     location VARCHAR(255) NOT NULL DEFAULT '',
     PRIMARY KEY (id),
     KEY idx_ping_logs_serial_number (serial_number),
@@ -22,7 +23,6 @@ const CREATE_REPORT_TABLE_SQL = `
     id CHAR(32) NOT NULL,
     created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     expires_at TIMESTAMP(3) NOT NULL,
-    report_password VARCHAR(16) NOT NULL,
     status VARCHAR(16) NOT NULL DEFAULT 'pending',
     payload MEDIUMTEXT NULL,
     analysis MEDIUMTEXT NULL,
@@ -69,7 +69,23 @@ function createPingStore(options = {}) {
 
   async function initialize() {
     if (!initialized) {
-      initialized = getPool().execute(CREATE_TABLE_SQL).catch((error) => {
+      initialized = (async () => {
+        await getPool().execute(CREATE_TABLE_SQL);
+        const [columns] = await getPool().execute(
+          `SELECT 1
+           FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ping_logs' AND COLUMN_NAME = 'ip_chain'
+           LIMIT 1`,
+          [env.MYSQL_DATABASE]
+        );
+        if (columns.length === 0) {
+          try {
+            await getPool().execute('ALTER TABLE ping_logs ADD COLUMN ip_chain TEXT NULL AFTER ip');
+          } catch (error) {
+            if (error.code !== 'ER_DUP_FIELDNAME') throw error;
+          }
+        }
+      })().catch((error) => {
         initialized = undefined;
         throw error;
       });
@@ -81,8 +97,8 @@ function createPingStore(options = {}) {
     async save(record) {
       await initialize();
       const [result] = await getPool().execute(
-        'INSERT INTO ping_logs (serial_number, ip, location) VALUES (?, ?, ?)',
-        [record.serialNumber, record.ip, record.location]
+        'INSERT INTO ping_logs (serial_number, ip, ip_chain, location) VALUES (?, ?, ?, ?)',
+        [record.serialNumber, record.ip, record.ipChain, record.location]
       );
       return result.insertId;
     },
@@ -118,9 +134,9 @@ function createReportStore(options = {}) {
       await initialize();
       await getPool().execute('DELETE FROM college_reports WHERE expires_at <= CURRENT_TIMESTAMP(3) LIMIT 100');
       await getPool().execute(
-        `INSERT INTO college_reports (id, expires_at, report_password, status)
-         VALUES (?, DATE_ADD(CURRENT_TIMESTAMP(3), INTERVAL ? HOUR), ?, 'pending')`,
-        [record.id, record.ttlHours, record.password]
+        `INSERT INTO college_reports (id, expires_at, status)
+         VALUES (?, DATE_ADD(CURRENT_TIMESTAMP(3), INTERVAL ? HOUR), 'pending')`,
+        [record.id, record.ttlHours]
       );
     },
 
@@ -129,20 +145,20 @@ function createReportStore(options = {}) {
       const [result] = await getPool().execute(
         `UPDATE college_reports
          SET status = 'ready', payload = ?, analysis = ?
-         WHERE id = ? AND report_password = ? AND expires_at > CURRENT_TIMESTAMP(3)`,
-        [JSON.stringify(record.payload), JSON.stringify(record.analysis), record.id, record.password]
+         WHERE id = ? AND expires_at > CURRENT_TIMESTAMP(3)`,
+        [JSON.stringify(record.payload), JSON.stringify(record.analysis), record.id]
       );
       return result.affectedRows === 1;
     },
 
-    async get(id, password) {
+    async get(id) {
       await initialize();
       const [rows] = await getPool().execute(
         `SELECT status, analysis, expires_at
          FROM college_reports
-         WHERE id = ? AND report_password = ? AND expires_at > CURRENT_TIMESTAMP(3)
+         WHERE id = ? AND expires_at > CURRENT_TIMESTAMP(3)
          LIMIT 1`,
-        [id, password]
+        [id]
       );
       if (rows.length === 0) return null;
       return {
@@ -152,26 +168,26 @@ function createReportStore(options = {}) {
       };
     },
 
-    async getPayload(id, password) {
+    async getPayload(id) {
       await initialize();
       const [rows] = await getPool().execute(
         `SELECT payload
          FROM college_reports
-         WHERE id = ? AND report_password = ? AND expires_at > CURRENT_TIMESTAMP(3)
+         WHERE id = ? AND expires_at > CURRENT_TIMESTAMP(3)
          LIMIT 1`,
-        [id, password]
+        [id]
       );
       if (rows.length === 0 || !rows[0].payload) return null;
       return JSON.parse(rows[0].payload);
     },
 
-    async replaceAnalysis(id, password, analysis) {
+    async replaceAnalysis(id, analysis) {
       await initialize();
       const [result] = await getPool().execute(
         `UPDATE college_reports
          SET analysis = ?, status = 'ready'
-         WHERE id = ? AND report_password = ? AND expires_at > CURRENT_TIMESTAMP(3)`,
-        [JSON.stringify(analysis), id, password]
+         WHERE id = ? AND expires_at > CURRENT_TIMESTAMP(3)`,
+        [JSON.stringify(analysis), id]
       );
       return result.affectedRows === 1;
     },

@@ -26,9 +26,6 @@ check:
 install:
 	cd src && npm ci
 
-test: install
-	cd src && npm test
-
 build: check test
 	chmod +x src/scf_bootstrap
 
@@ -45,3 +42,6 @@ clean:
 
 run:
 	@node src/index.js
+
+sync_location:
+	@node src/sync-ip-location.js

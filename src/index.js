@@ -12,6 +12,7 @@ const { createShellObfuscator } = require('./shell-obfuscator');
 const DEFAULT_PORT = 9000;
 const SERIAL_PATTERN = /^[A-Za-z0-9-]{8,32}$/;
 const MAX_COLLEGE_BODY_BYTES = 1024 * 1024;
+const FRONTEND_CACHE_SECONDS = 7 * 24 * 60 * 60;
 
 function resolveContentRoot() {
   const candidates = [
@@ -38,13 +39,23 @@ function normalizeIp(value) {
   return net.isIP(normalized) ? normalized : '';
 }
 
-function getClientIp(req) {
-  const forwardedIp = normalizeIp(
-    req.headers['cf-connecting-ip'] ||
+function getClientIpRecord(req) {
+  const forwardedIps = String(req.headers['x-forwarded-for'] || '')
+    .split(',')
+    .map((value) => normalizeIp(value))
+    .filter(Boolean);
+  const ip = forwardedIps[0] || normalizeIp(
     req.headers['x-real-ip'] ||
-    req.headers['x-forwarded-for']
-  );
-  return forwardedIp || normalizeIp(req.socket.remoteAddress) || '0.0.0.0';
+    req.headers['cf-connecting-ip']
+  ) || normalizeIp(req.socket.remoteAddress) || '0.0.0.0';
+  return {
+    ip,
+    ipChain: forwardedIps.length > 0 ? forwardedIps.join(', ') : ip
+  };
+}
+
+function getClientIp(req) {
+  return getClientIpRecord(req).ip;
 }
 
 function prefersCli(req) {
@@ -65,6 +76,11 @@ function sendJson(res, statusCode, payload) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Length', Buffer.byteLength(body));
   res.end(body);
+}
+
+function setFrontendCacheHeaders(res) {
+  res.setHeader('Cache-Control', `public, max-age=${FRONTEND_CACHE_SECONDS}`);
+  res.setHeader('Expires', new Date(Date.now() + FRONTEND_CACHE_SECONDS * 1000).toUTCString());
 }
 
 function readJsonBody(req, maxBytes = MAX_COLLEGE_BODY_BYTES) {
@@ -105,7 +121,7 @@ function getPublicBaseUrl(req) {
   return `${protocol}://${host}`;
 }
 
-function serveFile(req, res, filePath, contentType) {
+function serveFile(req, res, filePath, contentType, cacheFrontend = false, cacheControl = 'no-cache') {
   let stat;
   try {
     stat = fs.statSync(filePath);
@@ -117,11 +133,15 @@ function serveFile(req, res, filePath, contentType) {
   res.statusCode = 200;
   res.setHeader('Content-Type', contentType);
   res.setHeader('Content-Length', stat.size);
-  res.setHeader('Cache-Control', 'no-cache');
+  if (cacheFrontend) {
+    setFrontendCacheHeaders(res);
+  } else {
+    res.setHeader('Cache-Control', cacheControl);
+  }
   if (contentType.startsWith('text/html')) {
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://xrsec.s3.bitiful.net https://xrsec-fun.s3.bitiful.net; connect-src 'self' https://xrsec.s3.bitiful.net; base-uri 'self'; form-action 'self'"
+      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://xrsec.s3.bitiful.net https://xrsec-fun.s3.bitiful.net; connect-src 'self' https://xrsec.s3.bitiful.net https://xrsec-fun.s3.bitiful.net; base-uri 'self'; form-action 'self'"
     );
   }
 
@@ -162,7 +182,6 @@ function createRequestHandler(options = {}) {
   const languagePackFile = path.join(contentRoot, 'shell', 'lang', 'zh-CN.lang');
   const legalNoticeFile = path.join(contentRoot, 'html', 'legal-notice.html');
   const englishLegalNoticeFile = path.join(contentRoot, 'html', 'legal-notice.en.html');
-  const openGraphImageFile = path.join(contentRoot, 'html', 'og.png');
   const getObfuscatedCli = createShellObfuscator(cliFile);
   const pingStore = options.pingStore || createPingStore();
   const reportStore = options.reportStore || createReportStore();
@@ -179,11 +198,17 @@ function createRequestHandler(options = {}) {
     }
 
     if (url.pathname === '/' && (req.method === 'GET' || req.method === 'HEAD')) {
+      res.setHeader('Vary', 'User-Agent');
       if (prefersCli(req)) {
         serveGeneratedShell(req, res, getObfuscatedCli);
       } else {
-        serveFile(req, res, indexFile, 'text/html; charset=utf-8');
+        serveFile(req, res, indexFile, 'text/html; charset=utf-8', false, 'no-store');
       }
+      return;
+    }
+
+    if (url.pathname === '/index.html' && (req.method === 'GET' || req.method === 'HEAD')) {
+      serveFile(req, res, indexFile, 'text/html; charset=utf-8', true);
       return;
     }
 
@@ -193,12 +218,12 @@ function createRequestHandler(options = {}) {
     }
 
     if (url.pathname === '/legal-notice.html' && (req.method === 'GET' || req.method === 'HEAD')) {
-      serveFile(req, res, legalNoticeFile, 'text/html; charset=utf-8');
+      serveFile(req, res, legalNoticeFile, 'text/html; charset=utf-8', true);
       return;
     }
 
     if (url.pathname === '/legal-notice.en.html' && (req.method === 'GET' || req.method === 'HEAD')) {
-      serveFile(req, res, englishLegalNoticeFile, 'text/html; charset=utf-8');
+      serveFile(req, res, englishLegalNoticeFile, 'text/html; charset=utf-8', true);
       return;
     }
 
@@ -207,30 +232,23 @@ function createRequestHandler(options = {}) {
       return;
     }
 
-    if (url.pathname === '/og.png' && (req.method === 'GET' || req.method === 'HEAD')) {
-      serveFile(req, res, openGraphImageFile, 'image/png');
-      return;
-    }
-
     const reportPageMatch = url.pathname.match(/^\/college\/([a-f0-9]{32})$/);
     if (reportPageMatch && (req.method === 'GET' || req.method === 'HEAD')) {
-      serveFile(req, res, collegeFile, 'text/html; charset=utf-8');
+      serveFile(req, res, collegeFile, 'text/html; charset=utf-8', true);
       return;
     }
 
     if (url.pathname === '/api/college/session' && req.method === 'POST') {
       try {
         const id = crypto.randomBytes(16).toString('hex');
-        const password = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
         const ttlHours = Math.min(720, Math.max(1, Number(process.env.COLLEGE_REPORT_TTL_HOURS || 168)));
-        await reportStore.create({ id, password, ttlHours });
+        await reportStore.create({ id, ttlHours });
         const resultPath = `/college/${id}`;
         const baseUrl = getPublicBaseUrl(req);
-        const resultUrl = `${baseUrl ? `${baseUrl}${resultPath}` : resultPath}?password=${password}`;
+        const resultUrl = baseUrl ? `${baseUrl}${resultPath}` : resultPath;
         sendJson(res, 201, {
           ok: true,
           id,
-          report_password: password,
           result_path: resultPath,
           result_url: resultUrl,
           expires_in_hours: ttlHours
@@ -249,16 +267,10 @@ function createRequestHandler(options = {}) {
         return;
       }
       try {
-        const password = String(req.headers['x-report-password'] || '').trim();
-        if (!/^\d{6}$/.test(password)) {
-          sendJson(res, 401, { ok: false, error: 'invalid_report_password' });
-          return;
-        }
         const payload = normalizeCollection(await readJsonBody(req));
         const analysis = analyzeCollection(payload);
         const completed = await reportStore.complete({
           id: reportUploadMatch[1],
-          password,
           payload,
           analysis
         });
@@ -282,36 +294,26 @@ function createRequestHandler(options = {}) {
       return;
     }
 
-    const reportUnlockMatch = url.pathname.match(/^\/api\/college\/([a-f0-9]{32})\/unlock$/);
+    const reportReadMatch = url.pathname.match(/^\/api\/college\/([a-f0-9]{32})$/);
     const reportReanalyzeMatch = url.pathname.match(/^\/api\/college\/([a-f0-9]{32})\/reanalyze$/);
     if (reportReanalyzeMatch && req.method === 'POST') {
       try {
-        if (!String(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
-          sendJson(res, 415, { ok: false, error: 'json_content_type_required' });
-          return;
-        }
-        const body = await readJsonBody(req, 4096);
-        const password = String(body.password || '').trim();
-        if (!/^\d{6}$/.test(password)) {
-          sendJson(res, 401, { ok: false, error: 'invalid_report_password' });
-          return;
-        }
-        const current = await reportStore.get(reportReanalyzeMatch[1], password);
+        const current = await reportStore.get(reportReanalyzeMatch[1]);
         if (!current) {
-          sendJson(res, 401, { ok: false, error: 'invalid_report_password' });
+          sendJson(res, 404, { ok: false, error: 'report_not_found' });
           return;
         }
         if (current.status !== 'ready') {
           sendJson(res, 409, { ok: false, error: 'report_not_ready' });
           return;
         }
-        const source = await reportStore.getPayload(reportReanalyzeMatch[1], password);
+        const source = await reportStore.getPayload(reportReanalyzeMatch[1]);
         if (!source) {
           sendJson(res, 409, { ok: false, error: 'report_source_unavailable' });
           return;
         }
         const analysis = analyzeCollection(source);
-        const replaced = await reportStore.replaceAnalysis(reportReanalyzeMatch[1], password, analysis);
+        const replaced = await reportStore.replaceAnalysis(reportReanalyzeMatch[1], analysis);
         if (!replaced) {
           sendJson(res, 409, { ok: false, error: 'report_expired' });
           return;
@@ -329,21 +331,11 @@ function createRequestHandler(options = {}) {
       return;
     }
 
-    if (reportUnlockMatch && req.method === 'POST') {
+    if (reportReadMatch && req.method === 'GET') {
       try {
-        if (!String(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
-          sendJson(res, 415, { ok: false, error: 'json_content_type_required' });
-          return;
-        }
-        const body = await readJsonBody(req, 4096);
-        const password = String(body.password || '').trim();
-        if (!/^\d{6}$/.test(password)) {
-          sendJson(res, 401, { ok: false, error: 'invalid_report_password' });
-          return;
-        }
-        const record = await reportStore.get(reportUnlockMatch[1], password);
+        const record = await reportStore.get(reportReadMatch[1]);
         if (!record) {
-          sendJson(res, 401, { ok: false, error: 'invalid_report_password' });
+          sendJson(res, 404, { ok: false, error: 'report_not_found' });
           return;
         }
         sendJson(res, 200, {
@@ -365,11 +357,12 @@ function createRequestHandler(options = {}) {
         sendJson(res, 400, { ok: false, error: 'invalid_serial_number' });
         return;
       }
-      const ip = getClientIp(req);
+      const clientIp = getClientIpRecord(req);
       try {
         await pingStore.save({
           serialNumber: serialNumber.toUpperCase(),
-          ip,
+          ip: clientIp.ip,
+          ipChain: clientIp.ipChain,
           location: ''
         });
         sendJson(res, 200, { ok: true });
@@ -404,6 +397,7 @@ module.exports = {
   MAX_COLLEGE_BODY_BYTES,
   createRequestHandler,
   getClientIp,
+  getClientIpRecord,
   getPublicBaseUrl,
   prefersCli,
   readJsonBody,

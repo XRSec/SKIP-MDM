@@ -61,7 +61,7 @@ Only the device owner or an explicitly authorized administrator may perform this
 
 ## Privacy and Credentials
 
-After the user confirms this notice in the terminal, the client sends the target device serial number to the configured service. The service also records the request IP address and time and may derive an approximate location from the IP address. This information is used only to record confirmation of this legal and risk notice, not to determine device authorization. A user who does not accept this processing must choose `N` at the confirmation prompt and exit.
+After the user confirms this notice in the terminal, the client sends the target device serial number to the configured service. The service also records the request IP addresses, including all valid IP addresses in the proxy forwarding chain, and the request time, and may derive an approximate location from the first IP address. This information is used only to record confirmation of this legal and risk notice, not to determine device authorization. A user who does not accept this processing must choose `N` at the confirmation prompt and exit.
 
 Except for that confirmation record and a report separately initiated by the user, the project must not collect or upload system inventories, process lists, user-directory contents, diagnostic logs, or unrelated data. When a user separately initiates a report and confirms its upload, the report may include MDM/ADE enrollment status, the presence of ADE/DEP markers, the enrollment-service hostname, Apple domains overridden in `/etc/hosts`, system-level management-component metadata, and running executable names or paths; it excludes Hosts IP addresses and non-Apple entries, the complete enrollment URL, process arguments, and user-directory or temporary-directory paths. Passwords, tokens, private keys, and other credentials must not be written to command-line arguments, environment variables, logs, language packs, or temporary files on disk.
 
@@ -101,8 +101,9 @@ Continue only if all of the following are true:
 Commercial, unlawful, infringing, and unauthorized use is prohibited.
 
 After confirmation, the client sends the device serial number to the configured
-service. The service records the request IP address and time and may derive an
-approximate location, solely to record confirmation of this notice.
+service. The service records the request IP addresses, including all valid IP
+addresses in the proxy forwarding chain, and the request time, and may derive an
+approximate location from the first IP address, solely to record confirmation of this notice.
 ```
 
 The confirmation prompt must default to rejection:

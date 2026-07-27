@@ -7,12 +7,34 @@
 set +e
 umask 077
 
+# External configuration.
 RUN_MODE="${RUN_MODE:-}"
+mdm_lang="${mdm_lang:-}"
 COLLEGE_SERVER_URL="${COLLEGE_SERVER_URL:-https://mdm.xrsec.fun}"
 COLLEGE_SERVER_URL="${COLLEGE_SERVER_URL%/}"
 COLLEGE_OPEN_RESULT="${COLLEGE_OPEN_RESULT:-0}"
-MAX_ITEMS=4500
 
+# Server paths and network limits.
+COLLEGE_SCRIPT_PATH="/college.sh"
+COLLEGE_SESSION_PATH="/api/college/session"
+COLLEGE_REPORT_PATH="/api/college"
+CURL_RETRY_COUNT=2
+CURL_CONNECT_TIMEOUT=10
+CURL_SESSION_MAX_TIME=30
+CURL_UPLOAD_MAX_TIME=60
+
+# Collection and upload limits.
+MAX_ITEMS=4500
+MAX_PAYLOAD_BYTES=1048576
+
+# Temporary file templates.
+ITEMS_FILE_TEMPLATE="/tmp/mdm-college-items-$$.XXXXXX"
+PAYLOAD_FILE_TEMPLATE="/tmp/mdm-college-payload-$$.XXXXXX"
+RESPONSE_FILE_TEMPLATE="/tmp/mdm-college-response-$$.XXXXXX"
+PROCESS_FILE_TEMPLATE="/tmp/mdm-college-processes-$$.XXXXXX"
+HOSTS_FILE_TEMPLATE="/tmp/mdm-college-hosts-$$.XXXXXX"
+
+# Global runtime state shared between functions.
 TARGET_ROOT=""
 PAYLOAD_FILE=""
 ITEMS_FILE=""
@@ -22,12 +44,24 @@ HOSTS_FILE=""
 PASSWORD_INPUT=""
 password=""
 REPORT_ID=""
-REPORT_PASSWORD=""
 REPORT_URL=""
 ITEM_COUNT=0
 FIRST_ITEM=1
+CURSOR_HIDDEN=0
+
+# Terminal presentation state. Empty values keep redirected output plain.
+COLLEGE_RESET=""
+COLLEGE_BOLD=""
+COLLEGE_MUTED=""
+COLLEGE_ACCENT=""
+COLLEGE_SAFE=""
+COLLEGE_WARNING=""
 
 cleanup() {
+  if [ "$CURSOR_HIDDEN" = "1" ] && command_exists tput; then
+    tput cnorm 2>/dev/null || true
+  fi
+  CURSOR_HIDDEN=0
   PASSWORD_INPUT=""
   password=""
   [ -n "$PAYLOAD_FILE" ] && [ -e "$PAYLOAD_FILE" ] && rm -f "$PAYLOAD_FILE"
@@ -41,6 +75,203 @@ trap cleanup EXIT HUP INT TERM
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
+}
+
+setup_terminal_styles() {
+  [ -t 1 ] || return 0
+  [ "${TERM:-dumb}" != "dumb" ] || return 0
+  [ -z "${NO_COLOR:-}" ] || return 0
+  COLLEGE_RESET=$(printf '\033[0m')
+  COLLEGE_BOLD=$(printf '\033[1m')
+  COLLEGE_MUTED=$(printf '\033[2m')
+  COLLEGE_ACCENT=$(printf '\033[38;5;37m')
+  COLLEGE_SAFE=$(printf '\033[38;5;71m')
+  COLLEGE_WARNING=$(printf '\033[38;5;173m')
+}
+
+clear_language_menu() {
+  local lines="$1"
+  while [ "$lines" -gt 0 ]; do
+    tput cuu1 2>/dev/null || break
+    tput el 2>/dev/null || true
+    lines=$((lines - 1))
+  done
+}
+
+print_language_options() {
+  local selected="$1"
+  if [ "$selected" -eq 0 ]; then
+    printf '  %b▸ 简体中文 ◂%b\n' "$COLLEGE_SAFE$COLLEGE_BOLD" "$COLLEGE_RESET" >&2
+    printf '    English\n' >&2
+  else
+    printf '    简体中文\n' >&2
+    printf '  %b▸ English ◂%b\n' "$COLLEGE_SAFE$COLLEGE_BOLD" "$COLLEGE_RESET" >&2
+  fi
+}
+
+select_language_fallback() {
+  local answer=""
+  printf '\nChoose language / 选择语言\n' >&2
+  printf '  1) 简体中文\n  2) English\n' >&2
+  while :; do
+    printf 'Select / 请选择 [1-2]: ' >&2
+    IFS= read -r answer || return 1
+    case "$answer" in
+      1) mdm_lang=1; return 0 ;;
+      2) mdm_lang=0; return 0 ;;
+      *) printf 'Invalid selection / 选择无效。\n' >&2 ;;
+    esac
+  done
+}
+
+select_language() {
+  local selected=0
+  local key=""
+  local sequence=""
+  case "$mdm_lang" in
+    0|1) export mdm_lang; return 0 ;;
+  esac
+  if [ ! -t 0 ] || [ ! -t 2 ] || ! command_exists tput || ! tput cols >/dev/null 2>&1; then
+    select_language_fallback || return 1
+    export mdm_lang
+    return 0
+  fi
+
+  printf '\nChoose language / 选择语言\n' >&2
+  printf '  ↑/↓ Select / 选择    Enter Confirm / 确认\n\n' >&2
+  print_language_options "$selected"
+  if tput civis 2>/dev/null; then CURSOR_HIDDEN=1; fi
+  while :; do
+    key=""
+    if ! IFS= read -r -s -n 1 key; then
+      [ "$CURSOR_HIDDEN" = "1" ] && tput cnorm 2>/dev/null
+      CURSOR_HIDDEN=0
+      clear_language_menu 5
+      return 1
+    fi
+    if [ -z "$key" ]; then
+      [ "$CURSOR_HIDDEN" = "1" ] && tput cnorm 2>/dev/null
+      CURSOR_HIDDEN=0
+      clear_language_menu 5
+      if [ "$selected" -eq 0 ]; then mdm_lang=1; else mdm_lang=0; fi
+      export mdm_lang
+      return 0
+    fi
+    if [ "$key" = $'\033' ]; then
+      sequence=""
+      IFS= read -r -s -n 2 sequence || continue
+      case "$sequence" in
+        '[A'|'[B') if [ "$selected" -eq 0 ]; then selected=1; else selected=0; fi ;;
+        *) continue ;;
+      esac
+      clear_language_menu 2
+      print_language_options "$selected"
+    fi
+  done
+}
+
+college_text() {
+  local key="$1"
+  if [ "$mdm_lang" = "1" ]; then
+    case "$key" in
+      RECOVERY_ONLY) printf '%s' '监管分析仅支持正常桌面 macOS，不支持 Recovery。' ;;
+      INVALID_RUN_MODE) printf '%s' 'RUN_MODE 必须为 normal。' ;;
+      SUDO_REQUIRED) printf '%s' '读取完整系统元数据需要 sudo。' ;;
+      PASSWORD_PROMPT) printf '%s' '请输入当前用户密码：' ;;
+      PASSWORD_INVALID) printf '%s' '密码不能为空，也不能包含空白字符。' ;;
+      PASSWORD_FAILED) printf '%s' '密码验证失败' ;;
+      CURL_REQUIRED) printf '%s' '创建报告需要 curl。' ;;
+      SESSION_FAILED) printf '%s' '无法创建报告，请检查 HTTPS、网络连接和系统时间。' ;;
+      SESSION_HTML) printf '%s' '服务端返回了 HTML，而不是报告会话。' ;;
+      INVALID_REPORT_ID) printf '%s' '服务端返回了无效的报告 ID。' ;;
+      REPORT_URL_MISSING) printf '%s' '服务端响应中没有报告链接。' ;;
+      PAYLOAD_TOO_LARGE) printf '%s' '元数据超过 1 MiB 上传限制，未上传任何内容。' ;;
+      UPLOAD_FAILED) printf '%s' '上传失败，请检查 HTTPS、网络连接和系统时间。' ;;
+      UPLOAD_HTML) printf '%s' '服务端返回了 HTML，而不是报告响应。' ;;
+      UPLOAD_REJECTED) printf '%s' '服务端未接受分析数据。' ;;
+      *) printf '%s' "$key" ;;
+    esac
+  else
+    case "$key" in
+      RECOVERY_ONLY) printf '%s' 'Management analysis requires normal desktop macOS and is unavailable in Recovery.' ;;
+      INVALID_RUN_MODE) printf '%s' 'RUN_MODE must be normal.' ;;
+      SUDO_REQUIRED) printf '%s' 'sudo is required to read all system metadata.' ;;
+      PASSWORD_PROMPT) printf '%s' 'Enter the current user password: ' ;;
+      PASSWORD_INVALID) printf '%s' 'Password cannot be empty or contain whitespace.' ;;
+      PASSWORD_FAILED) printf '%s' 'Password verification failed' ;;
+      CURL_REQUIRED) printf '%s' 'curl is required to create the report.' ;;
+      SESSION_FAILED) printf '%s' 'Could not create the report. Check HTTPS, network access, and system time.' ;;
+      SESSION_HTML) printf '%s' 'Server returned HTML instead of a report session.' ;;
+      INVALID_REPORT_ID) printf '%s' 'Server returned an invalid report ID.' ;;
+      REPORT_URL_MISSING) printf '%s' 'Server response did not contain a report URL.' ;;
+      PAYLOAD_TOO_LARGE) printf '%s' 'The metadata exceeds the 1 MiB upload limit; nothing was uploaded.' ;;
+      UPLOAD_FAILED) printf '%s' 'Upload failed. Check HTTPS, network access, and system time.' ;;
+      UPLOAD_HTML) printf '%s' 'Server returned HTML instead of a report response.' ;;
+      UPLOAD_REJECTED) printf '%s' 'Server did not accept the analysis payload.' ;;
+      *) printf '%s' "$key" ;;
+    esac
+  fi
+}
+
+print_collection_notice() {
+  if [ "$mdm_lang" = "1" ]; then
+    printf '\n%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '╭─ MDM 监管分析 ─────────────────────────────────────╮' "$COLLEGE_RESET"
+    printf '%b  %s%b\n' "$COLLEGE_BOLD" '只读扫描 · 一次上传 · 不会自动修改系统' "$COLLEGE_RESET"
+    printf '%b  %s%b\n' "$COLLEGE_MUTED" '请先确认下面的数据范围，再决定是否继续。' "$COLLEGE_RESET"
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '├─ 会采集' "$COLLEGE_RESET"
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" 'MDM 注册状态与 ADE/DEP 标记'
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" '系统级管理组件的名称、路径和签名元数据'
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" '运行中可执行文件的名称或系统路径'
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" '/etc/hosts 中被覆盖的 Apple 域名'
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '├─ 不会采集' "$COLLEGE_RESET"
+    printf '  %b●%b %s\n' "$COLLEGE_MUTED" "$COLLEGE_RESET" '密码、序列号、设备名称或任何文件内容'
+    printf '  %b●%b %s\n' "$COLLEGE_MUTED" "$COLLEGE_RESET" '进程参数、用户目录路径或临时目录路径'
+    printf '  %b●%b %s\n' "$COLLEGE_MUTED" "$COLLEGE_RESET" 'Hosts IP、注释以及非 Apple 域名记录'
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '├─ 隐私处理' "$COLLEGE_RESET"
+    printf '  %s\n' '云配置 URL 仅保留主机名；结果元数据只上传一次。'
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '╰─ 上传目标' "$COLLEGE_RESET"
+  else
+    printf '\n%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '╭─ MDM MANAGEMENT ANALYSIS ──────────────────────────╮' "$COLLEGE_RESET"
+    printf '%b  %s%b\n' "$COLLEGE_BOLD" 'Read-only scan · One upload · No automatic changes' "$COLLEGE_RESET"
+    printf '%b  %s%b\n' "$COLLEGE_MUTED" 'Review the data scope below before continuing.' "$COLLEGE_RESET"
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '├─ COLLECTED' "$COLLEGE_RESET"
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" 'MDM enrollment status and ADE/DEP markers'
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" 'Names, paths, and signatures of system management components'
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" 'Names or system paths of running executables'
+    printf '  %b●%b %s\n' "$COLLEGE_SAFE" "$COLLEGE_RESET" 'Apple domains overridden in /etc/hosts'
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '├─ NOT COLLECTED' "$COLLEGE_RESET"
+    printf '  %b●%b %s\n' "$COLLEGE_MUTED" "$COLLEGE_RESET" 'Passwords, serial number, device name, or file contents'
+    printf '  %b●%b %s\n' "$COLLEGE_MUTED" "$COLLEGE_RESET" 'Process arguments, user-directory paths, or temporary paths'
+    printf '  %b●%b %s\n' "$COLLEGE_MUTED" "$COLLEGE_RESET" 'Hosts IPs, comments, or non-Apple domain records'
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '├─ PRIVACY' "$COLLEGE_RESET"
+    printf '  %s\n' 'Cloud configuration URLs are reduced to hostnames; metadata is uploaded once.'
+    printf '%b%s%b\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" '╰─ UPLOAD DESTINATION' "$COLLEGE_RESET"
+  fi
+  printf '  %b%s%b\n\n' "$COLLEGE_BOLD" "$COLLEGE_SERVER_URL" "$COLLEGE_RESET"
+}
+
+print_stage() {
+  local text="$2"
+  [ "$mdm_lang" = "1" ] || text="$3"
+  printf '\n%b[%s]%b %s\n' "$COLLEGE_ACCENT$COLLEGE_BOLD" "$1" "$COLLEGE_RESET" "$text"
+}
+
+print_report_result() {
+  if [ "$mdm_lang" = "1" ]; then
+    printf '\n%b%s%b\n' "$COLLEGE_SAFE$COLLEGE_BOLD" '╭─ 分析完成 ─────────────────────────────────────────╮' "$COLLEGE_RESET"
+    printf '  %s\n' '元数据已上传，报告可以立即查看。'
+    printf '%b%s%b\n' "$COLLEGE_SAFE$COLLEGE_BOLD" '╰─ 报告链接' "$COLLEGE_RESET"
+  else
+    printf '\n%b%s%b\n' "$COLLEGE_SAFE$COLLEGE_BOLD" '╭─ ANALYSIS COMPLETE ────────────────────────────────╮' "$COLLEGE_RESET"
+    printf '  %s\n' 'Metadata uploaded. The report is ready to view.'
+    printf '%b%s%b\n' "$COLLEGE_SAFE$COLLEGE_BOLD" '╰─ REPORT URL' "$COLLEGE_RESET"
+  fi
+  printf '  %b%s%b\n' "$COLLEGE_BOLD" "$REPORT_URL" "$COLLEGE_RESET"
+  if [ "$mdm_lang" = "1" ]; then
+    printf '  %b%s%b\n\n' "$COLLEGE_MUTED" '请妥善保管：任何获得完整链接的人都能在有效期内查看报告。' "$COLLEGE_RESET"
+  else
+    printf '  %b%s%b\n\n' "$COLLEGE_MUTED" 'Keep this URL private: anyone with it can view the report until it expires.' "$COLLEGE_RESET"
+  fi
 }
 
 read_password_with_feedback() {
@@ -120,14 +351,14 @@ detect_environment() {
   case "$RUN_MODE" in
     normal|'') ;;
     recovery)
-      printf 'Management analysis is available only in normal desktop macOS, not Recovery.\n' >&2
+      printf '%s\n' "$(college_text RECOVERY_ONLY)" >&2
       exit 1
       ;;
-    *) printf 'RUN_MODE must be normal.\n' >&2; exit 1 ;;
+    *) printf '%s\n' "$(college_text INVALID_RUN_MODE)" >&2; exit 1 ;;
   esac
 
   if [ -d /System/Installation ] || [ -d "/System/Library/CoreServices/Recovery Springboard.app" ]; then
-    printf 'Management analysis requires normal desktop macOS and is unavailable in Recovery.\n' >&2
+    printf '%s\n' "$(college_text RECOVERY_ONLY)" >&2
     exit 1
   fi
   if [ -e /dev/console ] && command_exists stat; then
@@ -138,7 +369,7 @@ detect_environment() {
   elif command_exists open && [ -d "/System/Library/CoreServices/Finder.app" ] && [ -d /Users ]; then
     RUN_MODE="normal"
   else
-    printf 'Management analysis requires normal desktop macOS and is unavailable in Recovery.\n' >&2
+    printf '%s\n' "$(college_text RECOVERY_ONLY)" >&2
     exit 1
   fi
 }
@@ -148,22 +379,22 @@ ensure_root() {
   local command_status=1
   [ "$(id -u 2>/dev/null)" = "0" ] && return 0
   if ! command_exists sudo; then
-    printf 'sudo is required to read all system metadata.\n' >&2
+    printf '%s\n' "$(college_text SUDO_REQUIRED)" >&2
     exit 1
   fi
 
   while [ "$attempt" -le 3 ]; do
-    read_password_with_feedback 'Enter the current user password: ' || PASSWORD_INPUT=""
+    read_password_with_feedback "$(college_text PASSWORD_PROMPT)" || PASSWORD_INPUT=""
     password="$PASSWORD_INPUT"
     PASSWORD_INPUT=""
     if ! password_input_is_valid "$password"; then
       password=""
-      printf 'Password cannot be empty or contain whitespace.\n' >&2
+      printf '%s\n' "$(college_text PASSWORD_INVALID)" >&2
     elif printf '%s\n' "$password" | sudo -S -p '' -v >/dev/null 2>&1; then
       break
     else
       password=""
-      printf 'Password verification failed (%s/3).\n' "$attempt" >&2
+      printf '%s (%s/3).\n' "$(college_text PASSWORD_FAILED)" "$attempt" >&2
     fi
     attempt=$((attempt + 1))
   done
@@ -173,8 +404,8 @@ ensure_root() {
   fi
 
   COLLEGE_PASSWORD_STDIN=1
-  export RUN_MODE COLLEGE_SERVER_URL COLLEGE_OPEN_RESULT COLLEGE_PASSWORD_STDIN
-  printf '%s\n' "$password" | sudo -nE /bin/bash -c '/bin/bash <(curl -kfsSL "${COLLEGE_SERVER_URL%/}/college.sh")'
+  export RUN_MODE mdm_lang COLLEGE_SERVER_URL COLLEGE_OPEN_RESULT COLLEGE_SCRIPT_PATH COLLEGE_PASSWORD_STDIN
+  printf '%s\n' "$password" | sudo -nE /bin/bash -c '/bin/bash <(curl -kfsSL "${COLLEGE_SERVER_URL%/}${COLLEGE_SCRIPT_PATH}")'
   command_status=$?
   unset COLLEGE_PASSWORD_STDIN
   password=""
@@ -345,7 +576,7 @@ scan_running_processes() {
   local process_path=""
   local process_name=""
   command_exists ps || return 0
-  PROCESS_FILE=$(mktemp "/tmp/mdm-college-processes-$$.XXXXXX") || return 0
+  PROCESS_FILE=$(mktemp "$PROCESS_FILE_TEMPLATE") || return 0
   ps -axo comm= 2>/dev/null | awk 'NF { sub(/^[[:space:]]+/, ""); if (!seen[$0]++) print }' > "$PROCESS_FILE"
   while IFS= read -r process_path; do
     [ -n "$process_path" ] || continue
@@ -367,7 +598,7 @@ scan_apple_hosts_overrides() {
   local hostname=""
   hosts_file=$(path_under_root "$TARGET_ROOT" "etc/hosts")
   [ -r "$hosts_file" ] || return 0
-  HOSTS_FILE=$(mktemp "/tmp/mdm-college-hosts-$$.XXXXXX") || return 0
+  HOSTS_FILE=$(mktemp "$HOSTS_FILE_TEMPLATE") || return 0
   awk '
     {
       sub(/#.*/, "")
@@ -492,36 +723,29 @@ collect_metadata() {
 
 create_report_session() {
   command_exists curl || {
-    printf 'curl is required to create the report.\n' >&2
+    printf '%s\n' "$(college_text CURL_REQUIRED)" >&2
     return 1
   }
-  curl -fsSL --retry 2 --connect-timeout 10 --max-time 30 \
-    -X POST "$COLLEGE_SERVER_URL/api/college/session" \
+  curl -fsSL --retry "$CURL_RETRY_COUNT" --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_SESSION_MAX_TIME" \
+    -X POST "$COLLEGE_SERVER_URL$COLLEGE_SESSION_PATH" \
     -o "$RESPONSE_FILE" || {
-      printf 'Could not create the report. Check HTTPS, network access, and system time.\n' >&2
+      printf '%s\n' "$(college_text SESSION_FAILED)" >&2
       return 1
     }
   if grep -Eiq '<!doctype|<html' "$RESPONSE_FILE" 2>/dev/null; then
-    printf 'Server returned HTML instead of a report session.\n' >&2
+    printf '%s\n' "$(college_text SESSION_HTML)" >&2
     return 1
   fi
   REPORT_ID=$(sed -n 's/.*"id":"\([a-f0-9]*\)".*/\1/p' "$RESPONSE_FILE" | head -1)
-  REPORT_PASSWORD=$(sed -n 's/.*"report_password":"\([0-9]*\)".*/\1/p' "$RESPONSE_FILE" | head -1)
   REPORT_URL=$(sed -n 's/.*"result_url":"\([^"]*\)".*/\1/p' "$RESPONSE_FILE" | head -1)
   case "$REPORT_ID" in
     ????????????????????????????????) ;;
-    *) printf 'Server returned an invalid report ID.\n' >&2; return 1 ;;
-  esac
-  case "$REPORT_PASSWORD" in
-    ??????) ;;
-    *) printf 'Server returned an invalid report password.\n' >&2; return 1 ;;
+    *) printf '%s\n' "$(college_text INVALID_REPORT_ID)" >&2; return 1 ;;
   esac
   [ -n "$REPORT_URL" ] || {
-    printf 'Server response did not contain a report URL.\n' >&2
+    printf '%s\n' "$(college_text REPORT_URL_MISSING)" >&2
     return 1
   }
-  printf '\nReport URL: %s\n' "$REPORT_URL"
-  printf 'Report password: %s\n\n' "$REPORT_PASSWORD"
 }
 
 build_payload() {
@@ -544,9 +768,12 @@ build_payload() {
 
 confirm_collection() {
   local answer=""
-  printf '\nThis report will scan enrollment status, ADE/DEP markers, Apple domains overridden in /etc/hosts, running executable names or paths, and system-level management component metadata.\n'
-  printf 'It excludes hosts IP addresses and non-Apple entries, process arguments, user-directory and temporary paths, file contents, serial number, and device hostname. The cloud configuration URL is reduced to its hostname.\n'
-  printf 'Scan this Mac and upload the resulting metadata once to %s? Type YES to continue: ' "$COLLEGE_SERVER_URL"
+  print_collection_notice
+  if [ "$mdm_lang" = "1" ]; then
+    printf '%b%s%b' "$COLLEGE_WARNING$COLLEGE_BOLD" '确认扫描并上传？请输入 YES（其他输入均取消）：' "$COLLEGE_RESET"
+  else
+    printf '%b%s%b' "$COLLEGE_WARNING$COLLEGE_BOLD" 'Scan and upload now? Type YES to continue (anything else cancels): ' "$COLLEGE_RESET"
+  fi
   IFS= read -r answer || return 1
   [ "$answer" = "YES" ]
 }
@@ -554,35 +781,36 @@ confirm_collection() {
 validate_payload_size() {
   local bytes=""
   bytes=$(wc -c < "$PAYLOAD_FILE" | tr -d ' ')
-  printf '\nCollected %s metadata items (%s bytes).\n' "$ITEM_COUNT" "$bytes"
-  if [ "$bytes" -gt 1048576 ] 2>/dev/null; then
-    printf 'The metadata exceeds the 1 MiB upload limit; nothing was uploaded.\n' >&2
+  if [ "$mdm_lang" = "1" ]; then
+    printf '      已采集 %s 项元数据，共 %s 字节。\n' "$ITEM_COUNT" "$bytes"
+  else
+    printf '      Collected %s metadata items (%s bytes).\n' "$ITEM_COUNT" "$bytes"
+  fi
+  if [ "$bytes" -gt "$MAX_PAYLOAD_BYTES" ] 2>/dev/null; then
+    printf '%s\n' "$(college_text PAYLOAD_TOO_LARGE)" >&2
     return 1
   fi
   return 0
 }
 
 upload_payload() {
-  curl -fsSL --retry 2 --connect-timeout 10 --max-time 60 \
+  curl -fsSL --retry "$CURL_RETRY_COUNT" --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_UPLOAD_MAX_TIME" \
     -H 'Content-Type: application/json' \
-    -H "X-Report-Password: $REPORT_PASSWORD" \
     --data-binary "@$PAYLOAD_FILE" \
-    "$COLLEGE_SERVER_URL/api/college/$REPORT_ID/upload" \
+    "$COLLEGE_SERVER_URL$COLLEGE_REPORT_PATH/$REPORT_ID/upload" \
     -o "$RESPONSE_FILE" || {
-      printf 'Upload failed. Check HTTPS, network access, and system time.\n' >&2
+      printf '%s\n' "$(college_text UPLOAD_FAILED)" >&2
       return 1
     }
   if grep -Eiq '<!doctype|<html' "$RESPONSE_FILE" 2>/dev/null; then
-    printf 'Server returned HTML instead of a report response.\n' >&2
+    printf '%s\n' "$(college_text UPLOAD_HTML)" >&2
     return 1
   fi
   if ! grep -q '"ok":true' "$RESPONSE_FILE" 2>/dev/null; then
-    printf 'Server did not accept the analysis payload.\n' >&2
+    printf '%s\n' "$(college_text UPLOAD_REJECTED)" >&2
     return 1
   fi
-  printf '\nAnalysis uploaded successfully.\n'
-  printf 'Report URL: %s\n' "$REPORT_URL"
-  printf 'Report password: %s\n' "$REPORT_PASSWORD"
+  print_report_result
   if [ "$COLLEGE_OPEN_RESULT" = "1" ] && [ "$RUN_MODE" = "normal" ] && command_exists open; then
     open "$REPORT_URL" >/dev/null 2>&1 || true
   fi
@@ -590,21 +818,29 @@ upload_payload() {
 
 main() {
   read_inherited_password
+  setup_terminal_styles
+  select_language || exit 1
   detect_environment
   ensure_root "$@"
   select_target_root
   confirm_collection || {
-    printf 'Scan cancelled.\n'
+    if [ "$mdm_lang" = "1" ]; then
+      printf '\n%b%s%b\n' "$COLLEGE_MUTED" '已取消：未扫描系统，也未上传任何数据。' "$COLLEGE_RESET"
+    else
+      printf '\n%b%s%b\n' "$COLLEGE_MUTED" 'Cancelled: the system was not scanned and no data was uploaded.' "$COLLEGE_RESET"
+    fi
     exit 1
   }
-  ITEMS_FILE=$(mktemp "/tmp/mdm-college-items-$$.XXXXXX") || exit 1
-  PAYLOAD_FILE=$(mktemp "/tmp/mdm-college-payload-$$.XXXXXX") || exit 1
-  RESPONSE_FILE=$(mktemp "/tmp/mdm-college-response-$$.XXXXXX") || exit 1
+  ITEMS_FILE=$(mktemp "$ITEMS_FILE_TEMPLATE") || exit 1
+  PAYLOAD_FILE=$(mktemp "$PAYLOAD_FILE_TEMPLATE") || exit 1
+  RESPONSE_FILE=$(mktemp "$RESPONSE_FILE_TEMPLATE") || exit 1
+  print_stage '1/3' '正在创建私密报告…' 'Creating a private report…'
   create_report_session || exit 1
-  printf 'Scanning target: %s\n' "$TARGET_ROOT"
+  print_stage '2/3' '正在只读扫描系统元数据…' 'Scanning system metadata read-only…'
   collect_metadata
   build_payload
   validate_payload_size || exit 1
+  print_stage '3/3' '正在上传分析元数据…' 'Uploading analysis metadata…'
   upload_payload
 }
 

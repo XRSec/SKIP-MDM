@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#071c18">
-  <title>XR MDM · 监管分析报告</title>
+  <title>Skip MDM · 监管分析报告</title>
   <style>
     :root {
       --night: #071c18;
@@ -25,6 +25,7 @@
     body {
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
       color: var(--ink);
       background:
         radial-gradient(circle at 92% 4%, rgba(217,243,109,.45), transparent 25rem),
@@ -33,36 +34,38 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    button { font: inherit; }
+    button, a { font: inherit; }
     .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
-    header { padding: 26px 0; }
-    .nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-    .brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; font-weight: 850; }
-    .mark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: white; background: var(--night); font-size: 12px; }
-    .private { color: var(--muted); font: 700 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
-    .hero { padding: 54px 0 40px; }
-    .eyebrow { margin-bottom: 18px; color: var(--green); font-size: 12px; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
-    h1 { max-width: 850px; margin: 0; font-size: clamp(44px, 7vw, 80px); line-height: .98; letter-spacing: -.06em; }
-    .lead { max-width: 700px; margin: 24px 0 0; color: var(--muted); font-size: 17px; line-height: 1.75; }
-    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; margin: 28px 0 34px; }
-    .metric { min-height: 88px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
-    .metric:nth-child(2) { color: white; background: var(--green); border-color: transparent; }
+    header { padding: 20px 0 0; }
+    .nav { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+    .home-link, .private { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border: 1px solid rgba(255,255,255,.58); border-radius: 13px; background: rgba(255,255,255,.62); box-shadow: 0 8px 24px rgba(8,28,24,.08); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+    .home-link { color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 800; }
+    .home-link:hover { background: rgba(255,255,255,.88); }
+    .private { color: var(--muted); font: 700 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .06em; }
+    .hero { padding: 34px 0 24px; }
+    .eyebrow { margin-bottom: 12px; color: var(--green); font-size: 11px; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { max-width: 850px; margin: 0; font-size: clamp(38px, 6vw, 58px); line-height: 1; letter-spacing: -.055em; }
+    .lead { max-width: 720px; margin: 17px 0 0; color: var(--muted); font-size: 15px; line-height: 1.7; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; margin: 18px 0 28px; }
+    .metric { min-height: 84px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+    .metric.success { color: white; background: var(--green); border-color: transparent; }
+    .metric.alert { color: white; background: var(--orange); border-color: transparent; }
     .metric-label { display: block; color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
-    .metric:nth-child(2) .metric-label { color: rgba(255,255,255,.65); }
+    .metric.success .metric-label, .metric.alert .metric-label { color: rgba(255,255,255,.72); }
     .metric-value { display: block; margin-top: 10px; font-size: 24px; line-height: 1.15; font-weight: 880; letter-spacing: -.04em; overflow-wrap: anywhere; }
     .toolbar { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin: 0 0 18px; }
     .toolbar h2 { margin: 0; font-size: 28px; letter-spacing: -.035em; }
     .toolbar p { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
     .reanalyze { flex: 0 0 auto; border: 0; border-radius: 12px; padding: 11px 16px; color: white; background: var(--green); cursor: pointer; font-weight: 800; }
     .reanalyze:disabled { cursor: wait; opacity: .58; }
-    .management-detail { margin: 0 0 36px; padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+    .management-detail { margin: 0 0 30px; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
     .management-detail h2 { margin: 0 0 6px; font-size: 25px; letter-spacing: -.035em; }
     .management-detail > p { margin: 0 0 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 26px; }
     .detail-row { min-width: 0; display: grid; grid-template-columns: minmax(145px, .9fr) minmax(0, 1.1fr); gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
     .detail-label { color: var(--muted); font-size: 13px; }
     .detail-value { font-size: 13px; font-weight: 750; overflow-wrap: anywhere; }
-    .finding-list { display: grid; gap: 14px; padding-bottom: 80px; }
+    .finding-list { display: grid; gap: 12px; padding-bottom: 64px; }
     .finding { padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: 0 16px 40px rgba(8,28,24,.05); }
     .finding.apple { border-color: rgba(180,58,48,.3); background: rgba(255,244,239,.84); }
     .finding-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
@@ -85,19 +88,15 @@
     .command-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 13px 0 16px; color: rgba(255,255,255,.58); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
     .copy { border: 1px solid rgba(255,255,255,.18); border-radius: 9px; padding: 7px 10px; color: white; background: rgba(255,255,255,.08); cursor: pointer; font-size: 11px; font-weight: 750; }
     pre { margin: 0; padding: 14px 16px 18px; color: #efffd0; font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .state { margin: 40px 0; padding: 32px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--muted); background: var(--card); }
-    .unlock { max-width: 520px; margin: 20px 0 80px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
-    .unlock h2 { margin: 0; font-size: 26px; letter-spacing: -.035em; }
-    .unlock p { margin: 10px 0 20px; color: var(--muted); line-height: 1.65; }
-    .unlock-row { display: flex; gap: 9px; }
-    .unlock input { min-width: 0; flex: 1; height: 50px; padding: 0 15px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: rgba(255,255,255,.78); font: 700 20px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; outline: none; }
-    .unlock input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(11,114,83,.1); }
-    .unlock button { min-width: 110px; border: 0; border-radius: 12px; color: var(--night); background: var(--lime); cursor: pointer; font-weight: 850; }
-    .unlock-error { min-height: 20px; margin: 12px 0 0 !important; color: var(--red) !important; font-size: 13px; }
+    .state { margin: 28px 0; padding: 30px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--muted); background: var(--card); text-align: center; line-height: 1.65; }
     .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 15px); padding: 11px 15px; border-radius: 11px; color: white; background: var(--night); opacity: 0; pointer-events: none; transition: .2s; }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
     footer { padding: 0 0 34px; color: var(--muted); font-size: 12px; }
     @media (max-width: 720px) {
+      header { padding-top: 12px; }
+      .nav { align-items: flex-end; flex-direction: column; }
+      .private { min-height: 34px; }
+      .hero { padding-top: 24px; }
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .metric { min-height: 82px; padding: 13px 14px; }
       .metric-value { font-size: 20px; }
@@ -110,15 +109,15 @@
 <body>
   <header>
     <div class="wrap nav">
-      <a class="brand" href="/"><span class="mark">XR</span><span>XR MDM</span></a>
-      <span class="private">PRIVATE · EXPIRING REPORT</span>
+      <span class="private">私密报告 · 到期失效</span>
+      <a class="home-link" href="/">← 返回首页</a>
     </div>
   </header>
   <main class="wrap">
     <section class="hero">
-      <div class="eyebrow">Management footprint analysis</div>
-      <h1>监管组件 分析报告</h1>
-      <p class="lead">基于 Launch plist、应用标识、代码签名、系统扩展和安装收据生成。命令不会自动执行；请核对证据并优先使用厂商卸载器。</p>
+      <div class="eyebrow">Skip MDM · Analysis report</div>
+      <h1>监管分析报告</h1>
+      <p class="lead">根据设备主动提交的管理组件元数据生成。报告只提供判断依据和手动命令，不会自动修改设备。</p>
     </section>
     <div id="content"><div class="state">正在读取分析结果…</div></div>
   </main>
@@ -127,7 +126,6 @@
   <script>
     const content = document.getElementById('content');
     const toast = document.getElementById('toast');
-    let activePassword = '';
 
     function element(tag, className, text) {
       const node = document.createElement(tag);
@@ -160,10 +158,14 @@
       setTimeout(() => toast.classList.remove('show'), 1600);
     }
 
-    function metric(label, value) {
-      const card = element('article', 'metric');
+    function metric(label, value, tone = '') {
+      const card = element('article', `metric${tone ? ` ${tone}` : ''}`);
       card.append(element('span', 'metric-label', label), element('strong', 'metric-value', String(value)));
       return card;
+    }
+
+    function statusTone(value) {
+      return ['yes', 'present', 'user_approved'].includes(value) ? 'alert' : '';
     }
 
     function statusText(value) {
@@ -172,6 +174,15 @@
         absent: '不存在', available: '可用', unavailable: '命令不可用', error: '检测失败', unknown: '无法确认'
       };
       return labels[value] || value || '无法确认';
+    }
+
+    function badgeText(value) {
+      const labels = {
+        apple: 'Apple 系统', mdm: 'MDM', rmm: '远程运维', internal: '企业内部',
+        inventory: '资产清单', security: '终端安全', network: '网络接入', remote: '远程控制',
+        system: '系统级', high: '高可信', medium: '中可信', low: '低可信'
+      };
+      return labels[value] || value;
     }
 
     function renderManagementDetail(management) {
@@ -214,8 +225,8 @@
       const title = element('div');
       title.append(element('h3', '', finding.product), element('p', 'company', finding.company));
       const badges = element('div', 'badges');
-      badges.append(element('span', `badge ${finding.confidence === 'system' ? 'system' : ''}`, finding.category));
-      badges.append(element('span', 'badge', finding.confidence));
+      badges.append(element('span', `badge ${finding.category === 'apple' ? 'system' : ''}`, badgeText(finding.category)));
+      badges.append(element('span', 'badge', badgeText(finding.confidence)));
       if (finding.states && finding.states.running) badges.append(element('span', 'badge', '正在运行'));
       if (finding.states && finding.states.persistent) badges.append(element('span', 'badge', '已持久化'));
       head.append(title, badges);
@@ -261,16 +272,16 @@
       const summary = element('section', 'summary');
       summary.append(
         metric('采集项目', report.source.itemCount),
-        metric('可疑组件', report.summary.findingCount),
-        metric('可处理项', report.summary.removableCount),
-        metric('MDM 注册', statusText(management.mdmEnrollment)),
-        metric('ADE/DEP', statusText(management.automatedEnrollment)),
-        metric('云配置记录', statusText(management.cloudConfigRecord)),
+        metric('发现组件', report.summary.findingCount),
+        metric('可处理项', report.summary.removableCount, report.summary.removableCount > 0 ? 'success' : ''),
+        metric('MDM 注册', statusText(management.mdmEnrollment), statusTone(management.mdmEnrollment)),
+        metric('ADE/DEP', statusText(management.automatedEnrollment), statusTone(management.automatedEnrollment)),
+        metric('云配置记录', statusText(management.cloudConfigRecord), statusTone(management.cloudConfigRecord)),
         metric('运行进程', management.runningProcessCount || 0)
       );
       const toolbar = element('div', 'toolbar');
       const heading = element('div');
-      heading.append(element('h2', '', '发现的管理足迹'), element('p', '', `报告到期：${new Date(payload.expires_at).toLocaleString()}`));
+      heading.append(element('h2', '', '组件与处理建议'), element('p', '', `报告到期：${new Date(payload.expires_at).toLocaleString()}`));
       const reanalyzeButton = element('button', 'reanalyze', '重新分析');
       reanalyzeButton.type = 'button';
       reanalyzeButton.addEventListener('click', () => reanalyze(reanalyzeButton));
@@ -284,75 +295,36 @@
     }
 
     async function reanalyze(button) {
-      if (!/^\d{6}$/.test(activePassword)) {
-        renderUnlock('请重新输入报告密码。');
-        return;
-      }
       button.disabled = true;
       button.textContent = '正在重新分析…';
       const id = location.pathname.split('/').filter(Boolean).pop();
       try {
         const response = await fetch(`/api/college/${encodeURIComponent(id)}/reanalyze`, {
           method: 'POST',
-          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: activePassword })
+          headers: { Accept: 'application/json' }
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'reanalyze_failed');
         render(payload);
       } catch (error) {
-        if (error.message === 'invalid_report_password') {
-          activePassword = '';
-          renderUnlock('密码错误，或报告已经过期。');
-        } else {
-          button.disabled = false;
-          button.textContent = '重新分析';
-          window.alert(error.message === 'report_source_unavailable' ? '原始扫描数据不可用，无法重新分析。' : '重新分析失败，请稍后重试。');
-        }
+        button.disabled = false;
+        button.textContent = '重新分析';
+        window.alert(error.message === 'report_source_unavailable' ? '原始扫描数据不可用，无法重新分析。' : '重新分析失败，请稍后重试。');
       }
     }
 
-    function renderUnlock(message = '') {
-      content.textContent = '';
-      const card = element('section', 'unlock');
-      card.append(element('h2', '', '输入报告密码'), element('p', '', '请输入采集脚本在终端显示的 6 位密码。'));
-      const form = element('form', 'unlock-row');
-      const input = element('input');
-      input.type = 'password';
-      input.inputMode = 'numeric';
-      input.autocomplete = 'one-time-code';
-      input.maxLength = 6;
-      input.pattern = '[0-9]{6}';
-      input.required = true;
-      input.setAttribute('aria-label', '6 位报告密码');
-      const button = element('button', '', '查看报告');
-      button.type = 'submit';
-      const error = element('p', 'unlock-error', message);
-      form.append(input, button);
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        unlock(input.value.trim());
-      });
-      card.append(form, error);
-      content.append(card);
-      input.focus();
-    }
-
-    async function unlock(password, polling = false) {
+    async function loadReport(polling = false) {
       const id = location.pathname.split('/').filter(Boolean).pop();
       try {
-        const response = await fetch(`/api/college/${encodeURIComponent(id)}/unlock`, {
-          method: 'POST',
-          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
+        const response = await fetch(`/api/college/${encodeURIComponent(id)}`, {
+          headers: { Accept: 'application/json' }
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'load_failed');
-        activePassword = password;
         if (payload.status === 'pending') {
           content.textContent = '';
           content.append(element('div', 'state', '报告已创建，正在等待设备完成扫描和上传…'));
-          setTimeout(() => unlock(password, true), 3000);
+          setTimeout(() => loadReport(true), 3000);
           return;
         }
         render(payload);
@@ -361,17 +333,13 @@
           content.textContent = '';
           content.append(element('div', 'state', '报告暂时无法读取，请刷新页面后重试。'));
         } else {
-          renderUnlock(error.message === 'invalid_report_password' ? '密码错误，或报告已经过期。' : '暂时无法读取报告，请稍后重试。');
+          content.textContent = '';
+          content.append(element('div', 'state', error.message === 'report_not_found' ? '报告不存在或已经过期。' : '暂时无法读取报告，请稍后重试。'));
         }
       }
     }
 
-    const parameterPassword = new URLSearchParams(location.search).get('password');
-    if (/^\d{6}$/.test(parameterPassword || '')) {
-      unlock(parameterPassword);
-    } else {
-      renderUnlock();
-    }
+    loadReport();
   </script>
 </body>
 </html>
