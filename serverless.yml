@@ -12,6 +12,7 @@ inputs:
       MYSQL_PASSWORD: ${env:MYSQL_PASSWORD}
       MYSQL_DATABASE: ${env:MYSQL_DATABASE}
       MYSQL_SSL: ${env:MYSQL_SSL}
+      PUBLIC_BASE_URL: ${env:PUBLIC_BASE_URL}
   events:
     - http:
         parameters:

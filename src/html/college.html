@@ -44,15 +44,24 @@
     .eyebrow { margin-bottom: 18px; color: var(--green); font-size: 12px; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
     h1 { max-width: 850px; margin: 0; font-size: clamp(44px, 7vw, 80px); line-height: .98; letter-spacing: -.06em; }
     .lead { max-width: 700px; margin: 24px 0 0; color: var(--muted); font-size: 17px; line-height: 1.75; }
-    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 38px 0 50px; }
-    .metric { min-height: 145px; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; margin: 28px 0 34px; }
+    .metric { min-height: 88px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
     .metric:nth-child(2) { color: white; background: var(--green); border-color: transparent; }
     .metric-label { display: block; color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
     .metric:nth-child(2) .metric-label { color: rgba(255,255,255,.65); }
-    .metric-value { display: block; margin-top: 22px; font-size: 42px; font-weight: 880; letter-spacing: -.05em; }
+    .metric-value { display: block; margin-top: 10px; font-size: 24px; line-height: 1.15; font-weight: 880; letter-spacing: -.04em; overflow-wrap: anywhere; }
     .toolbar { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin: 0 0 18px; }
     .toolbar h2 { margin: 0; font-size: 28px; letter-spacing: -.035em; }
     .toolbar p { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+    .reanalyze { flex: 0 0 auto; border: 0; border-radius: 12px; padding: 11px 16px; color: white; background: var(--green); cursor: pointer; font-weight: 800; }
+    .reanalyze:disabled { cursor: wait; opacity: .58; }
+    .management-detail { margin: 0 0 36px; padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+    .management-detail h2 { margin: 0 0 6px; font-size: 25px; letter-spacing: -.035em; }
+    .management-detail > p { margin: 0 0 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 26px; }
+    .detail-row { min-width: 0; display: grid; grid-template-columns: minmax(145px, .9fr) minmax(0, 1.1fr); gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+    .detail-label { color: var(--muted); font-size: 13px; }
+    .detail-value { font-size: 13px; font-weight: 750; overflow-wrap: anywhere; }
     .finding-list { display: grid; gap: 14px; padding-bottom: 80px; }
     .finding { padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: 0 16px 40px rgba(8,28,24,.05); }
     .finding.apple { border-color: rgba(180,58,48,.3); background: rgba(255,244,239,.84); }
@@ -63,6 +72,11 @@
     .badge { padding: 7px 9px; border-radius: 999px; background: rgba(11,114,83,.09); color: var(--green); font-size: 11px; font-weight: 800; text-transform: uppercase; }
     .badge.system { color: var(--red); background: rgba(180,58,48,.09); }
     .warning { margin: 18px 0 0; padding: 13px 15px; border-radius: 12px; color: #7f2b24; background: rgba(241,112,71,.12); font-size: 13px; line-height: 1.6; }
+    .normal-note { margin: 18px 0 0; padding: 13px 15px; border-radius: 12px; color: #075c43; background: rgba(11,114,83,.1); font-size: 13px; line-height: 1.6; }
+    .health-warning { margin: 0 0 28px; padding: 20px 22px; border: 1px solid rgba(180,58,48,.3); border-radius: 18px; color: #7f2b24; background: rgba(255,244,239,.9); }
+    .health-warning h2 { margin: 0 0 8px; font-size: 22px; }
+    .health-warning p { margin: 0; font-size: 14px; line-height: 1.65; }
+    .health-hosts { margin: 12px 0 0; padding-left: 20px; font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
     details { margin-top: 18px; border-top: 1px solid var(--line); }
     summary { padding: 17px 0 0; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 750; }
     .evidence { margin: 13px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
@@ -84,8 +98,10 @@
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
     footer { padding: 0 0 34px; color: var(--muted); font-size: 12px; }
     @media (max-width: 720px) {
-      .summary { grid-template-columns: 1fr; }
-      .metric { min-height: 115px; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric { min-height: 82px; padding: 13px 14px; }
+      .metric-value { font-size: 20px; }
+      .detail-grid { grid-template-columns: 1fr; }
       .finding-head, .toolbar { align-items: flex-start; flex-direction: column; }
       .badges { justify-content: flex-start; }
     }
@@ -101,7 +117,7 @@
   <main class="wrap">
     <section class="hero">
       <div class="eyebrow">Management footprint analysis</div>
-      <h1>监管组件<br>分析报告</h1>
+      <h1>监管组件 分析报告</h1>
       <p class="lead">基于 Launch plist、应用标识、代码签名、系统扩展和安装收据生成。命令不会自动执行；请核对证据并优先使用厂商卸载器。</p>
     </section>
     <div id="content"><div class="state">正在读取分析结果…</div></div>
@@ -111,6 +127,7 @@
   <script>
     const content = document.getElementById('content');
     const toast = document.getElementById('toast');
+    let activePassword = '';
 
     function element(tag, className, text) {
       const node = document.createElement(tag);
@@ -149,6 +166,48 @@
       return card;
     }
 
+    function statusText(value) {
+      const labels = {
+        user_approved: '是（用户批准）', yes: '是', no: '否', present: '存在',
+        absent: '不存在', available: '可用', unavailable: '命令不可用', error: '检测失败', unknown: '无法确认'
+      };
+      return labels[value] || value || '无法确认';
+    }
+
+    function renderManagementDetail(management) {
+      const section = element('section', 'management-detail');
+      section.append(
+        element('h2', '', '云配置信息'),
+        element('p', '', '展示设备本地云配置记录中已提取的字段；完整 URL、证书和 plist 内容不会上传。')
+      );
+      const fields = [
+        ['ConfigurationURL（仅主机名）', management.cloudConfigDomain || '未读取到'],
+        ['云配置记录', statusText(management.cloudConfigRecord)],
+        ['云配置描述文件', statusText(management.cloudConfigProfileInstalled)]
+      ];
+      const grid = element('div', 'detail-grid');
+      for (const field of fields) {
+        const row = element('div', 'detail-row');
+        row.append(element('span', 'detail-label', field[0]), element('strong', 'detail-value', field[1]));
+        grid.append(row);
+      }
+      section.append(grid);
+      return section;
+    }
+
+    function renderHealthWarning(health) {
+      if (!health || health.status !== 'unhealthy' || !Array.isArray(health.unexpectedAppleHostOverrides) || health.unexpectedAppleHostOverrides.length === 0) return null;
+      const section = element('section', 'health-warning');
+      section.append(
+        element('h2', '', '系统不健康'),
+        element('p', '', '/etc/hosts 中存在非预期的 Apple 服务域名覆盖，部分 Apple 服务可能不可用。请核对以下域名：')
+      );
+      const list = element('ul', 'health-hosts');
+      for (const hostname of health.unexpectedAppleHostOverrides) list.append(element('li', '', hostname));
+      section.append(list);
+      return section;
+    }
+
     function renderFinding(finding) {
       const card = element('article', `finding ${finding.category === 'apple' ? 'apple' : ''}`);
       const head = element('div', 'finding-head');
@@ -157,18 +216,24 @@
       const badges = element('div', 'badges');
       badges.append(element('span', `badge ${finding.confidence === 'system' ? 'system' : ''}`, finding.category));
       badges.append(element('span', 'badge', finding.confidence));
+      if (finding.states && finding.states.running) badges.append(element('span', 'badge', '正在运行'));
+      if (finding.states && finding.states.persistent) badges.append(element('span', 'badge', '已持久化'));
       head.append(title, badges);
       card.append(head);
 
-      if (!finding.removable) {
+      if (finding.assessment === 'normal_system_component') {
+        card.append(element('p', 'normal-note', '这是 macOS 正常的系统管理组件，存在属于正常现象，无需担心。禁止删除系统文件。'));
+      } else if (finding.category === 'apple') {
         card.append(element('p', 'warning', '这是 Apple 原生系统组件。它的存在不等于设备已注册 MDM，禁止删除系统文件。'));
+      } else if (!finding.removable) {
+        card.append(element('p', 'warning', '当前只有运行态、注册记录或其他只读证据，报告不会据此生成删除命令。'));
       }
 
       const details = element('details');
       const summary = element('summary', '', `查看 ${finding.evidence.length} 条证据`);
       const list = element('ul', 'evidence');
       for (const item of finding.evidence) {
-        const values = [item.type, item.path, item.label, item.bundleId, item.teamId, item.packageId].filter(Boolean);
+        const values = [item.type, item.path, item.label, item.program, item.bundleId, item.teamId, item.signingId, item.packageId, item.status, item.detail].filter(Boolean);
         list.append(element('li', '', values.join(' · ')));
       }
       details.append(summary, list);
@@ -190,21 +255,61 @@
 
     function render(payload) {
       const report = payload.report;
+      const management = report.source.management || {};
+      const healthWarning = renderHealthWarning(report.source.health);
       content.textContent = '';
       const summary = element('section', 'summary');
       summary.append(
         metric('采集项目', report.source.itemCount),
         metric('可疑组件', report.summary.findingCount),
-        metric('可处理项', report.summary.removableCount)
+        metric('可处理项', report.summary.removableCount),
+        metric('MDM 注册', statusText(management.mdmEnrollment)),
+        metric('ADE/DEP', statusText(management.automatedEnrollment)),
+        metric('云配置记录', statusText(management.cloudConfigRecord)),
+        metric('运行进程', management.runningProcessCount || 0)
       );
       const toolbar = element('div', 'toolbar');
       const heading = element('div');
       heading.append(element('h2', '', '发现的管理足迹'), element('p', '', `报告到期：${new Date(payload.expires_at).toLocaleString()}`));
-      toolbar.append(heading);
+      const reanalyzeButton = element('button', 'reanalyze', '重新分析');
+      reanalyzeButton.type = 'button';
+      reanalyzeButton.addEventListener('click', () => reanalyze(reanalyzeButton));
+      toolbar.append(heading, reanalyzeButton);
       const list = element('section', 'finding-list');
       if (report.findings.length === 0) list.append(element('div', 'state', '没有匹配到当前规则库中的监管组件。'));
       for (const finding of report.findings) list.append(renderFinding(finding));
-      content.append(summary, toolbar, list);
+      content.append(summary);
+      if (healthWarning) content.append(healthWarning);
+      content.append(renderManagementDetail(management), toolbar, list);
+    }
+
+    async function reanalyze(button) {
+      if (!/^\d{6}$/.test(activePassword)) {
+        renderUnlock('请重新输入报告密码。');
+        return;
+      }
+      button.disabled = true;
+      button.textContent = '正在重新分析…';
+      const id = location.pathname.split('/').filter(Boolean).pop();
+      try {
+        const response = await fetch(`/api/college/${encodeURIComponent(id)}/reanalyze`, {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: activePassword })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'reanalyze_failed');
+        render(payload);
+      } catch (error) {
+        if (error.message === 'invalid_report_password') {
+          activePassword = '';
+          renderUnlock('密码错误，或报告已经过期。');
+        } else {
+          button.disabled = false;
+          button.textContent = '重新分析';
+          window.alert(error.message === 'report_source_unavailable' ? '原始扫描数据不可用，无法重新分析。' : '重新分析失败，请稍后重试。');
+        }
+      }
     }
 
     function renderUnlock(message = '') {
@@ -243,6 +348,7 @@
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'load_failed');
+        activePassword = password;
         if (payload.status === 'pending') {
           content.textContent = '';
           content.append(element('div', 'state', '报告已创建，正在等待设备完成扫描和上传…'));
@@ -262,7 +368,6 @@
 
     const parameterPassword = new URLSearchParams(location.search).get('password');
     if (/^\d{6}$/.test(parameterPassword || '')) {
-      history.replaceState({}, '', location.pathname);
       unlock(parameterPassword);
     } else {
       renderUnlock();

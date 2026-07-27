@@ -54,7 +54,7 @@ TEMP_FILES=""
 TARGET_ROOT=""
 SYSTEM_ROOT=""
 CURRENT_USER=""
-LOGIN_USER="${MDM_LOGIN_USER:-}"
+LOGIN_USER="${SUDO_USER:-}"
 SESSION_PASSWORD=""
 PASSWORD_INPUT=""
 MDM_PATH=""
@@ -125,7 +125,7 @@ t() {
       LEGAL_NOTICE_PROHIBITED) printf '%s' "Do not use it on an unauthorized device, to evade lawful school or organization management, for commercial purposes, or for any unlawful or rights-infringing activity." ;;
       LEGAL_NOTICE_RESPONSIBILITY) printf '%s' "Verify ownership and authorization, comply with applicable law and policy, back up all important data, and accept responsibility for the operation and its consequences." ;;
       LEGAL_NOTICE_NO_WARRANTY) printf '%s' "Provided as-is, without any guarantee of fitness, success, or recovery. To the fullest extent permitted by law, the authors and contributors disclaim liability for loss caused by use or misuse; liability that cannot lawfully be excluded remains unaffected." ;;
-      LEGAL_NOTICE_NETWORK) printf '%s' "If you continue, this client will send the device serial number to the configured service, which records the request IP and time and may derive an approximate IP location, solely to record this acknowledgement." ;;
+      LEGAL_NOTICE_NETWORK) printf '%s' "If you continue, this client will send the device serial number to the configured service, which records the request IP and time and may derive an approximate IP location, solely to record this acknowledgement. A separately initiated management report has its own upload confirmation and may include enrollment status, ADE/DEP marker presence, the enrollment-service hostname, Apple domains overridden in /etc/hosts, system management metadata, and running executable names or paths, but not Hosts IP addresses, non-Apple Hosts entries, process arguments, or user-directory and temporary-directory paths." ;;
       LEGAL_NOTICE_PROMPT) printf '%s' "Do you consent to the described data transfer and confirm your authorization, understanding of the risks, and acceptance of the non-commercial restriction? [y/N]" ;;
       LEGAL_NOTICE_DECLINED) printf '%s' "Authorization and risk notice was not confirmed; exiting" ;;
       PING_SENDING) printf '%s' "Recording legal notice acknowledgement" ;;
@@ -626,18 +626,12 @@ ensure_root() {
     msg_err "$(t COMMAND_MISSING): curl"
     exit 1
   fi
-  printf '%s\n' "$password" | sudo -n env \
-    "RUN_MODE=$RUN_MODE" \
-    "DRY_RUN=$DRY_RUN" \
-    "TARGET_VOLUME=$TARGET_VOLUME" \
-    "mdm_lang=$mdm_lang" \
-    "MDM_SERVER_URL=$MDM_SERVER_URL" \
-    "MDM_LANG_PACK_URL=$LANG_PACK_URL" \
-    "MDM_KEYWORDS=$MDM_KEYWORDS" \
-    "MDM_EXTRA_KEYWORDS=" \
-    "MDM_LOGIN_USER=$login_user" \
-    "MDM_PASSWORD_STDIN=1" \
-    /bin/bash -c '/bin/bash <(curl -kfsSL "${MDM_SERVER_URL%/}")'
+  # RUN_MODE and mdm_lang were selected in this process. MDM_SERVER_URL is
+  # needed by the root shell before it downloads the next cli.sh instance.
+  export RUN_MODE mdm_lang MDM_SERVER_URL
+  printf '%s\n' "$password" | \
+    MDM_PASSWORD_STDIN=1 \
+    sudo -nE /bin/bash -c '/bin/bash <(curl -kfsSL "${MDM_SERVER_URL%/}")'
   password=""
   exit 0
 }

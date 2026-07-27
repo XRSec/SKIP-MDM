@@ -152,6 +152,30 @@ function createReportStore(options = {}) {
       };
     },
 
+    async getPayload(id, password) {
+      await initialize();
+      const [rows] = await getPool().execute(
+        `SELECT payload
+         FROM college_reports
+         WHERE id = ? AND report_password = ? AND expires_at > CURRENT_TIMESTAMP(3)
+         LIMIT 1`,
+        [id, password]
+      );
+      if (rows.length === 0 || !rows[0].payload) return null;
+      return JSON.parse(rows[0].payload);
+    },
+
+    async replaceAnalysis(id, password, analysis) {
+      await initialize();
+      const [result] = await getPool().execute(
+        `UPDATE college_reports
+         SET analysis = ?, status = 'ready'
+         WHERE id = ? AND report_password = ? AND expires_at > CURRENT_TIMESTAMP(3)`,
+        [JSON.stringify(analysis), id, password]
+      );
+      return result.affectedRows === 1;
+    },
+
     async close() {
       if (pool) await pool.end();
     }

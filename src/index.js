@@ -121,7 +121,7 @@ function serveFile(req, res, filePath, contentType) {
   if (contentType.startsWith('text/html')) {
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://xrsec.s3.bitiful.net https://xrsec-fun.s3.bitiful.net; connect-src 'self'; base-uri 'self'; form-action 'self'"
+      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://xrsec.s3.bitiful.net https://xrsec-fun.s3.bitiful.net; connect-src 'self' https://xrsec.s3.bitiful.net; base-uri 'self'; form-action 'self'"
     );
   }
 
@@ -271,7 +271,7 @@ function createRequestHandler(options = {}) {
           finding_count: analysis.summary.findingCount
         });
       } catch (error) {
-        const knownErrors = new Set(['invalid_payload', 'unsupported_schema', 'too_many_items', 'invalid_json']);
+        const knownErrors = new Set(['invalid_payload', 'unsupported_schema', 'unsupported_run_mode', 'too_many_items', 'invalid_json']);
         if (knownErrors.has(error.message) || error.statusCode === 400 || error.statusCode === 413) {
           sendJson(res, error.statusCode || 400, { ok: false, error: error.message });
         } else {
@@ -283,6 +283,52 @@ function createRequestHandler(options = {}) {
     }
 
     const reportUnlockMatch = url.pathname.match(/^\/api\/college\/([a-f0-9]{32})\/unlock$/);
+    const reportReanalyzeMatch = url.pathname.match(/^\/api\/college\/([a-f0-9]{32})\/reanalyze$/);
+    if (reportReanalyzeMatch && req.method === 'POST') {
+      try {
+        if (!String(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
+          sendJson(res, 415, { ok: false, error: 'json_content_type_required' });
+          return;
+        }
+        const body = await readJsonBody(req, 4096);
+        const password = String(body.password || '').trim();
+        if (!/^\d{6}$/.test(password)) {
+          sendJson(res, 401, { ok: false, error: 'invalid_report_password' });
+          return;
+        }
+        const current = await reportStore.get(reportReanalyzeMatch[1], password);
+        if (!current) {
+          sendJson(res, 401, { ok: false, error: 'invalid_report_password' });
+          return;
+        }
+        if (current.status !== 'ready') {
+          sendJson(res, 409, { ok: false, error: 'report_not_ready' });
+          return;
+        }
+        const source = await reportStore.getPayload(reportReanalyzeMatch[1], password);
+        if (!source) {
+          sendJson(res, 409, { ok: false, error: 'report_source_unavailable' });
+          return;
+        }
+        const analysis = analyzeCollection(source);
+        const replaced = await reportStore.replaceAnalysis(reportReanalyzeMatch[1], password, analysis);
+        if (!replaced) {
+          sendJson(res, 409, { ok: false, error: 'report_expired' });
+          return;
+        }
+        sendJson(res, 200, {
+          ok: true,
+          status: 'ready',
+          expires_at: current.expiresAt,
+          report: analysis
+        });
+      } catch (error) {
+        process.stderr.write(`Failed to reanalyze college report: ${error.message}\n`);
+        sendJson(res, 503, { ok: false, error: 'storage_unavailable' });
+      }
+      return;
+    }
+
     if (reportUnlockMatch && req.method === 'POST') {
       try {
         if (!String(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {

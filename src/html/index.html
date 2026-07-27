@@ -3,15 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="XR MDM 面向渠道、生态伙伴与战略投资人开放合作，共建 Mac 设备服务网络。">
+  <meta name="description" data-i18n-content="metaDescription" content="面向合法授权设备的 Mac 管理工具，提供 MDM、DEP、自动设备注册、远程管理分析与 macOS Recovery 维护指引。">
+  <meta name="keywords" data-i18n-content="metaKeywords" content="Mac 管理工具,绕过监管,监管分析,MDM,MDM bypass,Skip MDM,DEP,Device Enrollment Program,Automated Device Enrollment,Remote Management,macOS Recovery,Apple Silicon,Intel Mac">
+  <meta name="application-name" data-i18n-content="brandName" content="Mac 设备管理工具">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#081c18">
+  <link rel="canonical" href="https://mdm.xrsec.fun/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="XR MDM · 战略合作">
-  <meta property="og:description" content="连接产品能力、市场渠道与长期资源。">
+  <meta property="og:site_name" data-i18n-content="brandName" content="Mac 设备管理工具">
+  <meta property="og:title" data-i18n-content="title" content="Mac 设备管理工具 · MDM / DEP 监管处理与分析">
+  <meta property="og:description" data-i18n-content="metaDescription" content="面向合法授权设备的 Mac 管理工具，提供 MDM、DEP、自动设备注册、远程管理分析与 macOS Recovery 维护指引。">
+  <meta property="og:url" content="https://mdm.xrsec.fun/">
+  <meta property="og:locale" data-i18n-content="ogLocale" content="zh_CN">
   <meta property="og:image" content="https://mdm.xrsec.fun/og.png">
+  <meta name="baidu-site-verification" content="codeva-UsCa0z9ZPc" />
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="XR MDM · Strategic Partnerships">
-  <meta name="twitter:description" content="Channel growth · Ecosystem · Strategic investment">
+  <meta name="twitter:title" data-i18n-content="title" content="Mac 设备管理工具 · MDM / DEP 监管处理与分析">
+  <meta name="twitter:description" data-i18n-content="metaDescription" content="面向合法授权设备的 Mac 管理工具，提供 MDM、DEP、自动设备注册、远程管理分析与 macOS Recovery 维护指引。">
   <meta name="twitter:image" content="https://mdm.xrsec.fun/og.png">
   <link rel="shortcut icon" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=50&fmt=webp&q=48">
   <link rel="shortcut icon" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=50&fmt=webp&q=48">
@@ -20,7 +28,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=16&fmt=webp&q=48">
   <link rel="mask-icon" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?fmt=webp&q=48&w=128" color="#5bbad5">
 
-  <title>XR MDM · 战略合作</title>
+  <title>Mac 设备管理工具 · MDM / DEP 监管处理与分析</title>
   <style>
     :root {
       --ink: #102821;
@@ -37,7 +45,9 @@
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    main > section[id] { scroll-margin-top: 76px; }
     body {
       margin: 0;
       color: var(--ink);
@@ -83,6 +93,60 @@
     .nav-links { display: flex; align-items: center; gap: 26px; }
     .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 650; }
     .nav-links a:hover { color: var(--ink); }
+    .nav-menu { position: relative; }
+    .nav-menu-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .nav-menu-trigger::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .18s ease; }
+    .nav-menu.open .nav-menu-trigger { color: var(--ink); }
+    .nav-menu.open .nav-menu-trigger::after { transform: translateY(2px) rotate(225deg); }
+    .nav-menu-list {
+      position: absolute;
+      top: calc(100% + 15px);
+      left: 50%;
+      width: max-content;
+      min-width: 160px;
+      max-width: calc(100vw - 24px);
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 254, 249, .96);
+      box-shadow: 0 18px 48px rgba(8, 28, 24, .16);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      opacity: 0;
+      visibility: hidden;
+      transform: translate(-50%, -6px);
+      transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+    }
+    .nav-menu.open .nav-menu-list { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+    .tool-download {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      align-items: center;
+      gap: 11px;
+      padding: 11px;
+      border: 0;
+      border-radius: 11px;
+      color: var(--ink);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+    .tool-download:hover, .tool-download:focus-visible { background: rgba(13, 111, 82, .09); outline: none; }
+    .tool-download:disabled { cursor: wait; opacity: .65; }
+    .tool-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--night); background: var(--lime); font-size: 12px; font-weight: 850; }
+    .tool-label { display: block; font-size: 14px; font-weight: 800; white-space: nowrap; }
     .language {
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -143,7 +207,7 @@
       cursor: pointer;
       transition: transform .2s ease, box-shadow .2s ease;
     }
-    .button:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(8, 28, 24, .18); }
+    .button:hover { transform: none; box-shadow: 0 12px 26px rgba(8, 28, 24, .18); }
     .button.secondary { color: var(--ink); background: transparent; border-color: var(--line); }
     .button .arrow { font-size: 20px; line-height: 1; }
 
@@ -204,7 +268,7 @@
     .toolbox h2 { max-width: 330px; margin: 16px 0 12px; font-size: 34px; line-height: 1.08; letter-spacing: -.04em; }
     .toolbox-copy { min-height: 54px; margin: 0; color: rgba(255,255,255,.62); font-size: 14px; line-height: 1.7; }
     .copy-command { width: 100%; min-height: 54px; margin-top: 24px; border: 0; border-radius: 14px; color: var(--night); background: var(--lime); cursor: pointer; font-weight: 850; transition: transform .2s ease, filter .2s ease; }
-    .copy-command:hover { transform: translateY(-2px); filter: brightness(1.03); }
+    .copy-command:hover { transform: none; filter: brightness(1.03); }
     .command-note { margin: 12px 0 0; color: rgba(255,255,255,.4); font-size: 11px; line-height: 1.55; }
 
     .ticker { border-block: 1px solid var(--line); overflow: hidden; }
@@ -212,7 +276,7 @@
     .ticker-item { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
     .ticker-item::before { content: "✦"; color: var(--orange); }
 
-    main > section { padding: 104px 0; }
+    main > section { padding: 84px 0; }
     .section-head { display: grid; grid-template-columns: .8fr 1.2fr; gap: 48px; margin-bottom: 48px; align-items: end; }
     .section-label { color: var(--green); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
     .section-title { margin: 0; font-size: clamp(34px, 4.8vw, 62px); line-height: 1.06; letter-spacing: -.05em; }
@@ -353,8 +417,8 @@
     .legal-document li + li { margin-top: 6px; }
     .legal-document .alert { padding: 16px 18px; border: 1px solid rgba(216,87,53,.24); border-radius: 14px; background: rgba(216,87,53,.075); }
     .legal-document .alert strong { color: var(--orange); }
-    .legal-document .confirm { margin-top: 16px; padding: 18px; border-radius: 14px; color: #f8fff5; background: #102821; }
-    .legal-document .confirm h2 { color: var(--lime); }
+    .legal-document .confirm { margin-top: 16px; padding: 18px 18px 18px 22px; border: 1px solid rgba(240,113,70,.34); border-radius: 14px; color: #263a34; background: linear-gradient(135deg, rgba(240,113,70,.16), rgba(216,241,106,.11)); box-shadow: inset 4px 0 0 var(--orange); }
+    .legal-document .confirm h2 { color: var(--orange); }
     .legal-document .confirm p:last-child { margin-bottom: 0; }
     .legal-document code { padding: 2px 6px; border-radius: 6px; color: #102821; background: var(--lime); font: 800 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
     .legal-document .foot { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
@@ -393,8 +457,9 @@
     .guide-step strong { display: block; margin-bottom: 5px; }
     .guide-step p { margin: 0; color: var(--muted); line-height: 1.6; }
     .guide-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-    .guide-mode { padding: 16px 18px; border-radius: 15px; color: rgba(255,255,255,.78); background: var(--night); line-height: 1.6; }
-    .guide-mode strong { display: block; margin-bottom: 4px; color: var(--lime); }
+    .guide-mode { padding: 16px 18px; border: 1px solid var(--line); border-radius: 15px; color: var(--muted); background: rgba(255,255,255,.46); line-height: 1.6; }
+    .guide-mode strong { display: block; margin-bottom: 4px; color: var(--ink); }
+    .guide-dialog [hidden] { display: none !important; }
     .guide-warning { margin: 24px 0 12px; color: var(--orange); font-size: 18px; }
     .guide-warning-copy { margin: 0 0 14px; color: var(--muted); line-height: 1.7; }
     .guide-images { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -404,7 +469,7 @@
     .guide-done { min-height: 46px; padding: 0 20px; border: 0; border-radius: 11px; color: var(--night); background: var(--lime); cursor: pointer; font-weight: 850; }
 
     @media (max-width: 880px) {
-      .nav-links a { display: none; }
+      .nav-links > a { display: none; }
       .hero { padding-top: 48px; }
       .hero-grid, .section-head { grid-template-columns: 1fr; }
       .hero-grid { gap: 40px; }
@@ -416,14 +481,18 @@
       .ticker-item:nth-child(n+3) { display: none; }
     }
     @media (max-width: 600px) {
+      main > section[id] { scroll-margin-top: 64px; }
       .wrap { width: min(100% - 24px, 1180px); }
       .nav-inner { height: 64px; }
+      .nav-links { gap: 14px; }
       .brand-name { display: none; }
+      .nav-menu-list { position: fixed; top: 58px; right: 12px; left: auto; transform: translateY(-6px); }
+      .nav-menu.open .nav-menu-list { transform: translateY(0); }
       h1 { font-size: 48px; }
       .hero-copy { font-size: 17px; }
       .brief { padding: 24px; border-radius: 28px; }
       .brief-bottom { left: 24px; right: 24px; bottom: 24px; }
-      main > section { padding: 76px 0; }
+      main > section { padding: 64px 0; }
       .resource-grid, .roadmap { grid-template-columns: 1fr; }
       .stage { padding: 26px 0; }
       .stage + .stage { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
@@ -439,7 +508,7 @@
       .guide-modes, .guide-images { grid-template-columns: 1fr; }
     }
     @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
+      html { scroll-behavior: auto; scroll-snap-type: none; }
       *, *::before, *::after { transition: none !important; }
     }
   </style>
@@ -447,16 +516,25 @@
 <body>
   <header class="nav">
     <div class="wrap nav-inner">
-      <a class="brand" href="#top" aria-label="XR MDM home">
+      <a class="brand" href="#top" aria-label="Mac 设备管理工具首页" data-i18n-aria="brandHome">
         <span class="brand-mark">XR</span>
-        <span class="brand-name">XR MDM</span>
+        <span class="brand-name" data-i18n="brandName">Mac 设备管理工具</span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="#value" data-i18n="navValue">项目价值</a>
-        <a href="#partners" data-i18n="navPartners">合作商</a>
         <a href="#models" data-i18n="navModels">合作模式</a>
+        <a href="#partners" data-i18n="navPartners">合作商</a>
         <a href="#roadmap" data-i18n="navRoadmap">共建路径</a>
         <a href="#contact" data-i18n="navContact">联系合作</a>
+        <div class="nav-menu" id="toolsMenu">
+          <button class="nav-menu-trigger" id="toolsMenuButton" type="button" aria-haspopup="menu" aria-expanded="false" data-i18n="navTools">工具</button>
+          <div class="nav-menu-list" id="toolsMenuList" role="menu" aria-labelledby="toolsMenuButton">
+            <button class="tool-download" id="downloadDfuTools" type="button" role="menuitem">
+              <span class="tool-icon">DFU</span>
+              <span class="tool-label">DFU-Tools</span>
+            </button>
+          </div>
+        </div>
         <button class="language" id="languageButton" type="button" aria-label="Switch language">EN</button>
       </nav>
     </div>
@@ -635,7 +713,7 @@
 
   <footer>
     <div class="wrap footer-inner">
-      <span>© 2026 XR MDM · <span data-i18n="footer">面向长期价值的合作计划</span></span>
+      <span>© 2026 <span data-i18n="brandName">Mac 设备管理工具</span> · <span data-i18n="footer">面向长期价值的合作计划</span></span>
       <div class="footer-links">
         <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">赣ICP备2023013014号</a>
         <a href="https://beian.mps.gov.cn/#/query/webSearch?code=36082602000219" target="_blank" rel="noreferrer">赣公网安备36082602000219</a>
@@ -666,30 +744,30 @@
         <button class="legal-close" id="guideClose" type="button" aria-label="关闭操作说明" data-i18n-aria="guideClose">×</button>
       </div>
       <div class="guide-scroll">
-        <p class="guide-intro" data-i18n="guideIntro">请回到需要处理的 Mac，按照当前所处环境打开终端并运行刚刚复制的命令。</p>
+        <p class="guide-intro" id="guideIntro" data-i18n="guideIntro">请回到需要处理的 Mac，按照当前所处环境打开终端并运行刚刚复制的命令。</p>
         <ol class="guide-steps">
-          <li class="guide-step"><strong data-i18n="guideStepOneTitle">打开终端</strong><p data-i18n="guideStepOneCopy">根据桌面模式或 Recovery 的入口找到“终端”。</p></li>
+          <li class="guide-step"><strong data-i18n="guideStepOneTitle">打开终端</strong><p id="guideStepOneCopy" data-i18n="guideStepOneCopy">根据桌面模式或 Recovery 的入口找到“终端”。</p></li>
           <li class="guide-step"><strong data-i18n="guideStepTwoTitle">粘贴命令</strong><p data-i18n="guideStepTwoCopy">在终端中按 Command + V 粘贴，然后按 Return/回车运行。</p></li>
-          <li class="guide-step"><strong data-i18n="guideStepThreeTitle">按提示完成</strong><p data-i18n="guideStepThreeCopy">选择语言、阅读并确认声明，再根据终端提示选择系统卷或输入管理员密码。</p></li>
+          <li class="guide-step"><strong data-i18n="guideStepThreeTitle">按提示完成</strong><p id="guideStepThreeCopy" data-i18n="guideStepThreeCopy">选择语言、阅读并确认声明，再根据终端提示选择系统卷或输入管理员密码。</p></li>
         </ol>
-        <div class="guide-modes">
+        <div class="guide-modes" data-guide-mode="bypass">
           <div class="guide-mode"><strong data-i18n="guideDesktopTitle">正常桌面系统</strong><span data-i18n="guideDesktopCopy">打开“应用程序 → 实用工具 → 终端”。</span></div>
           <div class="guide-mode"><strong data-i18n="guideRecoveryTitle">macOS Recovery</strong><span data-i18n="guideRecoveryCopy">从顶部菜单打开“实用工具 → 终端”。</span></div>
         </div>
-        <h3 class="guide-warning" data-i18n="guideRecoveryImagesTitle">Recovery 入口与终端位置</h3>
-        <div class="guide-images">
+        <h3 class="guide-warning" data-guide-mode="bypass" data-i18n="guideRecoveryImagesTitle">Recovery 入口与终端位置</h3>
+        <div class="guide-images" data-guide-mode="bypass">
           <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/recovery.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/recovery.webp" alt="Recovery 选项入口" data-i18n-alt="guideRecoveryImageAlt" loading="lazy"></a>
           <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/terminal.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/terminal.webp" alt="Recovery 终端菜单" data-i18n-alt="guideTerminalImageAlt" loading="lazy"></a>
         </div>
-        <h3 class="guide-warning" data-i18n="guideDiskTitle">找不到磁盘或磁盘仍未装载</h3>
-        <p class="guide-warning-copy" data-i18n="guideDiskCopy">返回 Recovery 的磁盘工具，展开卷组，选择灰色的 Data/数据卷并点击“装载”，需要时输入 Mac 管理员密码，然后回到终端重试。</p>
-        <div class="guide-images">
+        <h3 class="guide-warning" data-guide-mode="bypass" data-i18n="guideDiskTitle">找不到磁盘或磁盘仍未装载</h3>
+        <p class="guide-warning-copy" data-guide-mode="bypass" data-i18n="guideDiskCopy">返回 Recovery 的磁盘工具，展开卷组，选择灰色的 Data/数据卷并点击“装载”，需要时输入 Mac 管理员密码，然后回到终端重试。</p>
+        <div class="guide-images" data-guide-mode="bypass">
           <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/disk1.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/disk1.webp" alt="Recovery 磁盘工具入口" data-i18n-alt="guideDiskOneAlt" loading="lazy"></a>
           <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/disk2.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/disk2.webp" alt="装载 Data 数据卷" data-i18n-alt="guideDiskTwoAlt" loading="lazy"></a>
         </div>
-        <h3 class="guide-warning" data-i18n="guideWarningTitle">完成后注意</h3>
-        <p class="guide-warning-copy" data-i18n="guideWarningCopy">看到设备注册或远程管理页面时，不要进入注册详情；请按照终端结果和页面上的继续/返回提示操作。</p>
-        <div class="guide-images">
+        <h3 class="guide-warning" data-guide-mode="bypass" data-i18n="guideWarningTitle">完成后注意</h3>
+        <p class="guide-warning-copy" data-guide-mode="bypass" data-i18n="guideWarningCopy">看到设备注册或远程管理页面时，不要进入注册详情；请按照终端结果和页面上的继续/返回提示操作。</p>
+        <div class="guide-images" data-guide-mode="bypass">
           <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/tip1.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/tip1.webp" alt="远程管理页面操作提示" data-i18n-alt="guideTipOneAlt" loading="lazy"></a>
           <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/tip2.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/tip2.webp" alt="设备注册通知操作提示" data-i18n-alt="guideTipTwoAlt" loading="lazy"></a>
         </div>
@@ -702,10 +780,10 @@
   <script>
     const translations = {
       zh: {
-        title: 'XR MDM · 战略合作', navValue: '项目价值', navPartners: '合作商', navModels: '合作模式', navRoadmap: '共建路径', navContact: '联系合作',
+        title: 'Mac 设备管理工具 · MDM / DEP 监管处理与分析', brandName: 'Mac 设备管理工具', brandHome: 'Mac 设备管理工具首页', metaDescription: '面向合法授权设备的 Mac 管理工具，提供 MDM、DEP、自动设备注册、远程管理分析与 macOS Recovery 维护指引。', metaKeywords: 'Mac 管理工具,绕过监管,监管分析,MDM,MDM bypass,Skip MDM,DEP,Device Enrollment Program,Automated Device Enrollment,Remote Management,macOS Recovery,Apple Silicon,Intel Mac', ogLocale: 'zh_CN', navValue: '项目价值', navPartners: '合作商', navModels: '合作模式', navRoadmap: '共建路径', navContact: '联系合作', navTools: '工具',
         eyebrow: '战略合作 · 资源共建', heroTitle: '让 Mac 设备服务<br>成为<span class="accent">增长生意</span>',
         heroCopy: '我们正在把成熟的设备服务能力，升级为更清晰、更可靠、可规模化的合作网络。现面向渠道伙伴、生态伙伴与战略投资人开放合作。',
-        talk: '洽谈合作', explore: '查看合作方向', open: '开放中', ready: '在线可用', bypassTab: '绕过监管', analyzeTab: '分析监管', bypassTitle: '实用工具 → 终端', bypassCopy: '打开“实用工具”中的“终端”，点击下方按钮复制命令，粘贴后按回车运行。', analyzeTitle: '扫描并生成监管报告', analyzeCopy: '主动采集管理组件元数据，确认后上传并获得限时分析 URL。', copyCommand: '一键复制命令', commandNote: '使用 HTTPS 下载到临时文件并完成 Bash 语法检查；不会跳过证书校验或直接执行网络流。', commandCopied: '终端命令已复制', focus: '本阶段合作重点', briefTitle: '连接产品能力、市场渠道与长期资源',
+        talk: '洽谈合作', explore: '查看合作方向', open: '开放中', ready: '在线可用', bypassTab: '绕过监管', analyzeTab: '分析监管', bypassTitle: '实用工具 → 终端', bypassCopy: '打开“实用工具”中的“终端”，点击下方按钮复制命令，粘贴后按回车运行。', analyzeTitle: '扫描并生成监管报告', analyzeCopy: '主动采集管理组件元数据，确认后上传并获得限时分析 URL。', copyCommand: '一键复制命令', commandNote: '通过 curl 获取脚本并在终端运行，请按照脚本提示完成授权与确认。', commandCopied: '终端命令已复制', focus: '本阶段合作重点', briefTitle: '连接产品能力、市场渠道与长期资源',
         tagChannel: '渠道共建', tagEco: '生态合作', tagCapital: '战略投资', tickerOne: 'Intel & Apple Silicon', tickerTwo: '中英双语服务', tickerThree: 'Web & CLI 触达', tickerFour: '灵活合作机制',
         valueLabel: '为什么是现在', valueTitle: '从技术能力，走向可复制的合作价值', valueDesc: '项目已经形成清晰的服务入口与跨架构交付能力。下一阶段的关键不是堆叠功能，而是连接更好的渠道、服务场景和商业资源。',
         valueOneTitle: '轻量可达', valueOneCopy: '一个入口同时服务网页访客与命令行用户，降低触达成本，为进一步产品化保留空间。', valueTwoTitle: '面向真实场景', valueTwoCopy: '聚焦 Mac 设备服务链路，以稳定、清晰、可协作为原则，适合与既有服务网络组合。', valueThreeTitle: '合作优先', valueThreeCopy: '支持渠道、生态和资源多种合作方式，以共同验证、阶段复盘和长期价值为导向。',
@@ -715,13 +793,13 @@
         roadmapLabel: '共建路径', roadmapTitle: '小步验证，清晰复盘，长期同行', stageOneTitle: '能力对齐', stageOneCopy: '交换资源与目标，明确双方最有价值的合作切入点。', stageTwoTitle: '联合验证', stageTwoCopy: '以小范围场景验证交付、市场反馈和协作效率。', stageThreeTitle: '规模共建', stageThreeCopy: '基于真实结果设计长期机制，放大产品与渠道价值。',
         contactTitle: '有资源、有判断，也愿意一起做事？聊聊。', contactCopy: '欢迎渠道方、产业伙伴与投资人联系。请简单说明你的机构、资源方向和合作设想，我们会认真回复每一次有效沟通。', wechat: '复制微信：xr_sec', backTop: '返回顶部', footer: '面向长期价值的合作计划', copied: '微信号已复制',
         legalTitle: '使用条款与授权确认', legalScrollTip: '请完整阅读并滚动至条款底部', legalAgree: '我确认拥有设备合法操作权或已获得所有者及管理方明确授权，并已阅读、理解和同意上述条款。', legalClose: '关闭条款', legalCancel: '取消', legalConfirm: '同意并复制', legalLoading: '正在加载条款…', legalReady: '请完整阅读并滚动至条款底部', legalRead: '已阅读至条款底部，请勾选授权确认', legalFailed: '条款加载失败，确认已停用', legalRetry: '条款加载失败，请检查网络后重试。',
-        guideTitle: '命令已复制，接下来这样操作', guideIntro: '请回到需要处理的 Mac，按照当前所处环境打开终端并运行刚刚复制的命令。', guideStepOneTitle: '打开终端', guideStepOneCopy: '根据桌面模式或 Recovery 的入口找到“终端”。', guideStepTwoTitle: '粘贴命令', guideStepTwoCopy: '在终端中按 Command + V 粘贴，然后按 Return/回车运行。', guideStepThreeTitle: '按提示完成', guideStepThreeCopy: '选择语言、阅读并确认声明，再根据终端提示选择系统卷或输入管理员密码。', guideDesktopTitle: '正常桌面系统', guideDesktopCopy: '打开“应用程序 → 实用工具 → 终端”。', guideRecoveryTitle: 'macOS Recovery', guideRecoveryCopy: '从顶部菜单打开“实用工具 → 终端”。', guideRecoveryImagesTitle: 'Recovery 入口与终端位置', guideDiskTitle: '找不到磁盘或磁盘仍未装载', guideDiskCopy: '返回 Recovery 的磁盘工具，展开卷组，选择灰色的 Data/数据卷并点击“装载”，需要时输入 Mac 管理员密码，然后回到终端重试。', guideWarningTitle: '完成后注意', guideWarningCopy: '看到设备注册或远程管理页面时，不要进入注册详情；请按照终端结果和页面上的继续/返回提示操作。', guideClose: '关闭操作说明', guideDone: '知道了', guideRecoveryImageAlt: 'Recovery 选项入口', guideTerminalImageAlt: 'Recovery 终端菜单', guideDiskOneAlt: 'Recovery 磁盘工具入口', guideDiskTwoAlt: '装载 Data 数据卷', guideTipOneAlt: '远程管理页面操作提示', guideTipTwoAlt: '设备注册通知操作提示'
+        guideTitle: '命令已复制，接下来这样操作', guideIntro: '请回到需要处理的 Mac，按照当前所处环境打开终端并运行刚刚复制的命令。', guideAnalyzeIntro: '请在正常桌面系统中打开终端并运行刚刚复制的分析命令。分析监管不支持 macOS Recovery。', guideStepOneTitle: '打开终端', guideStepOneCopy: '根据桌面模式或 Recovery 的入口找到“终端”。', guideAnalyzeStepOneCopy: '在正常桌面系统中打开“应用程序 → 实用工具 → 终端”。', guideStepTwoTitle: '粘贴命令', guideStepTwoCopy: '在终端中按 Command + V 粘贴，然后按 Return/回车运行。', guideStepThreeTitle: '按提示完成', guideStepThreeCopy: '选择语言、阅读并确认声明，再根据终端提示选择系统卷或输入管理员密码。', guideAnalyzeStepThreeCopy: '按终端提示授权读取系统元数据，确认采集范围后再上传分析。', guideDesktopTitle: '正常桌面系统', guideDesktopCopy: '打开“应用程序 → 实用工具 → 终端”。', guideRecoveryTitle: 'macOS Recovery', guideRecoveryCopy: '从顶部菜单打开“实用工具 → 终端”。', guideRecoveryImagesTitle: 'Recovery 入口与终端位置', guideDiskTitle: '找不到磁盘或磁盘仍未装载', guideDiskCopy: '返回 Recovery 的磁盘工具，展开卷组，选择灰色的 Data/数据卷并点击“装载”，需要时输入 Mac 管理员密码，然后回到终端重试。', guideWarningTitle: '完成后注意', guideWarningCopy: '看到设备注册或远程管理页面时，不要进入注册详情；请按照终端结果和页面上的继续/返回提示操作。', guideClose: '关闭操作说明', guideDone: '知道了', guideRecoveryImageAlt: 'Recovery 选项入口', guideTerminalImageAlt: 'Recovery 终端菜单', guideDiskOneAlt: 'Recovery 磁盘工具入口', guideDiskTwoAlt: '装载 Data 数据卷', guideTipOneAlt: '远程管理页面操作提示', guideTipTwoAlt: '设备注册通知操作提示', dfuDownloading: '正在下载 DFU-Tools…', dfuCached: '正在使用本机缓存', dfuReady: 'DFU-Tools 下载已开始', dfuDirect: '缓存不可用，已切换为直接下载'
       },
       en: {
-        title: 'XR MDM · Strategic Partnerships', navValue: 'Why us', navPartners: 'Partners', navModels: 'Partnerships', navRoadmap: 'Roadmap', navContact: 'Contact',
+        title: 'Mac Device Tools · MDM / DEP Management and Analysis', brandName: 'Mac Device Tools', brandHome: 'Mac Device Tools home', metaDescription: 'Mac management tools for legally authorized devices, covering MDM, DEP, Automated Device Enrollment, Remote Management analysis, Skip MDM and macOS Recovery guidance.', metaKeywords: 'Mac management tools,MDM,MDM bypass,Skip MDM,DEP,Device Enrollment Program,Automated Device Enrollment,Remote Management,macOS Recovery,Apple Silicon,Intel Mac,management analysis', ogLocale: 'en_US', navValue: 'Why us', navPartners: 'Partners', navModels: 'Partnerships', navRoadmap: 'Roadmap', navContact: 'Contact', navTools: 'Tools',
         eyebrow: 'Strategic partnership · Shared growth', heroTitle: 'Turn Mac device services<br>into a <span class="accent">growth business</span>',
         heroCopy: 'We are turning proven device-service capabilities into a clearer, more reliable and scalable partner network—open to channel partners, ecosystem builders and strategic investors.',
-        talk: 'Start a conversation', explore: 'Explore partnerships', open: 'Now open', ready: 'Online', bypassTab: 'Bypass management', analyzeTab: 'Analyze management', bypassTitle: 'Utilities → Terminal', bypassCopy: 'Open Terminal from Utilities, copy the command below, paste it and press Return.', analyzeTitle: 'Scan and build a management report', analyzeCopy: 'Collects management metadata on demand, uploads after confirmation and returns an expiring report URL.', copyCommand: 'Copy terminal command', commandNote: 'Uses HTTPS, downloads to a temporary file and validates Bash syntax without disabling certificate checks or directly executing a network stream.', commandCopied: 'Terminal command copied', focus: 'Current partnership focus', briefTitle: 'Connect product capability, market access and long-term resources',
+        talk: 'Start a conversation', explore: 'Explore partnerships', open: 'Now open', ready: 'Online', bypassTab: 'Bypass MDM', analyzeTab: 'Analyze MDM', bypassTitle: 'Utilities → Terminal', bypassCopy: 'Open Terminal from Utilities, copy the command below, paste it and press Return.', analyzeTitle: 'Scan and build a management report', analyzeCopy: 'Collects management metadata on demand, uploads after confirmation and returns an expiring report URL.', copyCommand: 'Copy terminal command', commandNote: 'Fetches the script with curl and runs it in Terminal; follow the prompts to authorize and confirm.', commandCopied: 'Terminal command copied', focus: 'Current partnership focus', briefTitle: 'Connect product capability, market access and long-term resources',
         tagChannel: 'Channel growth', tagEco: 'Ecosystem', tagCapital: 'Investment', tickerOne: 'Intel & Apple Silicon', tickerTwo: 'Bilingual service', tickerThree: 'Web & CLI access', tickerFour: 'Flexible partnerships',
         valueLabel: 'Why now', valueTitle: 'From technical capability to repeatable partner value', valueDesc: 'The project has a clear service entry point and cross-architecture delivery capability. The next step is not more feature volume—it is better channels, use cases and commercial resources.',
         valueOneTitle: 'Easy to reach', valueOneCopy: 'One entry point serves both web visitors and command-line users, reducing friction while leaving room for deeper productization.', valueTwoTitle: 'Built for real use', valueTwoCopy: 'Focused on the Mac device-service journey, with stability, clarity and collaboration at the center.', valueThreeTitle: 'Partner first', valueThreeCopy: 'Channel, ecosystem and strategic resource models are all open, guided by joint validation and long-term value.',
@@ -731,11 +809,23 @@
         roadmapLabel: 'How we build', roadmapTitle: 'Validate in steps. Review clearly. Grow for the long term.', stageOneTitle: 'Align strengths', stageOneCopy: 'Map resources and goals to identify the most valuable starting point.', stageTwoTitle: 'Run a pilot', stageTwoCopy: 'Test delivery, market response and collaboration in a focused scenario.', stageThreeTitle: 'Scale together', stageThreeCopy: 'Design a lasting model from real results and expand product and channel value.',
         contactTitle: 'Bring resources, conviction and a builder mindset? Let’s talk.', contactCopy: 'We welcome channel leaders, industry partners and investors. Tell us briefly about your organization, strengths and partnership idea—we read every serious note.', wechat: 'Copy WeChat: xr_sec', backTop: 'Back to top', footer: 'A partnership plan built for long-term value', copied: 'WeChat ID copied',
         legalTitle: 'Terms and authorization', legalScrollTip: 'Read the complete notice and scroll to the bottom', legalAgree: 'I confirm that I legally control this device or have explicit authorization from its owner and management authority, and that I have read, understood and accepted these terms.', legalClose: 'Close terms', legalCancel: 'Cancel', legalConfirm: 'Accept and copy', legalLoading: 'Loading notice…', legalReady: 'Read the complete notice and scroll to the bottom', legalRead: 'Notice read to the bottom; select the authorization checkbox', legalFailed: 'Notice unavailable; confirmation disabled', legalRetry: 'Unable to load the notice. Check your connection and try again.',
-        guideTitle: 'Command copied — what to do next', guideIntro: 'Return to the Mac you want to service, open Terminal for the current environment, and run the command you just copied.', guideStepOneTitle: 'Open Terminal', guideStepOneCopy: 'Use the desktop or Recovery instructions below to find Terminal.', guideStepTwoTitle: 'Paste the command', guideStepTwoCopy: 'Press Command + V in Terminal, then press Return to run it.', guideStepThreeTitle: 'Follow the prompts', guideStepThreeCopy: 'Choose a language, read and confirm the notice, then select the system volume or enter an administrator password when prompted.', guideDesktopTitle: 'Normal desktop macOS', guideDesktopCopy: 'Open Applications → Utilities → Terminal.', guideRecoveryTitle: 'macOS Recovery', guideRecoveryCopy: 'Open Utilities → Terminal from the menu bar.', guideRecoveryImagesTitle: 'Finding Recovery and Terminal', guideDiskTitle: 'Disk missing or still unmounted', guideDiskCopy: 'Return to Disk Utility in Recovery, expand the volume group, select the grey Data volume and click Mount. Enter the Mac administrator password if requested, then return to Terminal and try again.', guideWarningTitle: 'After completion', guideWarningCopy: 'If Device Enrollment or Remote Management appears, do not open registration details. Follow the Terminal result and the Continue/Back guidance shown on screen.', guideClose: 'Close instructions', guideDone: 'Got it', guideRecoveryImageAlt: 'Recovery Options entry', guideTerminalImageAlt: 'Terminal in the Recovery Utilities menu', guideDiskOneAlt: 'Disk Utility in Recovery', guideDiskTwoAlt: 'Mounting the Data volume', guideTipOneAlt: 'Remote Management screen guidance', guideTipTwoAlt: 'Device Enrollment notification guidance'
+        guideTitle: 'Command copied — what to do next', guideIntro: 'Return to the Mac you want to service, open Terminal for the current environment, and run the command you just copied.', guideAnalyzeIntro: 'Open Terminal in normal desktop macOS and run the analysis command you just copied. Analyze management is not supported in macOS Recovery.', guideStepOneTitle: 'Open Terminal', guideStepOneCopy: 'Use the desktop or Recovery instructions below to find Terminal.', guideAnalyzeStepOneCopy: 'In normal desktop macOS, open Applications → Utilities → Terminal.', guideStepTwoTitle: 'Paste the command', guideStepTwoCopy: 'Press Command + V in Terminal, then press Return to run it.', guideStepThreeTitle: 'Follow the prompts', guideStepThreeCopy: 'Choose a language, read and confirm the notice, then select the system volume or enter an administrator password when prompted.', guideAnalyzeStepThreeCopy: 'Authorize access to system metadata when prompted, then review the collection scope before uploading it for analysis.', guideDesktopTitle: 'Normal desktop macOS', guideDesktopCopy: 'Open Applications → Utilities → Terminal.', guideRecoveryTitle: 'macOS Recovery', guideRecoveryCopy: 'Open Utilities → Terminal from the menu bar.', guideRecoveryImagesTitle: 'Finding Recovery and Terminal', guideDiskTitle: 'Disk missing or still unmounted', guideDiskCopy: 'Return to Disk Utility in Recovery, expand the volume group, select the grey Data volume and click Mount. Enter the Mac administrator password if requested, then return to Terminal and try again.', guideWarningTitle: 'After completion', guideWarningCopy: 'If Device Enrollment or Remote Management appears, do not open registration details. Follow the Terminal result and the Continue/Back guidance shown on screen.', guideClose: 'Close instructions', guideDone: 'Got it', guideRecoveryImageAlt: 'Recovery Options entry', guideTerminalImageAlt: 'Terminal in the Recovery Utilities menu', guideDiskOneAlt: 'Disk Utility in Recovery', guideDiskTwoAlt: 'Mounting the Data volume', guideTipOneAlt: 'Remote Management screen guidance', guideTipTwoAlt: 'Device Enrollment notification guidance', dfuDownloading: 'Downloading DFU-Tools…', dfuCached: 'Using the local cache', dfuReady: 'DFU-Tools download started', dfuDirect: 'Cache unavailable; switched to a direct download'
       }
     };
 
+    // Change these values to update the DFU download or invalidate existing caches.
+    const DFU_TOOL_CONFIG = Object.freeze({
+      url: 'https://xrsec-fun.s3.bitiful.net/MDM/DFU-Tools.dmg',
+      fileName: 'DFU-Tools.dmg',
+      cacheEnabled: true,
+      cachePrefix: 'xr-dfu-tools-',
+      cacheName: 'xr-dfu-tools-v1'
+    });
+
     const languageButton = document.getElementById('languageButton');
+    const toolsMenu = document.getElementById('toolsMenu');
+    const toolsMenuButton = document.getElementById('toolsMenuButton');
+    const downloadDfuTools = document.getElementById('downloadDfuTools');
     const modeTabs = Array.from(document.querySelectorAll('.mode-tab'));
     const toolIndex = document.getElementById('toolIndex');
     const toolTitle = document.getElementById('toolTitle');
@@ -752,6 +842,9 @@
     const guideOverlay = document.getElementById('guideOverlay');
     const guideClose = document.getElementById('guideClose');
     const guideDone = document.getElementById('guideDone');
+    const guideIntro = document.getElementById('guideIntro');
+    const guideStepOneCopy = document.getElementById('guideStepOneCopy');
+    const guideStepThreeCopy = document.getElementById('guideStepThreeCopy');
     let legalNoticeLanguage = '';
     const legalNoticeCache = new Map();
     const legalNoticeLoads = new Map();
@@ -810,6 +903,9 @@
       });
       document.querySelectorAll('[data-i18n-alt]').forEach((element) => {
         element.setAttribute('alt', text[element.dataset.i18nAlt]);
+      });
+      document.querySelectorAll('[data-i18n-content]').forEach((element) => {
+        element.setAttribute('content', text[element.dataset.i18nContent]);
       });
       languageButton.textContent = language === 'zh' ? 'EN' : '中文';
       updateToolbox();
@@ -880,15 +976,98 @@
       setTimeout(() => toast.classList.remove('show'), 1800);
     }
 
+    function showToastMessage(key) {
+      const toast = document.getElementById('toast');
+      toast.textContent = translations[language][key];
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function setToolsMenu(open) {
+      toolsMenu.classList.toggle('open', open);
+      toolsMenuButton.setAttribute('aria-expanded', String(open));
+    }
+
+    function startDirectDownload() {
+      const link = document.createElement('a');
+      link.href = DFU_TOOL_CONFIG.url;
+      link.download = DFU_TOOL_CONFIG.fileName;
+      link.rel = 'noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    async function downloadDfuTool() {
+      setToolsMenu(false);
+      downloadDfuTools.disabled = true;
+      downloadDfuTools.setAttribute('aria-busy', 'true');
+
+      try {
+        let response;
+        if (DFU_TOOL_CONFIG.cacheEnabled && 'caches' in window) {
+          const cacheNames = await window.caches.keys();
+          await Promise.all(cacheNames.map((cacheName) => {
+            const stale = cacheName.startsWith(DFU_TOOL_CONFIG.cachePrefix) && cacheName !== DFU_TOOL_CONFIG.cacheName;
+            return stale ? window.caches.delete(cacheName) : Promise.resolve(false);
+          }));
+          const cache = await window.caches.open(DFU_TOOL_CONFIG.cacheName);
+          response = await cache.match(DFU_TOOL_CONFIG.url);
+          if (response) {
+            showToastMessage('dfuCached');
+          } else {
+            showToastMessage('dfuDownloading');
+            response = await fetch(DFU_TOOL_CONFIG.url, { mode: 'cors', credentials: 'omit' });
+            const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+            if (!response.ok || contentType.includes('text/html')) throw new Error('invalid_download');
+            try {
+              await cache.put(DFU_TOOL_CONFIG.url, response.clone());
+            } catch {
+              // Quota or storage restrictions must not prevent this download.
+            }
+          }
+        } else {
+          showToastMessage('dfuDownloading');
+          response = await fetch(DFU_TOOL_CONFIG.url, { mode: 'cors', credentials: 'omit' });
+          if (!response.ok) throw new Error('download_failed');
+        }
+
+        const blobUrl = URL.createObjectURL(await response.blob());
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = DFU_TOOL_CONFIG.fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        showToastMessage('dfuReady');
+      } catch {
+        startDirectDownload();
+        showToastMessage('dfuDirect');
+      } finally {
+        downloadDfuTools.disabled = false;
+        downloadDfuTools.removeAttribute('aria-busy');
+      }
+    }
+
     async function copyModeCommand(mode) {
       const copied = await copyToClipboard(buildCommand(mode));
       if (!copied) return;
       showCopiedToast();
-      openGuideNotice();
+      openGuideNotice(mode);
     }
 
-    function openGuideNotice() {
+    function openGuideNotice(mode) {
+      const analyze = mode === 'analyze';
+      const text = translations[language];
+      guideIntro.textContent = analyze ? text.guideAnalyzeIntro : text.guideIntro;
+      guideStepOneCopy.textContent = analyze ? text.guideAnalyzeStepOneCopy : text.guideStepOneCopy;
+      guideStepThreeCopy.textContent = analyze ? text.guideAnalyzeStepThreeCopy : text.guideStepThreeCopy;
+      document.querySelectorAll('[data-guide-mode="bypass"]').forEach((element) => {
+        element.hidden = analyze;
+      });
       document.querySelectorAll('[data-guide-src]').forEach((image) => {
+        if (analyze && image.closest('[data-guide-mode="bypass"]')) return;
         if (!image.getAttribute('src')) image.setAttribute('src', image.dataset.guideSrc);
       });
       guideOverlay.classList.add('show');
@@ -1018,6 +1197,20 @@
       }
     });
 
+    toolsMenuButton.addEventListener('click', () => {
+      setToolsMenu(!toolsMenu.classList.contains('open'));
+    });
+    toolsMenuButton.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowDown') return;
+      event.preventDefault();
+      setToolsMenu(true);
+      downloadDfuTools.focus();
+    });
+    downloadDfuTools.addEventListener('click', downloadDfuTool);
+    document.addEventListener('click', (event) => {
+      if (!toolsMenu.contains(event.target)) setToolsMenu(false);
+    });
+
     legalScroll.addEventListener('scroll', markLegalReadIfComplete);
     legalAgree.addEventListener('change', updateLegalConfirm);
     legalClose.addEventListener('click', closeLegalNotice);
@@ -1036,11 +1229,14 @@
       if (!copied) return;
       closeLegalNotice();
       showCopiedToast();
-      openGuideNotice();
+      openGuideNotice('bypass');
     });
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
-      if (guideOverlay.classList.contains('show')) closeGuideNotice();
+      if (toolsMenu.classList.contains('open')) {
+        setToolsMenu(false);
+        toolsMenuButton.focus();
+      } else if (guideOverlay.classList.contains('show')) closeGuideNotice();
       else if (legalOverlay.classList.contains('show')) closeLegalNotice();
     });
 

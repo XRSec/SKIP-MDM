@@ -13,6 +13,18 @@ GNU coreutils。
 当前客户端不包含设备授权检查、架构二进制下载、诊断日志上传或通用遥测。正常桌面模式下由普通用户启动时，完成 sudo 密码验证后会在 root Shell 内重新下载并执行服务端返回的
 `cli.sh`；除此之外，常规网络请求包括可选的简体中文语言包下载，以及使用者确认法律风险声明后发送的一次确认 Ping。
 
+首页“分析监管”使用独立的 `src/shell/college.sh` 元数据采集器，仅支持正常桌面 macOS。网页为该模式只显示桌面终端说明，隐藏 Recovery 入口、Recovery 终端位置、磁盘装载和清理完成提示；采集器在 Recovery 或无法确认桌面环境时直接退出，服务端也拒绝 `run_mode=recovery` 的分析载荷。Recovery 维护仍仅由 `cli.sh` 的“绕过监管”流程支持。
+
+主动报告运行只读的 `profiles status -type enrollment`，将 MDM、User Approved 和 ADE/DEP 状态规范化为枚举；同时检查 `ConfigurationProfiles/Settings` 下的 ADE/DEP 标记。读取 `.cloudConfigRecordFound` 时只保留 `CloudConfigProfile.ConfigurationURL` 的主机名，不上传完整 URL、证书或 plist 内容。报告不会执行 `profiles renew`，因此不会为了扫描主动刷新注册记录。进程扫描使用 `ps -axo comm=`，只采集运行中可执行文件的名称或路径，排除用户目录、挂载卷、临时目录以及全部命令参数。
+
+采集器还会读取 `/etc/hosts`，但只上传其中规范化、去重后的 `apple.com` 主机名，不上传对应 IP、注释或非 Apple 条目。服务端允许 `iprofiles.apple.com`、`mdmenrollment.apple.com` 和 `deviceenrollment.apple.com`；发现其他 `apple.com` 主机名时将报告标记为“系统不健康”，提示部分 Apple 服务可能不可用。Apple ManagedClient 和 Apple Declarative Device Management 属于正常 macOS 系统组件，报告会明确提示无需担心。注册状态、ADE/DEP 标记、Hosts 域名和运行进程均为只读证据，服务端不会为这些类型生成删除命令。
+
+`college.sh` 必须取得 root 权限。由普通用户启动时，它会显示带 `*`、支持退格的密码输入，拒绝空密码和包含空白字符的密码，并通过 `sudo -S -v` 最多验证三次，再使用 `sudo -nE` 启动 root 子进程。密码仅保存在 Shell 变量中并通过 stdin 传递；root 子进程先读取继承密码、恢复 stdin 到 `/dev/tty`，随后立即清空密码。取得 root 后，脚本先展示扫描与上传范围并要求输入 `YES`；拒绝时不会创建报告会话、扫描系统或上传数据。确认后才创建报告、扫描、校验载荷大小并上传。密码不进入参数、环境变量或临时文件。
+
+报告 URL 中的 6 位密码参数会保留在地址栏中，页面刷新后继续使用该参数自动解锁，不使用 `history.replaceState` 自动清除。
+
+刷新报告页面只调用 `unlock` 读取已保存的 `analysis`。“重新分析”按钮调用受同一 6 位密码保护的 `POST /api/college/:id/reanalyze`，从现有报告记录读取原始 `payload`，使用当前 `report-analyzer.js` 规则重新生成结果并覆盖 `analysis`。该操作不重新扫描设备，不改变报告 ID、密码或过期时间；原始载荷不可用、报告未完成或已经过期时不会写入。
+
 ## 2. 启动流程
 
 ```text
@@ -90,7 +102,8 @@ KEY<Tab>VALUE
 4. root 子进程读取密码后，将标准输入恢复为 `/dev/tty`，保证方向键菜单正常工作。
 5. FileVault 使用密码后立即清空内存变量；退出和信号处理也会清空。
 
-`MDM_PASSWORD_STDIN=1` 只表示 root 子进程需要从 stdin 读取一行密码，本身不包含密码。`MDM_LOGIN_USER` 只传递非敏感用户名。
+`MDM_PASSWORD_STDIN=1` 只表示 root 子进程需要从 stdin 读取一行密码，本身不包含密码。root 子进程通过 sudo 自动设置的 `SUDO_USER` 识别原登录用户，不再额外传递用户名。
+提权重启使用 `sudo -nE`：`-n` 保证 sudo 凭据失效时立即失败而不再次显示系统密码提示，`-E` 将本次命令临时设置的非敏感运行配置传给 root 子进程；密码不属于保留的环境变量。
 
 无论入口是本地文件还是 `/dev/fd/*`，正常桌面模式的非 root 脚本都会在 sudo 内启动 `/bin/bash -c`，通过
 `curl -kfsSL "${MDM_SERVER_URL%/}/"` 创建进程替换并运行第二层 `cli.sh`，随后非 root 父进程以状态 0 退出。第二层继承 `MDM_PASSWORD_STDIN=1`，

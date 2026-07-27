@@ -7,12 +7,35 @@ const ALLOWED_TYPES = new Set([
   'launch_daemon',
   'application',
   'application_support',
+  'enrollment_record',
+  'enrollment_status',
+  'hosts_override',
   'kernel_extension',
   'managed_preference',
   'package_receipt',
   'preference',
   'privileged_helper',
+  'running_process',
   'system_extension'
+]);
+const IGNORED_EVIDENCE_IDENTIFIERS = new Set([
+  'todesk.app',
+  'com.youqu.todesk.service',
+  'com.youqu.todesk.uninstallerhelper',
+  'com.youqu.todesk.uninstallerwatcher',
+  'com.youqu.todesk.uninstallerstarter',
+  'com.youqu.todesk.session',
+  'com.youqu.todesk.desktop',
+  'com.youqu.todesk.startup',
+  'com.youqu.todesk.client.startup',
+  'com.youqu.todesk.camsession',
+  'com.youqu.todesk.mac',
+  'com.youqu.todesk.uninstallerclient'
+]);
+const EXPECTED_APPLE_HOST_OVERRIDES = new Set([
+  'iprofiles.apple.com',
+  'mdmenrollment.apple.com',
+  'deviceenrollment.apple.com'
 ]);
 
 const RULES = [
@@ -83,7 +106,9 @@ function normalizeItem(value) {
     bundleId: cleanString(value.bundle_id || value.bundleId, 512),
     teamId: cleanString(value.team_id || value.teamId, 64),
     signingId: cleanString(value.signing_id || value.signingId, 512),
-    packageId: cleanString(value.package_id || value.packageId, 512)
+    packageId: cleanString(value.package_id || value.packageId, 512),
+    status: cleanString(value.status, 64),
+    detail: cleanString(value.detail, 512)
   };
 }
 
@@ -94,12 +119,14 @@ function normalizeCollection(payload) {
   if (Number(payload.schema_version) !== 1 || !Array.isArray(payload.items)) {
     throw new Error('unsupported_schema');
   }
+  const runMode = cleanString(payload.run_mode || 'normal', 32);
+  if (runMode !== 'normal') throw new Error('unsupported_run_mode');
   if (payload.items.length > MAX_ITEMS) throw new Error('too_many_items');
   const items = payload.items.map(normalizeItem).filter(Boolean);
   return {
     schemaVersion: 1,
     collectedAt: cleanString(payload.collected_at, 64),
-    runMode: ['normal', 'recovery'].includes(payload.run_mode) ? payload.run_mode : 'normal',
+    runMode,
     osVersion: cleanString(payload.os_version, 128),
     architecture: cleanString(payload.architecture, 32),
     items
@@ -107,9 +134,21 @@ function normalizeCollection(payload) {
 }
 
 function searchable(item) {
-  return [item.path, item.label, item.program, item.bundleId, item.teamId, item.signingId, item.packageId]
+  return [item.path, item.label, item.program, item.bundleId, item.teamId, item.signingId, item.packageId, item.status, item.detail]
     .join('\n')
     .toLowerCase();
+}
+
+function evidenceIdentifier(value) {
+  let identifier = cleanString(value).toLowerCase();
+  identifier = identifier.slice(identifier.lastIndexOf('/') + 1);
+  if (identifier.endsWith('.plist')) identifier = identifier.slice(0, -6);
+  return identifier;
+}
+
+function isIgnoredEvidence(item) {
+  return [item.path, item.label, item.program, item.bundleId, item.signingId, item.packageId]
+    .some((value) => IGNORED_EVIDENCE_IDENTIFIERS.has(evidenceIdentifier(value)));
 }
 
 function shellQuote(value) {
@@ -129,42 +168,94 @@ function commandPath(itemPath) {
   return itemPath;
 }
 
-function commandsForEvidence(rule, evidence, runMode) {
+function commandsForEvidence(rule, evidence) {
   if (rule.category === 'apple') return [];
   const commands = [];
   const seen = new Set();
+  const removableTypes = new Set([
+    'application', 'application_support', 'kernel_extension', 'launch_agent',
+    'launch_daemon', 'managed_preference', 'preference', 'privileged_helper',
+    'system_extension'
+  ]);
   for (const item of evidence) {
+    if (!removableTypes.has(item.type)) continue;
     const target = commandPath(item.path);
     if (!target || seen.has(target)) continue;
     seen.add(target);
-    if (runMode === 'normal' && item.type === 'launch_daemon') {
+    if (item.type === 'launch_daemon') {
       commands.push(`sudo launchctl bootout system ${shellQuote(item.path)} 2>/dev/null || true`);
-    } else if (runMode === 'normal' && item.type === 'launch_agent') {
+    } else if (item.type === 'launch_agent') {
       commands.push(`launchctl bootout "gui/$(id -u)" ${shellQuote(item.path)} 2>/dev/null || true`);
     }
     const recursive = ['application', 'application_support', 'kernel_extension', 'system_extension'].includes(item.type);
-    commands.push(`sudo rm ${recursive ? '-rf' : '-f'} "\${TARGET_ROOT:-}"${shellQuote(target)}`);
+    commands.push(`sudo rm ${recursive ? '-rf' : '-f'} ${shellQuote(target)}`);
   }
   return commands;
+}
+
+function managementStatus(items) {
+  const statusItem = (label) => items.find((item) => item.type === 'enrollment_status' && item.label === label);
+  const recordItem = (label) => items.find((item) => item.type === 'enrollment_record' && item.label === label);
+  const command = statusItem('profiles_command');
+  const mdm = statusItem('mdm_enrollment');
+  const automated = statusItem('automated_enrollment');
+  const cloudRecord = recordItem('.cloudConfigRecordFound');
+  const profileInstalled = recordItem('.cloudConfigProfileInstalled');
+  return {
+    profilesCommand: command ? command.status : (mdm || automated ? 'available' : 'unknown'),
+    mdmEnrollment: mdm ? mdm.status : 'unknown',
+    automatedEnrollment: automated ? automated.status : 'unknown',
+    cloudConfigRecord: cloudRecord ? cloudRecord.status : 'unknown',
+    cloudConfigDomain: cloudRecord ? cloudRecord.detail : '',
+    cloudConfigProfileInstalled: profileInstalled ? profileInstalled.status : 'unknown',
+    runningProcessCount: items.filter((item) => item.type === 'running_process').length
+  };
+}
+
+function systemHealth(items) {
+  const appleHostOverrides = [];
+  const unexpectedAppleHostOverrides = [];
+  const seen = new Set();
+  for (const item of items) {
+    if (item.type !== 'hosts_override') continue;
+    const hostname = cleanString(item.label, 253).toLowerCase().replace(/\.$/, '');
+    if (seen.has(hostname) || (hostname !== 'apple.com' && !hostname.endsWith('.apple.com'))) continue;
+    seen.add(hostname);
+    appleHostOverrides.push(hostname);
+    if (!EXPECTED_APPLE_HOST_OVERRIDES.has(hostname)) unexpectedAppleHostOverrides.push(hostname);
+  }
+  return {
+    status: unexpectedAppleHostOverrides.length > 0 ? 'unhealthy' : 'healthy',
+    appleHostOverrides,
+    unexpectedAppleHostOverrides
+  };
 }
 
 function analyzeCollection(collection) {
   const findings = [];
   for (const rule of RULES) {
     const evidence = collection.items.filter((item) => {
+      if (isIgnoredEvidence(item)) return false;
       const haystack = searchable(item);
       return rule.keywords.some((keyword) => haystack.includes(keyword));
     });
     if (evidence.length === 0) continue;
+    const commands = commandsForEvidence(rule, evidence);
     findings.push({
       id: rule.id,
       product: rule.product,
       company: rule.company,
       category: rule.category,
       confidence: rule.confidence,
-      removable: rule.category !== 'apple',
+      assessment: ['apple-managedclient', 'apple-ddm'].includes(rule.id) ? 'normal_system_component' : '',
+      removable: commands.length > 0,
+      states: {
+        running: evidence.some((item) => item.type === 'running_process'),
+        persistent: evidence.some((item) => item.type === 'launch_agent' || item.type === 'launch_daemon'),
+        installed: evidence.some((item) => !['running_process', 'enrollment_record', 'enrollment_status'].includes(item.type))
+      },
       evidence,
-      commands: commandsForEvidence(rule, evidence, collection.runMode)
+      commands
     });
   }
 
@@ -177,7 +268,9 @@ function analyzeCollection(collection) {
       runMode: collection.runMode,
       osVersion: collection.osVersion,
       architecture: collection.architecture,
-      itemCount: collection.items.length
+      itemCount: collection.items.length,
+      management: managementStatus(collection.items),
+      health: systemHealth(collection.items)
     },
     summary: {
       findingCount: findings.length,

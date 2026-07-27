@@ -8,19 +8,19 @@ set +e
 umask 077
 
 RUN_MODE="${RUN_MODE:-}"
-TARGET_VOLUME="${TARGET_VOLUME:-}"
 COLLEGE_SERVER_URL="${COLLEGE_SERVER_URL:-https://mdm.xrsec.fun}"
-COLLEGE_ALLOW_HTTP="${COLLEGE_ALLOW_HTTP:-0}"
-COLLEGE_AUTO_CONFIRM="${COLLEGE_AUTO_CONFIRM:-0}"
+COLLEGE_SERVER_URL="${COLLEGE_SERVER_URL%/}"
 COLLEGE_OPEN_RESULT="${COLLEGE_OPEN_RESULT:-0}"
-COLLEGE_ALLOW_PARTIAL="${COLLEGE_ALLOW_PARTIAL:-0}"
 MAX_ITEMS=4500
 
-SCRIPT_PATH="$0"
 TARGET_ROOT=""
 PAYLOAD_FILE=""
 ITEMS_FILE=""
 RESPONSE_FILE=""
+PROCESS_FILE=""
+HOSTS_FILE=""
+PASSWORD_INPUT=""
+password=""
 REPORT_ID=""
 REPORT_PASSWORD=""
 REPORT_URL=""
@@ -28,15 +28,71 @@ ITEM_COUNT=0
 FIRST_ITEM=1
 
 cleanup() {
+  PASSWORD_INPUT=""
+  password=""
   [ -n "$PAYLOAD_FILE" ] && [ -e "$PAYLOAD_FILE" ] && rm -f "$PAYLOAD_FILE"
   [ -n "$ITEMS_FILE" ] && [ -e "$ITEMS_FILE" ] && rm -f "$ITEMS_FILE"
   [ -n "$RESPONSE_FILE" ] && [ -e "$RESPONSE_FILE" ] && rm -f "$RESPONSE_FILE"
+  [ -n "$PROCESS_FILE" ] && [ -e "$PROCESS_FILE" ] && rm -f "$PROCESS_FILE"
+  [ -n "$HOSTS_FILE" ] && [ -e "$HOSTS_FILE" ] && rm -f "$HOSTS_FILE"
 }
 
 trap cleanup EXIT HUP INT TERM
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
+}
+
+read_password_with_feedback() {
+  local prompt="$1"
+  local value=""
+  local character=""
+
+  PASSWORD_INPUT=""
+  printf '%s' "$prompt" >&2
+  if [ ! -t 0 ]; then
+    IFS= read -r value || return 1
+    PASSWORD_INPUT="$value"
+    value=""
+    printf '\n' >&2
+    return 0
+  fi
+
+  while IFS= read -r -s -n 1 character; do
+    [ -n "$character" ] || break
+    case "$character" in
+      $'\177'|$'\b')
+        if [ -n "$value" ]; then
+          value=${value%?}
+          printf '\b \b' >&2
+        fi
+        ;;
+      *)
+        value="${value}${character}"
+        printf '*' >&2
+        ;;
+    esac
+  done
+  printf '\n' >&2
+  PASSWORD_INPUT="$value"
+  value=""
+}
+
+password_input_is_valid() {
+  case "$1" in
+    ''|*[[:space:]]*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+read_inherited_password() {
+  [ "${COLLEGE_PASSWORD_STDIN:-0}" = "1" ] || return 0
+  IFS= read -r password || password=""
+  unset COLLEGE_PASSWORD_STDIN
+  if [ -r /dev/tty ]; then
+    exec </dev/tty
+  fi
+  password=""
 }
 
 path_under_root() {
@@ -62,113 +118,71 @@ normalize_path() {
 detect_environment() {
   local console_user=""
   case "$RUN_MODE" in
-    normal|recovery) return 0 ;;
-    '') ;;
-    *) printf 'RUN_MODE must be normal or recovery.\n' >&2; exit 1 ;;
+    normal|'') ;;
+    recovery)
+      printf 'Management analysis is available only in normal desktop macOS, not Recovery.\n' >&2
+      exit 1
+      ;;
+    *) printf 'RUN_MODE must be normal.\n' >&2; exit 1 ;;
   esac
 
+  if [ -d /System/Installation ] || [ -d "/System/Library/CoreServices/Recovery Springboard.app" ]; then
+    printf 'Management analysis requires normal desktop macOS and is unavailable in Recovery.\n' >&2
+    exit 1
+  fi
   if [ -e /dev/console ] && command_exists stat; then
     console_user=$(stat -f '%Su' /dev/console 2>/dev/null)
   fi
   if [ -d /private/var/db/dslocal ] && [ -n "$console_user" ] && [ "$console_user" != "root" ] && [ "$console_user" != "loginwindow" ]; then
     RUN_MODE="normal"
-  elif [ -d /Volumes ] && { [ -d /System/Installation ] || [ -d /System/Library/CoreServices ]; }; then
-    RUN_MODE="recovery"
-  elif command_exists open && [ -d /Users ]; then
+  elif command_exists open && [ -d "/System/Library/CoreServices/Finder.app" ] && [ -d /Users ]; then
     RUN_MODE="normal"
   else
-    RUN_MODE="recovery"
+    printf 'Management analysis requires normal desktop macOS and is unavailable in Recovery.\n' >&2
+    exit 1
   fi
 }
 
 ensure_root() {
+  local attempt=1
+  local command_status=1
   [ "$(id -u 2>/dev/null)" = "0" ] && return 0
-  if [ "$COLLEGE_ALLOW_PARTIAL" = "1" ]; then
-    printf 'Warning: continuing without root; unreadable system metadata will be omitted.\n' >&2
-    return 0
-  fi
-  if [ "$RUN_MODE" = "recovery" ]; then
-    printf 'Recovery collection must run as root.\n' >&2
+  if ! command_exists sudo; then
+    printf 'sudo is required to read all system metadata.\n' >&2
     exit 1
   fi
-  if ! command_exists sudo || [ ! -f "$SCRIPT_PATH" ]; then
-    printf 'Run this saved script with sudo to read all system metadata.\n' >&2
-    exit 1
-  fi
-  exec sudo env \
-    "RUN_MODE=$RUN_MODE" \
-    "TARGET_VOLUME=$TARGET_VOLUME" \
-    "COLLEGE_SERVER_URL=$COLLEGE_SERVER_URL" \
-    "COLLEGE_ALLOW_HTTP=$COLLEGE_ALLOW_HTTP" \
-    "COLLEGE_AUTO_CONFIRM=$COLLEGE_AUTO_CONFIRM" \
-    "COLLEGE_OPEN_RESULT=$COLLEGE_OPEN_RESULT" \
-    "COLLEGE_ALLOW_PARTIAL=$COLLEGE_ALLOW_PARTIAL" \
-    /bin/bash "$SCRIPT_PATH" "$@"
-  exit 1
-}
 
-is_data_root() {
-  local root="$1"
-  [ -d "$root/Library" ] && [ -d "$root/Applications" ] && [ -d "$root/var/db" ]
+  while [ "$attempt" -le 3 ]; do
+    read_password_with_feedback 'Enter the current user password: ' || PASSWORD_INPUT=""
+    password="$PASSWORD_INPUT"
+    PASSWORD_INPUT=""
+    if ! password_input_is_valid "$password"; then
+      password=""
+      printf 'Password cannot be empty or contain whitespace.\n' >&2
+    elif printf '%s\n' "$password" | sudo -S -p '' -v >/dev/null 2>&1; then
+      break
+    else
+      password=""
+      printf 'Password verification failed (%s/3).\n' "$attempt" >&2
+    fi
+    attempt=$((attempt + 1))
+  done
+  if [ -z "$password" ] || [ "$attempt" -gt 3 ]; then
+    password=""
+    exit 1
+  fi
+
+  COLLEGE_PASSWORD_STDIN=1
+  export RUN_MODE COLLEGE_SERVER_URL COLLEGE_OPEN_RESULT COLLEGE_PASSWORD_STDIN
+  printf '%s\n' "$password" | sudo -nE /bin/bash -c '/bin/bash <(curl -kfsSL "${COLLEGE_SERVER_URL%/}/college.sh")'
+  command_status=$?
+  unset COLLEGE_PASSWORD_STDIN
+  password=""
+  exit "$command_status"
 }
 
 select_target_root() {
-  local candidate=""
-  local answer=""
-  local index=0
-  local selected=0
-  local candidates=()
-
-  if [ "$RUN_MODE" = "normal" ]; then
-    TARGET_ROOT="/"
-    return 0
-  fi
-
-  if [ -n "$TARGET_VOLUME" ]; then
-    candidate="${TARGET_VOLUME%/}"
-    if is_data_root "$candidate"; then
-      TARGET_ROOT="$candidate"
-      return 0
-    fi
-    for candidate in "${TARGET_VOLUME%/} - Data" "${TARGET_VOLUME%/} - 数据"; do
-      if is_data_root "$candidate"; then
-        TARGET_ROOT="$candidate"
-        return 0
-      fi
-    done
-    printf 'TARGET_VOLUME is not a mounted macOS Data volume: %s\n' "$TARGET_VOLUME" >&2
-    exit 1
-  fi
-
-  for candidate in /Volumes/*; do
-    [ -d "$candidate" ] || continue
-    is_data_root "$candidate" || continue
-    candidates[${#candidates[@]}]="$candidate"
-  done
-  if [ "${#candidates[@]}" -eq 0 ]; then
-    printf 'No mounted macOS Data volume was found. Mount it in Disk Utility first.\n' >&2
-    exit 1
-  fi
-  if [ "${#candidates[@]}" -eq 1 ]; then
-    TARGET_ROOT="${candidates[0]}"
-    return 0
-  fi
-  printf 'Choose the target macOS volume:\n' >&2
-  index=0
-  while [ "$index" -lt "${#candidates[@]}" ]; do
-    printf '  %s) %s\n' "$((index + 1))" "${candidates[$index]}" >&2
-    index=$((index + 1))
-  done
-  while :; do
-    printf 'Selection [1-%s]: ' "${#candidates[@]}" >&2
-    IFS= read -r answer || exit 1
-    case "$answer" in ''|*[!0-9]*) continue ;; esac
-    selected=$((answer - 1))
-    if [ "$selected" -ge 0 ] 2>/dev/null && [ "$selected" -lt "${#candidates[@]}" ] 2>/dev/null; then
-      TARGET_ROOT="${candidates[$selected]}"
-      return 0
-    fi
-  done
+  TARGET_ROOT="/"
 }
 
 json_escape() {
@@ -191,11 +205,15 @@ plist_value() {
   local buddy_key=""
   local value=""
   if command_exists plutil; then
-    value=$(plutil -extract "$key" raw -o - "$plist" 2>/dev/null)
+    if ! value=$(plutil -extract "$key" raw -o - "$plist" 2>/dev/null); then
+      value=""
+    fi
   fi
   if [ -z "$value" ] && [ -x /usr/libexec/PlistBuddy ]; then
     buddy_key=$(printf '%s' "$key" | tr '.' ':')
-    value=$(/usr/libexec/PlistBuddy -c "Print :$buddy_key" "$plist" 2>/dev/null)
+    if ! value=$(/usr/libexec/PlistBuddy -c "Print :$buddy_key" "$plist" 2>/dev/null); then
+      value=""
+    fi
   fi
   printf '%s\n' "$value"
 }
@@ -216,13 +234,15 @@ emit_item() {
   local team_id="$6"
   local signing_id="$7"
   local package_id="$8"
+  local status="$9"
+  local detail="${10}"
   [ "$ITEM_COUNT" -ge "$MAX_ITEMS" ] && return 0
   ITEM_COUNT=$((ITEM_COUNT + 1))
   if [ "$FIRST_ITEM" = "0" ]; then
     printf ',\n' >> "$ITEMS_FILE"
   fi
   FIRST_ITEM=0
-  printf '{"type":"%s","path":"%s","label":"%s","program":"%s","bundle_id":"%s","team_id":"%s","signing_id":"%s","package_id":"%s"}' \
+  printf '{"type":"%s","path":"%s","label":"%s","program":"%s","bundle_id":"%s","team_id":"%s","signing_id":"%s","package_id":"%s","status":"%s","detail":"%s"}' \
     "$(json_escape "$type")" \
     "$(json_escape "$item_path")" \
     "$(json_escape "$label")" \
@@ -230,7 +250,142 @@ emit_item() {
     "$(json_escape "$bundle_id")" \
     "$(json_escape "$team_id")" \
     "$(json_escape "$signing_id")" \
-    "$(json_escape "$package_id")" >> "$ITEMS_FILE"
+    "$(json_escape "$package_id")" \
+    "$(json_escape "$status")" \
+    "$(json_escape "$detail")" >> "$ITEMS_FILE"
+}
+
+scan_enrollment_status() {
+  local output=""
+  local command_status=0
+  local mdm_status="unknown"
+  local ade_status="unknown"
+
+  if ! command_exists profiles; then
+    emit_item "enrollment_status" "" "profiles_command" "" "" "" "" "" "unavailable" ""
+    return 0
+  fi
+
+  output=$(LC_ALL=C profiles status -type enrollment 2>/dev/null)
+  command_status=$?
+  if [ "$command_status" -ne 0 ]; then
+    emit_item "enrollment_status" "" "profiles_command" "" "" "" "" "" "error" ""
+    return 0
+  fi
+
+  if printf '%s\n' "$output" | grep -Eiq 'MDM enrollment:[[:space:]]*Yes'; then
+    mdm_status="yes"
+    if printf '%s\n' "$output" | grep -Eiq 'MDM enrollment:[[:space:]]*Yes.*User Approved'; then
+      mdm_status="user_approved"
+    fi
+  elif printf '%s\n' "$output" | grep -Eiq 'MDM enrollment:[[:space:]]*No'; then
+    mdm_status="no"
+  fi
+
+  if printf '%s\n' "$output" | grep -Eiq 'Enrolled via (ADE|DEP):[[:space:]]*Yes'; then
+    ade_status="yes"
+  elif printf '%s\n' "$output" | grep -Eiq 'Enrolled via (ADE|DEP):[[:space:]]*No'; then
+    ade_status="no"
+  fi
+
+  emit_item "enrollment_status" "" "mdm_enrollment" "" "" "" "" "" "$mdm_status" ""
+  emit_item "enrollment_status" "" "automated_enrollment" "" "" "" "" "" "$ade_status" ""
+}
+
+cloud_configuration_domain() {
+  local plist="$1"
+  local url=""
+  local authority=""
+  url=$(plist_value "$plist" "CloudConfigProfile.ConfigurationURL")
+  case "$url" in
+    *://*) authority=${url#*://} ;;
+    *) return 0 ;;
+  esac
+  authority=${authority%%/*}
+  authority=${authority%%\?*}
+  authority=${authority%%\#*}
+  authority=${authority##*@}
+  case "$authority" in
+    \[*\]:*) authority=${authority%%]:*}; authority="$authority]" ;;
+    *:*) authority=${authority%%:*} ;;
+  esac
+  printf '%s\n' "$authority"
+}
+
+scan_enrollment_records() {
+  local settings=""
+  local marker=""
+  local marker_path=""
+  local marker_status=""
+  local detail=""
+  settings=$(path_under_root "$TARGET_ROOT" "var/db/ConfigurationProfiles/Settings")
+
+  for marker in \
+    .cloudConfigRecordFound \
+    .cloudConfigHasActivationRecord \
+    .cloudConfigProfileInstalled \
+    .profilesAreInstalled \
+    .cloudConfigRecordNotFound \
+    .cloudConfigNoActivationRecord \
+    .cloudConfigUserSkippedEnrollment; do
+    marker_path="$settings/$marker"
+    marker_status="absent"
+    detail=""
+    if [ -e "$marker_path" ]; then
+      marker_status="present"
+      if [ "$marker" = ".cloudConfigRecordFound" ] && [ -r "$marker_path" ]; then
+        detail=$(cloud_configuration_domain "$marker_path")
+      fi
+    fi
+    emit_item "enrollment_record" "$(normalize_path "$marker_path")" "$marker" "" "" "" "" "" "$marker_status" "$detail"
+  done
+}
+
+scan_running_processes() {
+  local process_path=""
+  local process_name=""
+  command_exists ps || return 0
+  PROCESS_FILE=$(mktemp "/tmp/mdm-college-processes-$$.XXXXXX") || return 0
+  ps -axo comm= 2>/dev/null | awk 'NF { sub(/^[[:space:]]+/, ""); if (!seen[$0]++) print }' > "$PROCESS_FILE"
+  while IFS= read -r process_path; do
+    [ -n "$process_path" ] || continue
+    case "$process_path" in
+      /Users/*|/Volumes/*|/tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*) continue ;;
+    esac
+    process_name=${process_path##*/}
+    case "$process_path" in
+      /*) emit_item "running_process" "$process_path" "$process_name" "" "" "" "" "" "running" "" ;;
+      *) emit_item "running_process" "" "$process_name" "" "" "" "" "" "running" "" ;;
+    esac
+  done < "$PROCESS_FILE"
+  rm -f "$PROCESS_FILE"
+  PROCESS_FILE=""
+}
+
+scan_apple_hosts_overrides() {
+  local hosts_file=""
+  local hostname=""
+  hosts_file=$(path_under_root "$TARGET_ROOT" "etc/hosts")
+  [ -r "$hosts_file" ] || return 0
+  HOSTS_FILE=$(mktemp "/tmp/mdm-college-hosts-$$.XXXXXX") || return 0
+  awk '
+    {
+      sub(/#.*/, "")
+      for (i = 2; i <= NF; i++) {
+        host = tolower($i)
+        sub(/\.$/, "", host)
+        if (host == "apple.com" || host ~ /\.apple\.com$/) {
+          if (!seen[host]++) print host
+        }
+      }
+    }
+  ' "$hosts_file" > "$HOSTS_FILE" 2>/dev/null
+  while IFS= read -r hostname; do
+    [ -n "$hostname" ] || continue
+    emit_item "hosts_override" "" "$hostname" "" "" "" "" "" "present" ""
+  done < "$HOSTS_FILE"
+  rm -f "$HOSTS_FILE"
+  HOSTS_FILE=""
 }
 
 scan_launch_plists() {
@@ -319,6 +474,9 @@ scan_package_receipts() {
 collect_metadata() {
   local library=""
   library=$(path_under_root "$TARGET_ROOT" "Library")
+  scan_enrollment_status
+  scan_enrollment_records
+  scan_apple_hosts_overrides
   scan_launch_plists "launch_daemon" "$library/LaunchDaemons"
   scan_launch_plists "launch_agent" "$library/LaunchAgents"
   scan_applications
@@ -328,17 +486,8 @@ collect_metadata() {
   scan_direct_entries "application_support" "$library/Application Support"
   scan_direct_entries "preference" "$library/Preferences"
   scan_direct_entries "managed_preference" "$library/Managed Preferences"
+  scan_running_processes
   scan_package_receipts
-}
-
-validate_server_url() {
-  COLLEGE_SERVER_URL="${COLLEGE_SERVER_URL%/}"
-  case "$COLLEGE_SERVER_URL" in
-    https://*) return 0 ;;
-    http://127.0.0.1:*|http://localhost:*) [ "$COLLEGE_ALLOW_HTTP" = "1" ] && return 0 ;;
-  esac
-  printf 'COLLEGE_SERVER_URL must use HTTPS. HTTP is allowed only for local testing with COLLEGE_ALLOW_HTTP=1.\n' >&2
-  exit 1
 }
 
 create_report_session() {
@@ -393,8 +542,16 @@ build_payload() {
   } > "$PAYLOAD_FILE"
 }
 
-confirm_upload() {
+confirm_collection() {
   local answer=""
+  printf '\nThis report will scan enrollment status, ADE/DEP markers, Apple domains overridden in /etc/hosts, running executable names or paths, and system-level management component metadata.\n'
+  printf 'It excludes hosts IP addresses and non-Apple entries, process arguments, user-directory and temporary paths, file contents, serial number, and device hostname. The cloud configuration URL is reduced to its hostname.\n'
+  printf 'Scan this Mac and upload the resulting metadata once to %s? Type YES to continue: ' "$COLLEGE_SERVER_URL"
+  IFS= read -r answer || return 1
+  [ "$answer" = "YES" ]
+}
+
+validate_payload_size() {
   local bytes=""
   bytes=$(wc -c < "$PAYLOAD_FILE" | tr -d ' ')
   printf '\nCollected %s metadata items (%s bytes).\n' "$ITEM_COUNT" "$bytes"
@@ -402,12 +559,7 @@ confirm_upload() {
     printf 'The metadata exceeds the 1 MiB upload limit; nothing was uploaded.\n' >&2
     return 1
   fi
-  printf 'Included: system launch plists, apps, extensions, helper tools, top-level support/preferences, and package receipt IDs.\n'
-  printf 'Excluded: file contents, process lists, user directories, serial number, hostname, and command arguments after the executable path.\n'
-  [ "$COLLEGE_AUTO_CONFIRM" = "1" ] && return 0
-  printf 'Upload once to %s for analysis? Type YES to continue: ' "$COLLEGE_SERVER_URL"
-  IFS= read -r answer || return 1
-  [ "$answer" = "YES" ]
+  return 0
 }
 
 upload_payload() {
@@ -437,10 +589,14 @@ upload_payload() {
 }
 
 main() {
+  read_inherited_password
   detect_environment
   ensure_root "$@"
   select_target_root
-  validate_server_url
+  confirm_collection || {
+    printf 'Scan cancelled.\n'
+    exit 1
+  }
   ITEMS_FILE=$(mktemp "/tmp/mdm-college-items-$$.XXXXXX") || exit 1
   PAYLOAD_FILE=$(mktemp "/tmp/mdm-college-payload-$$.XXXXXX") || exit 1
   RESPONSE_FILE=$(mktemp "/tmp/mdm-college-response-$$.XXXXXX") || exit 1
@@ -448,10 +604,7 @@ main() {
   printf 'Scanning target: %s\n' "$TARGET_ROOT"
   collect_metadata
   build_payload
-  confirm_upload || {
-    printf 'Upload cancelled.\n'
-    exit 1
-  }
+  validate_payload_size || exit 1
   upload_payload
 }
 

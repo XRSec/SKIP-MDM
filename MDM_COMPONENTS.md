@@ -11,23 +11,31 @@ LaunchDaemon。“样本”列使用“记录数 / 设备数”；`0 / 0` 表示
 
 ## 主动分析与报告接口
 
-`src/shell/college.sh` 是用户主动运行的一次性采集器，不是后台服务或遥测。它在本机读取系统级 Launch plist、App bundle
-元数据、代码签名、系统扩展、顶层 Application Support/Preferences 和安装包 Receipt
-ID；明确排除进程列表、用户目录、序列号、主机名、文件内容以及可执行路径之后的命令参数。上传前会显示项目数和字节数，并要求输入
-`YES`。
+`src/shell/college.sh` 是用户在正常桌面 macOS 中主动运行的一次性采集器，不支持 macOS Recovery，也不是后台服务或遥测。它运行
+`profiles status -type enrollment`，检查 ADE/DEP 状态标记（包括 `.cloudConfigRecordFound`），并读取系统级 Launch plist、App bundle
+元数据、代码签名、系统扩展、顶层 Application Support/Preferences、安装包 Receipt ID 和运行中可执行文件的名称或路径。
+`.cloudConfigRecordFound` 只提取 `CloudConfigProfile.ConfigurationURL` 的主机名，不上传完整 URL 或 plist 内容；进程采集使用不含参数的
+`ps -axo comm=`，排除用户目录、挂载卷和临时目录。报告不采集序列号、主机名、文件内容或进程参数。普通用户完成 root 提权后，脚本先展示扫描和上传范围并要求输入 `YES`；拒绝时不会创建报告、扫描系统或上传数据。扫描完成后再校验项目数和字节数。
+
+报告不会调用 `profiles renew -type enrollment`，避免只读扫描主动刷新 ADE/DEP 状态。`profiles` 不存在、执行失败和输出无法解析分别记录为不可用、错误和无法确认，不能误报成未注册。运行进程、注册状态和 ADE/DEP 标记均为只读证据，不生成删除命令。
+
+首页“分析监管”的复制后说明只展示桌面终端步骤，不展示 Recovery 入口、Recovery 终端位置或磁盘装载指引。采集脚本无法确认正常桌面环境时会在创建报告前退出，上传接口也会拒绝 `run_mode=recovery` 的载荷。
 
 | 接口                           | 方法   | 用途                                                |
 |--------------------------------|--------|-----------------------------------------------------|
 | `/college.sh`                  | `GET`  | 下载 Bash 3.2 兼容的主动分析脚本                    |
-| `/api/college/session`         | `POST` | 扫描前创建空报告，返回随机 URL 和 6 位密码          |
+| `/api/college/session`         | `POST` | 用户确认后、扫描前创建空报告，返回随机 URL 和密码   |
 | `/api/college/:id/upload`      | `POST` | 使用报告密码上传不超过 1 MiB 的 JSON 清单并完成分析 |
 | `/api/college/:id/unlock`      | `POST` | 使用 6 位密码读取等待中或已完成的报告               |
-| `/college/:id?password=123456` | `GET`  | 通过密码参数自动打开报告；验证后从地址栏移除密码    |
+| `/api/college/:id/reanalyze`   | `POST` | 使用原始扫描载荷和当前规则重新分析并覆盖旧结果       |
+| `/college/:id?password=123456` | `GET`  | 自动打开报告并保留密码参数，刷新后仍可继续查看     |
 | `/college/:id`                 | `GET`  | 显示密码输入框，验证后查看证据和逐路径命令          |
 
-脚本先创建报告并立即在终端输出 URL 和密码，再扫描本机，确认后上传到同一报告。报告默认保存 168 小时，可通过服务端
+脚本先取得 root 权限，再展示数据范围并要求确认；确认后创建报告、输出 URL 和密码、扫描本机并上传到同一报告。报告默认保存 168 小时，可通过服务端
 `COLLEGE_REPORT_TTL_HOURS` 调整，最大 720 小时。报告 URL 使用 128 位随机 ID，不提供公开列表；6 位密码按临时访问码明文存储并随报告一起过期。Apple
 原生组件只显示证据，不生成删除命令。第三方命令不会自动执行，用户必须在报告页面手动复制。
+
+刷新报告页面只通过 `unlock` 读取数据库中已经保存的分析结果，不会重复计算。“重新分析”按钮使用同一报告密码读取该记录保存的原始扫描载荷，以服务端当前规则重新运行分析并覆盖原 `analysis` 字段；它不重新连接或扫描用户的 Mac，报告 ID、密码和过期时间保持不变。原始载荷不存在、报告尚未完成、密码错误或报告过期时拒绝重新分析。
 
 直接运行本地脚本：
 
@@ -35,13 +43,13 @@ ID；明确排除进程列表、用户目录、序列号、主机名、文件内
 sudo /bin/bash src/shell/college.sh
 ```
 
-本地联调 HTTP 服务时必须显式允许，生产环境仍强制 HTTPS：
+本地联调时可以覆盖服务地址：
 
 ```bash
-COLLEGE_SERVER_URL=http://127.0.0.1:9000 COLLEGE_ALLOW_HTTP=1 sudo -E /bin/bash src/shell/college.sh
+COLLEGE_SERVER_URL=http://127.0.0.1:9000 sudo -E /bin/bash src/shell/college.sh
 ```
 
-没有 `sudo` 时可以设置 `COLLEGE_ALLOW_PARTIAL=1` 降级为普通用户扫描；脚本会明确警告，无法读取的系统元数据不会进入报告。
+报告必须取得 root 权限。普通用户执行时，脚本先使用带 `*` 和退格反馈的密码输入，经 `sudo -S -v` 验证后使用 `sudo -nE` 启动 root 子进程；密码只经 stdin 传递并在 root 子进程恢复 `/dev/tty` 后立即清空，不写入参数、环境变量或磁盘文件。
 
 ## Apple 自身的设备管理组件
 
@@ -153,6 +161,7 @@ COLLEGE_SERVER_URL=http://127.0.0.1:9000 COLLEGE_ALLOW_HTTP=1 sudo -E /bin/bash 
 ## 远程协助与远程控制代理
 
 远程控制工具可能由企业 IT 部署，也可能由用户自行安装。它们应记录为风险或运维线索，但不应自动等同于 MDM。
+后端分析明确忽略已知的 ToDesk 官方应用、启动项、卸载组件、特权 Helper 和安装包收据，避免正常远程控制组件生成发现；不在明确列表内的其他 ToDesk 标识仍按规则分析。
 
 | 产品                 | 所属公司            | 建议关键词              | 已观察到的文件                                                                |     样本 | 判断                               |
 |----------------------|---------------------|-------------------------|-------------------------------------------------------------------------------|---------:|------------------------------------|
