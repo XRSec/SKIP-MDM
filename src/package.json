@@ -1,0 +1,20 @@
+{
+  "name": "mdm-web-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal MDM website and CLI gateway",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "sync:ip-location": "node sync-ip-location.js",
+    "test": "node --test *.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bash-obfuscate": "1.2.1",
+    "dotenv": "^17.4.2",
+    "mysql2": "^3.23.1"
+  }
+}

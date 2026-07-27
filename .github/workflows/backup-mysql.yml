@@ -1,0 +1,72 @@
+name: backup-mysql
+on:
+  schedule:
+    # Run at 7:00 UTC every day
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
+jobs:
+  run_mysqldump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # 获取完整历史，方便创建分支
+
+      - name: Dump database
+        env:
+          MYSQL_PWD: ${{ secrets.MYSQL_PWD }}
+        run: |
+          cd custom/sync/
+          go mod tidy
+          # go run syncSql.go
+          # go run mysql2postgre.go || echo "mysql2postgre.go failed"
+          cd -
+          mysqldump \
+            -u "${{ secrets.MYSQL_USER }}" \
+            -h "${{ secrets.MYSQL_HOST }}" \
+            -P "${{ secrets.MYSQL_PORT }}" \
+            --single-transaction --skip-add-locks --no-tablespaces \
+            --triggers --routines --events --set-gtid-purged=OFF \
+            --verbose \
+            "${{ secrets.MYSQL_DATABASE }}" \
+            | bzip2 -c > "mdm.sql.bz2"
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Generate date
+        id: date
+        run: echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: mysql-backup-${{ steps.date.outputs.date }}
+          path: mdm.sql.bz2
+          retention-days: 30
+
+      - name: Commit and push backup
+        run: |
+          # 如果 backup 分支存在就删除它（彻底干净）
+          if git show-ref --verify --quiet refs/heads/backup; then
+            git branch -D backup
+          fi
+          
+          # 创建孤立分支
+          git checkout --orphan backup
+        
+          # 删除所有文件（工作目录完全清空）
+          git rm -rf . > /dev/null 2>&1
+        
+          # 添加最新 SQL 文件
+          git add *.sql.bz2
+        
+          # 提交
+          git commit -m "Backup database by Action"
+        
+          # 强制推送到远程 backup 分支
+          git push origin backup --force
