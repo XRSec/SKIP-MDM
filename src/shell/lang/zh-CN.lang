@@ -10,11 +10,6 @@ LEGAL_NOTICE_NO_WARRANTY	本项目按现状提供，不保证适用性、成功�
 LEGAL_NOTICE_NETWORK	继续后，客户端会向配置的服务端发送设备序列号；服务端会记录代理转发链中的全部有效请求 IP 和时间，并可能根据首个 IP 推导大致地区，仅用于记录本次声明确认。另行主动发起的监管报告会单独确认上传，并可能包含注册状态、ADE/DEP 标记是否存在、注册服务主机名、/etc/hosts 中覆盖的 Apple 域名、系统管理组件元数据及运行中可执行文件名称或路径，但不包含 Hosts IP、非 Apple Hosts 条目、进程参数、用户目录或临时目录路径。
 LEGAL_NOTICE_PROMPT	您是否同意上述数据传输，并确认已获得授权、理解风险及接受禁止商用限制？[y/N]
 LEGAL_NOTICE_DECLINED	未确认授权与风险声明，程序退出
-PING_SENDING	正在记录法律风险声明确认
-PING_SENT	法律风险声明确认已记录
-PING_FAILED	无法记录声明确认，将继续提供本地功能
-PING_URL_INVALID	服务端地址无效或不安全；公网服务必须使用 HTTPS
-ROOT_REQUIRED	此操作需要 root 权限
 ROOT_REQUEST	正在请求 root 权限
 ROOT_ACTIVE	已使用 root 权限运行
 SUDO_PASSWORD_PROMPT	请输入当前用户密码
@@ -50,10 +45,10 @@ CREATE_USER	创建管理员用户
 RESET_PASSWORD	打开密码重置工具
 DISABLE_SIP	禁用 SIP
 ENABLE_SIP	启用 SIP
-CLEAN_HOSTS	清理本工具写入的 Hosts 项
-CLEAN_WIFI	清理 Wi-Fi/APNS 缓存（仅 Recovery）
-CHANGE_ROOT_PASSWORD	修改目标系统 root 密码
-DISABLE_ROOT	停用 root 用户（仅桌面模式）
+CLEAN_HOSTS	清理 Apple Hosts
+CLEAN_WIFI	清理 Wi-Fi/APNS 缓存
+CHANGE_ROOT_PASSWORD	设置 Root 密码
+DISABLE_ROOT	停用 Root 用户
 EXIT	退出
 DONE	操作完成
 PARTIAL_DONE	已尝试执行全部阶段，但部分操作失败
@@ -61,6 +56,8 @@ PROTECTED_HINT	受保护的文件可能需要进入 macOS Recovery 后再处理
 FAILED	操作失败
 DRY_RUN_NOTICE	DRY_RUN=1：只显示操作，不修改系统
 SERIAL_NUMBER	设备序列号
+CONTACT_EMAIL	邮箱: xr_sec@qq.com
+CONTACT_WECHAT	微信: xr_sec
 SERIAL_UNAVAILABLE	无法读取设备序列号（不影响离线功能）
 NO_MDM_DIR	未找到 ConfigurationProfiles；请确认 Data/数据卷已装载
 HOSTS_MISSING	目标系统的 hosts 文件不存在或不可读
@@ -77,13 +74,11 @@ FILEVAULT_DISABLED	FileVault 停用请求已接受
 RESTART_HINT	请在完成后重启电脑
 RECOVERY_ONLY	此操作只能在 Recovery 中执行
 NORMAL_ONLY	此操作只能在正常桌面系统中执行
-USERNAME_PROMPT	新用户名（留空则自动生成）
-USER_ID_PROMPT	用户 ID（留空则使用下一个可用 ID）
+USERNAME_PROMPT	新用户名（留空则使用自动生成值）
 REALNAME_PROMPT	显示名称（留空使用 Apple）
-PASSWORD_PROMPT	请输入新密码
+PASSWORD_PROMPT	请输入新的管理员密码
 INVALID_USERNAME	用户名只能包含小写字母、数字、点、下划线和连字符，且必须以字母或下划线开头
 INVALID_USER_ID	用户 ID 必须是 501 到 60000 之间尚未使用的数字
-USER_ID_EXISTS	用户 ID 已被使用
 USER_EXISTS	用户已存在
 USER_HOME_EXISTS	用户主目录已经存在，已拒绝覆盖
 USER_CREATED	管理员用户已创建
@@ -98,6 +93,4 @@ CONFIRM_DESTRUCTIVE	此操作会修改所选系统卷。输入 YES 继续
 CANCELLED	已取消
 ROOT_PASSWORD_PROMPT	请输入新的 root 密码
 ROOT_DISABLED	root 用户已停用
-REBOOT_PROMPT	现在重启？[y/N]
-REBOOT_UNAVAILABLE	未找到 reboot 命令，请手动重启
 LANGUAGE_FALLBACK	中文语言包不可用，已切换为英语；请检查网络和系统时间

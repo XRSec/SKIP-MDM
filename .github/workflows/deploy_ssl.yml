@@ -1,114 +1,320 @@
-name: 自动续期 SSL 并部署到腾讯云 SCF
+name: 自动续期 SSL 并部署腾讯云 CDN
 
 on:
-  # 每 2 个月执行一次
   schedule:
     - cron: '0 0 1 */2 *'
   workflow_dispatch:
     inputs:
-      CDN_DOMAIN:
-        description: 'CDN 域名，多个域名用空格分隔'
+      DOMAIN:
+        description: '证书根域名；同时签发根域名和泛域名证书'
         required: false
+        type: string
+      DRY_RUN:
+        description: '仅测试 Certbot 签发，不修改 S3 或腾讯云'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: deploy-ssl
+  cancel-in-progress: false
 
 jobs:
   renew-and-deploy:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
     env:
-      CF_Token: ${{ secrets.CF_Token }}
-      TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
-      TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
-      CDN_DOMAIN: ${{ inputs.CDN_DOMAIN || secrets.CDN_DOMAIN }}
+      DRY_RUN: ${{ inputs.DRY_RUN || false }}
+      CERT_NAME: wildcard-bundle
+      CERTBOT_ROOT: /home/runner/.certbot
+      S3_BUCKET: xrsec-fun
+      S3_CERT_PREFIX: Certs
+      TENCENT_CERT_ALIAS: MDM 自动续期证书
 
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v7
+      - name: 校验域名
+        shell: node {0}
+        env:
+          SELECTED_DOMAIN: ${{ inputs.DOMAIN || secrets.CDN_DOMAIN }}
+        run: |
+          const fs = require('node:fs');
+
+          const domain = (process.env.SELECTED_DOMAIN || '').trim().toLowerCase();
+          if (!domain || /[\s*]/u.test(domain) || !domain.includes('.')) {
+            console.error('错误：请输入一个不含通配符的有效根域名。');
+            process.exit(1);
+          }
+
+          process.stdout.write(`::add-mask::${domain}\n`);
+          process.stdout.write(`::add-mask::*.${domain}\n`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `DOMAIN=${domain}\n`, 'utf8');
 
       - name: 安装依赖
         run: |
           sudo apt update
-          sudo apt install -y curl socat jq python3-pip
+          sudo apt install -y certbot jq python3-certbot-dns-cloudflare python3-pip
           pip3 install tccli
 
-      - name: 安装 acme.sh
+      - name: 申请根域名和泛域名证书
+        env:
+          CF_TOKEN: ${{ secrets.CF_TOKEN }}
         run: |
-          curl https://get.acme.sh | sh
-          ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+          set +x
+          umask 077
 
-      - name: 通过 Cloudflare DNS 为多个域名签发 / 续期证书
+          config_dir="$CERTBOT_ROOT/config"
+          work_dir="$CERTBOT_ROOT/work"
+          logs_dir="$CERTBOT_ROOT/logs"
+          mkdir -p "$config_dir" "$work_dir" "$logs_dir"
+
+          cloudflare_credentials=$(mktemp)
+          trap 'rm -f "$cloudflare_credentials"' EXIT
+          printf 'dns_cloudflare_api_token = %s\n' "$CF_TOKEN" > "$cloudflare_credentials"
+          chmod 600 "$cloudflare_credentials"
+
+          mode_args=()
+          if [ "$DRY_RUN" = "true" ]; then
+            mode_args+=(--dry-run)
+          fi
+
+          certbot certonly \
+            --dns-cloudflare \
+            --dns-cloudflare-credentials "$cloudflare_credentials" \
+            --config-dir "$config_dir" \
+            --work-dir "$work_dir" \
+            --logs-dir "$logs_dir" \
+            --cert-name "$CERT_NAME" \
+            -d "$DOMAIN" \
+            -d "*.$DOMAIN" \
+            --key-type ecdsa \
+            --elliptic-curve secp256r1 \
+            --no-reuse-key \
+            --non-interactive \
+            --agree-tos \
+            --register-unsafely-without-email \
+            --quiet \
+            "${mode_args[@]}"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Certbot 测试签发成功；后续部署步骤将跳过。"
+          else
+            echo "新证书签发成功。"
+          fi
+
+      - name: 归档旧证书并上传新证书到 S3
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.DRY_RUN }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
         run: |
-          # CDN_DOMAIN 可以是多个域名，用空格分隔，例如：example.com cdn.example.com
-          # acme.sh 会为每个域名单独签发一张 ECC 证书
-          for domain in ${CDN_DOMAIN}; do
-            echo "为域名 $domain 签发 / 续期证书..."
-            if ! $HOME/.acme.sh/acme.sh \
-              --issue \
-              --dns dns_cf \
-              -d "$domain" \
-              --ecc \
-              --debug 0; then
-              echo "为域名 $domain 签发 / 续期证书失败，跳过该域名，继续处理后续域名。"
-              continue
+          set +x
+          umask 077
+
+          cert_dir="$CERTBOT_ROOT/config/live/$CERT_NAME"
+          fullchain_file="$cert_dir/fullchain.pem"
+          private_key_file="$cert_dir/privkey.pem"
+          current_key="$S3_CERT_PREFIX/ssl-current/privkey.pem.enc"
+          current_cert="$S3_CERT_PREFIX/ssl-current/fullchain.pem"
+
+          encrypted_private_key=$(mktemp)
+          trap 'rm -f "$encrypted_private_key"' EXIT
+
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -in "$private_key_file" \
+            -out "$encrypted_private_key" \
+            -pass env:AWS_SECRET_ACCESS_KEY
+
+          current_cert_exists=false
+          if aws s3api head-object \
+            --bucket "$S3_BUCKET" \
+            --key "$current_cert" \
+            --endpoint-url "$AWS_ENDPOINT_URL" > /dev/null 2>&1; then
+            current_cert_exists=true
+          fi
+
+          current_key_exists=false
+          if aws s3api head-object \
+            --bucket "$S3_BUCKET" \
+            --key "$current_key" \
+            --endpoint-url "$AWS_ENDPOINT_URL" > /dev/null 2>&1; then
+            current_key_exists=true
+          fi
+
+          if [ "$current_cert_exists" != "$current_key_exists" ]; then
+            echo "错误：S3 当前证书不完整，已停止覆盖。"
+            exit 1
+          fi
+
+          if [ "$current_cert_exists" = "true" ]; then
+            # S3 没有原子重命名；复制整个目录到 previous，再移除 current。
+            aws s3 cp \
+              "s3://$S3_BUCKET/$S3_CERT_PREFIX/ssl-current/" \
+              "s3://$S3_BUCKET/$S3_CERT_PREFIX/ssl-previous/" \
+              --recursive \
+              --endpoint-url "$AWS_ENDPOINT_URL" \
+              --only-show-errors \
+              --no-progress
+            aws s3 rm \
+              "s3://$S3_BUCKET/$S3_CERT_PREFIX/ssl-current/" \
+              --recursive \
+              --endpoint-url "$AWS_ENDPOINT_URL" \
+              --only-show-errors
+            echo "旧证书已归档到 ssl-previous。"
+          fi
+
+          # 先上传私钥，最后上传证书链；fullchain.pem 代表这一版本已完整写入。
+          aws s3 cp \
+            "$encrypted_private_key" \
+            "s3://$S3_BUCKET/$current_key" \
+            --endpoint-url "$AWS_ENDPOINT_URL" \
+            --only-show-errors \
+            --no-progress
+          aws s3 cp \
+            "$fullchain_file" \
+            "s3://$S3_BUCKET/$current_cert" \
+            --endpoint-url "$AWS_ENDPOINT_URL" \
+            --only-show-errors \
+            --no-progress
+          echo "新证书已保存到 ssl-current。"
+
+      - name: 部署腾讯云 CDN 并删除未使用旧证书
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.DRY_RUN }}
+        env:
+          TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+          TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+        run: |
+          set +x
+
+          cert_dir="$CERTBOT_ROOT/config/live/$CERT_NAME"
+          fullchain_file="$cert_dir/fullchain.pem"
+          private_key_file="$cert_dir/privkey.pem"
+
+          while IFS= read -r secret_line; do
+            if [ -n "$secret_line" ]; then
+              printf '::add-mask::%s\n' "$secret_line"
             fi
-            zip -r ~/certs.zip ~/.acme.sh/${domain}_ecc
-          done
+          done < "$private_key_file"
 
-      - name: 上传最新证书到工作流工件（7 天保留）
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: latest-ssl-certs
-          path: ~/certs.zip
-          retention-days: 7
+          if ! upload_json=$(tccli ssl UploadCertificate \
+            --CertificatePublicKey "$(< "$fullchain_file")" \
+            --CertificatePrivateKey "$(< "$private_key_file")" \
+            --CertificateType SVR \
+            --CertificateUse CDN \
+            --Alias "$TENCENT_CERT_ALIAS" \
+            --Repeatable false \
+            2> /dev/null); then
+            echo "错误：上传证书到腾讯云失败，详细错误已隐藏。"
+            exit 1
+          fi
 
-      - name: 为每个 CDN 域名上传证书并更新配置
-        run: |
-          # 遍历每个 CDN 域名：逐个上传证书并绑定到对应域名
-          for domain in ${CDN_DOMAIN}; do
-            echo "处理 CDN 域名：$domain"
+          current_cert_id=$(jq -r '
+            [
+              .Response?.RepeatCertId,
+              .RepeatCertId,
+              .Response?.CertificateId,
+              .CertificateId
+            ]
+            | map(select(type == "string" and length > 0))
+            | first // empty
+          ' <<< "$upload_json")
 
-            CERT_DIR="$HOME/.acme.sh/${domain}_ecc"
-            FULLCHAIN_FILE="${CERT_DIR}/fullchain.cer"
-            KEY_FILE="${CERT_DIR}/${domain}.key"
+          if [ -z "$current_cert_id" ]; then
+            echo "错误：腾讯云未返回有效的证书 ID。"
+            exit 1
+          fi
+          printf '::add-mask::%s\n' "$current_cert_id"
 
-            if [ ! -f "$FULLCHAIN_FILE" ] || [ ! -f "$KEY_FILE" ]; then
-              echo "错误：未找到域名 $domain 的证书或私钥文件！"
-              continue
-            fi
+          domains_json=$(tccli cdn DescribeDomains --Offset 0 --Limit 1000 2> /dev/null)
+          mapfile -t domains < <(jq -r --arg root "$DOMAIN" '
+            (.Response.Domains // .Domains // [])[]?
+            | select(.Status == "online" and .Disable == "normal")
+            | .Domain
+            | select(type == "string")
+            | ascii_downcase
+            | select(
+                . == $root or
+                (
+                  endswith("." + $root) and
+                  ((split(".") | length) == (($root | split(".") | length) + 1))
+                )
+              )
+          ' <<< "$domains_json")
 
-            # 用 jq -Rs 读取并做 JSON 转义，避免换行和引号导致的转义问题
-            cert_json=$(jq -Rs . "$FULLCHAIN_FILE")
-            key_json=$(jq -Rs . "$KEY_FILE")
+          if [ "${#domains[@]}" -eq 0 ]; then
+            echo "错误：没有找到匹配的已启用腾讯云 CDN 域名。"
+            exit 1
+          fi
 
-            https_json=$(jq -n \
-              --argjson cert "$cert_json" \
-              --argjson key "$key_json" \
-              --arg msg "证书最后更新时间：$(date '+%Y-%m-%d %H:%M:%S')" \
-              '{
-                Switch: "on",
-                Http2: "on",
-                OcspStapling: "on",
-                Hsts: { Switch: "on", MaxAge: 604800 },
-                ForceRedirect: {
-                  Switch: "on",
-                  RedirectType: "Http",
-                  RedirectStatusCode: 301,
-                  CarryHeaders: "on"
-                },
-                CertInfo: {
-                  Certificate: $cert,
-                  PrivateKey: $key,
-                  Message: $msg
-                }
-              }')
-
-            echo "为域名 $domain 构造的 HTTPS 配置：$https_json"
-
-            if ! deploy_response=$(tccli cdn UpdateDomainConfig \
+          update_value=$(jq -nc --arg cert_id "$current_cert_id" '{ update: $cert_id }')
+          update_failed=false
+          for domain in "${domains[@]}"; do
+            printf '::add-mask::%s\n' "$domain"
+            if tccli cdn ModifyDomainConfig \
               --Domain "$domain" \
-              --Https "$https_json"); then
-              echo "为域名 $domain 更新 CDN HTTPS 配置失败，跳过该域名，继续处理后续域名。"
-              continue
+              --Route Https.CertInfo.CertId \
+              --Value "$update_value" \
+              > /dev/null 2>&1; then
+              echo "一个 CDN 域名的证书更新成功。"
+            else
+              echo "::warning::一个 CDN 域名更新失败，详细错误已隐藏。"
+              update_failed=true
             fi
-
-            echo "证书部署到 CDN 域名 $domain 的响应：$deploy_response"
           done
+
+          if [ "$update_failed" = "true" ]; then
+            echo "错误：部分 CDN 域名更新失败，已跳过旧证书清理。"
+            exit 1
+          fi
+
+          certificates_json=$(tccli ssl DescribeCertificates --Offset 0 --Limit 1000 2> /dev/null)
+          mapfile -t unused_cert_ids < <(jq -r \
+            --arg root "$DOMAIN" \
+            --arg current "$current_cert_id" '
+            (.Response.Certificates // .Certificates // [])[]?
+            | select(.From == "upload")
+            | select(.CertificateId != $current)
+            | select(
+                has("BoundResource") and
+                (.BoundResource | type) == "array" and
+                (.BoundResource | length) == 0
+              )
+            | . as $cert
+            | (($cert.SubjectAltName // []) + ($cert.CertSANs // []) | unique) as $sans
+            | select(
+                ($sans | index($root)) != null and
+                ($sans | index("*." + $root)) != null
+              )
+            | .CertificateId
+            | select(type == "string" and length > 0)
+          ' <<< "$certificates_json")
+
+          deleted_count=0
+          for cert_id in "${unused_cert_ids[@]}"; do
+            printf '::add-mask::%s\n' "$cert_id"
+            if delete_json=$(tccli ssl DeleteCertificate \
+              --CertificateId "$cert_id" \
+              --IsCheckResource true \
+              2> /dev/null) && jq -e '
+                .Response.DeleteResult == true or
+                .DeleteResult == true or
+                .Response.TaskId != null or
+                .TaskId != null
+              ' <<< "$delete_json" > /dev/null; then
+              deleted_count=$((deleted_count + 1))
+            else
+              echo "::warning::一个旧证书删除失败或仍被占用。"
+            fi
+          done
+          echo "腾讯云部署完成，清理旧证书数量：$deleted_count。"
+
+      - name: 清理本地证书
+        if: ${{ always() }}
+        run: |
+          rm -rf -- "$CERTBOT_ROOT"
+          echo "本地证书和 ACME 临时状态已清理。"

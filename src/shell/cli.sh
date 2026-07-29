@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Standalone MDM maintenance utility for macOS 11.5+ and macOS Recovery.
-# Bash 3.2 compatible. No authorization server, executable downloads,
-# telemetry, or client logging are used. English is always embedded.
+# Bash 3.2 compatible. No telemetry or client logging is used. English is
+# always embedded.
 
 set +e
 umask 077
@@ -16,7 +16,6 @@ RUN_MODE="${RUN_MODE:-}"
 DRY_RUN="${DRY_RUN:-0}"
 TARGET_VOLUME="${TARGET_VOLUME:-}"
 mdm_lang="${mdm_lang:-}"
-CLEAR_TRANSIENT_OUTPUT="${CLEAR_TRANSIENT_OUTPUT:-1}"
 TRASH_DATE_FORMAT="${TRASH_DATE_FORMAT:-%Y%m%d%H%M%S}"
 
 # Web service base URL. Use https://mdm.xrsec.fun in production. The current
@@ -31,7 +30,7 @@ LANG_PACK_URL="${MDM_LANG_PACK_URL:-${MDM_SERVER_URL%/}/lang/zh-CN.lang}"
 # Entries are lowercase, space-delimited substring matches. Override the
 # built-in set with MDM_KEYWORDS, then append deployment-specific terms with
 # MDM_EXTRA_KEYWORDS.
-DEFAULT_MDM_KEYWORDS="com.apple.mdmclient com.apple.managedclient com.apple.devicemanagementclient addigy ivanti jamf kandji mobileiron mosyle rippling airwatch intune workspaceone jumpcloud com.ws1 com.vmware.deem fleetdm ninjarmm automox tanium corplink"
+DEFAULT_MDM_KEYWORDS="com.apple.mdmclient com.apple.managedclient com.apple.devicemanagement com.apple.devicemanagementclient addigy ivanti jamf kandji mobileiron mosyle rippling airwatch falcon freshservice intune osquery tinyapp us.zoom workspaceone jumpcloud teslad orthus com.ws1 com.vmware.deem fleetdm ninjarmm automox tanium corplink"
 MDM_KEYWORDS="${MDM_KEYWORDS:-$DEFAULT_MDM_KEYWORDS}"
 MDM_EXTRA_KEYWORDS="${MDM_EXTRA_KEYWORDS:-}"
 MDM_KEYWORDS="$MDM_KEYWORDS $MDM_EXTRA_KEYWORDS"
@@ -61,7 +60,7 @@ MDM_PATH=""
 LIBRARY_PATH=""
 LANG_PACK=""
 DEVICE_SERIAL=""
-REQUIRED_LANG_KEYS="LANGUAGE_PROMPT SELECT_PROMPT INVALID_OPTION LEGAL_NOTICE_TITLE LEGAL_NOTICE_SCOPE LEGAL_NOTICE_RISK LEGAL_NOTICE_PROHIBITED LEGAL_NOTICE_RESPONSIBILITY LEGAL_NOTICE_NO_WARRANTY LEGAL_NOTICE_NETWORK LEGAL_NOTICE_PROMPT LEGAL_NOTICE_DECLINED PING_SENDING PING_SENT PING_FAILED PING_URL_INVALID ROOT_REQUIRED ROOT_REQUEST ROOT_ACTIVE SUDO_PASSWORD_PROMPT SUDO_PASSWORD_EMPTY SUDO_PASSWORD_INVALID PASSWORD_VERIFYING PASSWORD_VERIFIED SUDO_UNAVAILABLE REEXEC_FAILED MODE_NORMAL MODE_RECOVERY INVALID_RUN_MODE DISK_NOT_FOUND DISK_LOCKED DISK_ENCRYPTED DISK_UNLOCK_PASSWORD DISK_UNLOCK_FAILED DISK_MOUNT_FAILED CHOOSE_DISK TARGET_INVALID TARGET_SELECTED COMMAND_MISSING TRASH_USER_MISSING TRASH_CREATE_FAILED TRASH_MOVE_FAILED MAIN_MENU BYPASS_MDM BYPASS_START HOSTS_UPDATING TEMP_FAILED HOSTS_PROCESS_FAILED CREATE_USER RESET_PASSWORD DISABLE_SIP ENABLE_SIP CLEAN_HOSTS CLEAN_WIFI CHANGE_ROOT_PASSWORD DISABLE_ROOT EXIT DONE PARTIAL_DONE PROTECTED_HINT FAILED DRY_RUN_NOTICE SERIAL_NUMBER SERIAL_UNAVAILABLE NO_MDM_DIR HOSTS_MISSING HOSTS_UPDATED PROFILE_CLEANING SERVICE_CLEANING FILEVAULT_CHECKING FILEVAULT_ALREADY_OFF FILEVAULT_SELECT_USER FILEVAULT_PASSWORD FILEVAULT_EMPTY_PASSWORD FILEVAULT_DISABLING FILEVAULT_DISABLED RESTART_HINT RECOVERY_ONLY NORMAL_ONLY USERNAME_PROMPT USER_ID_PROMPT REALNAME_PROMPT PASSWORD_PROMPT INVALID_USERNAME INVALID_USER_ID USER_ID_EXISTS USER_EXISTS USER_HOME_EXISTS USER_CREATED USER_CREATE_FAILED USER_AUTH_FAILED AUTO_CREATE_ADMIN SELECT_USER NO_USER PASSWORD_TOOL_MISSING SIP_TOOL_MISSING CONFIRM_DESTRUCTIVE CANCELLED ROOT_PASSWORD_PROMPT ROOT_DISABLED REBOOT_PROMPT REBOOT_UNAVAILABLE LANGUAGE_FALLBACK"
+REQUIRED_LANG_KEYS="LANGUAGE_PROMPT SELECT_PROMPT INVALID_OPTION LEGAL_NOTICE_TITLE LEGAL_NOTICE_SCOPE LEGAL_NOTICE_RISK LEGAL_NOTICE_PROHIBITED LEGAL_NOTICE_RESPONSIBILITY LEGAL_NOTICE_NO_WARRANTY LEGAL_NOTICE_NETWORK LEGAL_NOTICE_PROMPT LEGAL_NOTICE_DECLINED ROOT_REQUEST ROOT_ACTIVE SUDO_PASSWORD_PROMPT SUDO_PASSWORD_EMPTY SUDO_PASSWORD_INVALID PASSWORD_VERIFYING PASSWORD_VERIFIED SUDO_UNAVAILABLE REEXEC_FAILED MODE_NORMAL MODE_RECOVERY INVALID_RUN_MODE DISK_NOT_FOUND DISK_LOCKED DISK_ENCRYPTED DISK_UNLOCK_PASSWORD DISK_UNLOCK_FAILED DISK_MOUNT_FAILED CHOOSE_DISK TARGET_INVALID TARGET_SELECTED COMMAND_MISSING TRASH_USER_MISSING TRASH_CREATE_FAILED TRASH_MOVE_FAILED MAIN_MENU BYPASS_MDM BYPASS_START HOSTS_UPDATING TEMP_FAILED HOSTS_PROCESS_FAILED CREATE_USER RESET_PASSWORD DISABLE_SIP ENABLE_SIP CLEAN_HOSTS CLEAN_WIFI CHANGE_ROOT_PASSWORD DISABLE_ROOT EXIT DONE PARTIAL_DONE PROTECTED_HINT FAILED DRY_RUN_NOTICE SERIAL_NUMBER CONTACT_EMAIL CONTACT_WECHAT SERIAL_UNAVAILABLE NO_MDM_DIR HOSTS_MISSING HOSTS_UPDATED PROFILE_CLEANING SERVICE_CLEANING FILEVAULT_CHECKING FILEVAULT_ALREADY_OFF FILEVAULT_SELECT_USER FILEVAULT_PASSWORD FILEVAULT_EMPTY_PASSWORD FILEVAULT_DISABLING FILEVAULT_DISABLED RESTART_HINT RECOVERY_ONLY NORMAL_ONLY USERNAME_PROMPT REALNAME_PROMPT PASSWORD_PROMPT INVALID_USERNAME INVALID_USER_ID USER_EXISTS USER_HOME_EXISTS USER_CREATED USER_CREATE_FAILED USER_AUTH_FAILED AUTO_CREATE_ADMIN SELECT_USER NO_USER PASSWORD_TOOL_MISSING SIP_TOOL_MISSING CONFIRM_DESTRUCTIVE CANCELLED ROOT_PASSWORD_PROMPT ROOT_DISABLED LANGUAGE_FALLBACK"
 LEGAL_NOTICE_CONFIRMED=0
 LEGAL_NOTICE_PING_HANDLED=0
 CURSOR_HIDDEN=0
@@ -72,10 +71,7 @@ cleanup() {
   local old_ifs="$IFS"
   SESSION_PASSWORD=""
   PASSWORD_INPUT=""
-  if [ "$CURSOR_HIDDEN" = "1" ] && command_exists tput; then
-    tput cnorm 2>/dev/null || true
-    CURSOR_HIDDEN=0
-  fi
+  restore_cursor
   IFS='|'
   for item in $TEMP_FILES; do
     [ -n "$item" ] && [ -e "$item" ] && rm -f "$item"
@@ -93,6 +89,41 @@ trap on_signal HUP INT TERM
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
+}
+
+hide_cursor() {
+  [ -t 2 ] || return 0
+  if command_exists tput && tput civis 2>/dev/null; then
+    :
+  else
+    printf '\033[?25l' >&2
+  fi
+  CURSOR_HIDDEN=1
+}
+
+restore_cursor() {
+  [ "$CURSOR_HIDDEN" = "1" ] || return 0
+  if command_exists tput && tput cnorm 2>/dev/null; then
+    :
+  else
+    printf '\033[?25h' >&2
+  fi
+  CURSOR_HIDDEN=0
+}
+
+cursor_up_one() {
+  if command_exists tput && tput cuu1 2>/dev/null; then
+    return 0
+  fi
+  printf '\033[1A' >&2
+}
+
+erase_current_line() {
+  if command_exists tput && tput el 2>/dev/null; then
+    printf '\r' >&2
+    return 0
+  fi
+  printf '\033[2K\r' >&2
 }
 
 path_under_root() {
@@ -116,9 +147,9 @@ t() {
     return 0
   fi
   case "$key" in
-      LANGUAGE_PROMPT) printf '%s' "Choose language / 选择语言" ;;
-      SELECT_PROMPT) printf '%s' "Enter a number" ;;
-      INVALID_OPTION) printf '%s' "Invalid input; try again" ;;
+      LANGUAGE_PROMPT) printf '%s' "Choose Language / 选择语言" ;;
+      SELECT_PROMPT) printf '%s' "Enter Number" ;;
+      INVALID_OPTION) printf '%s' "Invalid, Try Again" ;;
       LEGAL_NOTICE_TITLE) printf '%s' "IMPORTANT: AUTHORIZATION AND RISK NOTICE" ;;
       LEGAL_NOTICE_SCOPE) printf '%s' "For non-commercial security research, learning, and maintenance of devices you own or are expressly authorized to manage only." ;;
       LEGAL_NOTICE_RISK) printf '%s' "This tool modifies system, device-management, network, file, service, and disk-encryption settings. It may reduce security, cause data loss, or make the Mac unusable." ;;
@@ -128,97 +159,90 @@ t() {
       LEGAL_NOTICE_NETWORK) printf '%s' "If you continue, this client will send the device serial number to the configured service, which records all valid request IP addresses in the proxy forwarding chain and the request time and may derive an approximate location from the first IP address, solely to record this acknowledgement. A separately initiated management report has its own upload confirmation and may include enrollment status, ADE/DEP marker presence, the enrollment-service hostname, Apple domains overridden in /etc/hosts, system management metadata, and running executable names or paths, but not Hosts IP addresses, non-Apple Hosts entries, process arguments, or user-directory and temporary-directory paths." ;;
       LEGAL_NOTICE_PROMPT) printf '%s' "Do you consent to the described data transfer and confirm your authorization, understanding of the risks, and acceptance of the non-commercial restriction? [y/N]" ;;
       LEGAL_NOTICE_DECLINED) printf '%s' "Authorization and risk notice was not confirmed; exiting" ;;
-      PING_SENDING) printf '%s' "Recording legal notice acknowledgement" ;;
-      PING_SENT) printf '%s' "Legal notice acknowledgement recorded" ;;
-      PING_FAILED) printf '%s' "Could not record the acknowledgement; continuing with local functions" ;;
-      PING_URL_INVALID) printf '%s' "The service URL is invalid or insecure; public services must use HTTPS" ;;
-      ROOT_REQUIRED) printf '%s' "This operation requires root privileges" ;;
-      ROOT_REQUEST) printf '%s' "Requesting root privileges" ;;
-      ROOT_ACTIVE) printf '%s' "Running with root privileges" ;;
-      SUDO_PASSWORD_PROMPT) printf '%s' "Enter the current user password" ;;
-      SUDO_PASSWORD_EMPTY) printf '%s' "Password cannot be empty or contain whitespace; set a non-empty password without spaces" ;;
-      SUDO_PASSWORD_INVALID) printf '%s' "Password verification failed" ;;
-      PASSWORD_VERIFYING) printf '%s' "Verifying password" ;;
-      PASSWORD_VERIFIED) printf '%s' "Password verified" ;;
-      SUDO_UNAVAILABLE) printf '%s' "sudo was not found; rerun as root" ;;
-      REEXEC_FAILED) printf '%s' "Cannot rerun this script with sudo" ;;
-      MODE_NORMAL) printf '%s' "Normal desktop macOS detected" ;;
-      MODE_RECOVERY) printf '%s' "macOS Recovery detected" ;;
-      INVALID_RUN_MODE) printf '%s' "RUN_MODE must be normal or recovery" ;;
-      DISK_NOT_FOUND) printf '%s' "No unlocked, mounted macOS system was found; unlock and mount its System and Data volumes in Disk Utility" ;;
-      DISK_LOCKED) printf '%s' "locked" ;;
-      DISK_ENCRYPTED) printf '%s' "Disk encryption is enabled" ;;
-      DISK_UNLOCK_PASSWORD) printf '%s' "Enter the administrator password to unlock the disk" ;;
-      DISK_UNLOCK_FAILED) printf '%s' "Could not unlock the data volume" ;;
-      DISK_MOUNT_FAILED) printf '%s' "Could not mount the selected volume" ;;
-      CHOOSE_DISK) printf '%s' "Choose the target system volume" ;;
-      TARGET_INVALID) printf '%s' "Target volume validation failed; refusing to modify it" ;;
-      TARGET_SELECTED) printf '%s' "Target root" ;;
-      COMMAND_MISSING) printf '%s' "Required command is missing" ;;
-      TRASH_USER_MISSING) printf '%s' "Cannot determine the desktop user for Trash" ;;
-      TRASH_CREATE_FAILED) printf '%s' "Cannot prepare the user's Trash directory" ;;
-      TRASH_MOVE_FAILED) printf '%s' "Cannot move the item to Trash" ;;
-      MAIN_MENU) printf '%s' "Choose an operation" ;;
-      BYPASS_MDM) printf '%s' "Clean and disable MDM" ;;
-      BYPASS_START) printf '%s' "Starting MDM cleanup" ;;
+      ROOT_REQUEST) printf '%s' "Root Access" ;;
+      ROOT_ACTIVE) printf '%s' "Running as Root" ;;
+      SUDO_PASSWORD_PROMPT) printf '%s' "Current User Password" ;;
+      SUDO_PASSWORD_EMPTY) printf '%s' "No Empty or Spaced Passwords" ;;
+      SUDO_PASSWORD_INVALID) printf '%s' "Wrong Password" ;;
+      PASSWORD_VERIFYING) printf '%s' "Checking Password" ;;
+      PASSWORD_VERIFIED) printf '%s' "Password OK" ;;
+      SUDO_UNAVAILABLE) printf '%s' "sudo Not Found; Run as Root" ;;
+      REEXEC_FAILED) printf '%s' "sudo Relaunch Failed" ;;
+      MODE_NORMAL) printf '%s' "Desktop Mode" ;;
+      MODE_RECOVERY) printf '%s' "Recovery Mode" ;;
+      INVALID_RUN_MODE) printf '%s' "RUN_MODE: normal or recovery" ;;
+      DISK_NOT_FOUND) printf '%s' "No macOS Volume; Check Disk Utility" ;;
+      DISK_LOCKED) printf '%s' "Locked" ;;
+      DISK_ENCRYPTED) printf '%s' "Disk Encryption On" ;;
+      DISK_UNLOCK_PASSWORD) printf '%s' "Admin Password to Unlock Disk" ;;
+      DISK_UNLOCK_FAILED) printf '%s' "Data Volume Unlock Failed" ;;
+      DISK_MOUNT_FAILED) printf '%s' "Volume Mount Failed" ;;
+      CHOOSE_DISK) printf '%s' "Choose System Volume" ;;
+      TARGET_INVALID) printf '%s' "Invalid Target Volume; Stopped" ;;
+      TARGET_SELECTED) printf '%s' "Target Root" ;;
+      COMMAND_MISSING) printf '%s' "Missing Command" ;;
+      TRASH_USER_MISSING) printf '%s' "Trash User Not Found" ;;
+      TRASH_CREATE_FAILED) printf '%s' "Trash Setup Failed" ;;
+      TRASH_MOVE_FAILED) printf '%s' "Move to Trash Failed" ;;
+      MAIN_MENU) printf '%s' "Choose an Option" ;;
+      BYPASS_MDM) printf '%s' "Clean & Disable MDM" ;;
+      BYPASS_START) printf '%s' "Cleaning MDM" ;;
       HOSTS_UPDATING) printf '%s' "Updating Hosts" ;;
-      TEMP_FAILED) printf '%s' "Cannot create a secure temporary file" ;;
-      HOSTS_PROCESS_FAILED) printf '%s' "Cannot process or install the Hosts file" ;;
-      CREATE_USER) printf '%s' "Create an administrator" ;;
+      TEMP_FAILED) printf '%s' "Temp File Failed" ;;
+      HOSTS_PROCESS_FAILED) printf '%s' "Hosts Update Failed" ;;
+      CREATE_USER) printf '%s' "Create Admin User" ;;
       RESET_PASSWORD) printf '%s' "Open Reset Password" ;;
       DISABLE_SIP) printf '%s' "Disable SIP" ;;
       ENABLE_SIP) printf '%s' "Enable SIP" ;;
-      CLEAN_HOSTS) printf '%s' "Remove this tool's Hosts entries" ;;
-      CLEAN_WIFI) printf '%s' "Clean Wi-Fi/APNS caches (Recovery only)" ;;
-      CHANGE_ROOT_PASSWORD) printf '%s' "Change target root password" ;;
-      DISABLE_ROOT) printf '%s' "Disable root user (desktop only)" ;;
+      CLEAN_HOSTS) printf '%s' "Clean Apple Hosts" ;;
+      CLEAN_WIFI) printf '%s' "Clean Wi-Fi/APNS Caches" ;;
+      CHANGE_ROOT_PASSWORD) printf '%s' "Set Root Password" ;;
+      DISABLE_ROOT) printf '%s' "Disable Root User" ;;
       EXIT) printf '%s' "Exit" ;;
       DONE) printf '%s' "Done" ;;
-      PARTIAL_DONE) printf '%s' "All stages were attempted, but some operations failed" ;;
-      PROTECTED_HINT) printf '%s' "Protected files may require running this operation in macOS Recovery" ;;
-      FAILED) printf '%s' "Operation failed" ;;
-      DRY_RUN_NOTICE) printf '%s' "DRY_RUN=1: showing actions without changing the system" ;;
-      SERIAL_NUMBER) printf '%s' "Serial number" ;;
-      SERIAL_UNAVAILABLE) printf '%s' "Cannot read the serial number (offline functions remain available)" ;;
-      NO_MDM_DIR) printf '%s' "ConfigurationProfiles was not found; make sure the Data volume is mounted" ;;
-      HOSTS_MISSING) printf '%s' "The target system hosts file is missing or unreadable" ;;
-      HOSTS_UPDATED) printf '%s' "Hosts updated" ;;
-      PROFILE_CLEANING) printf '%s' "Cleaning MDM configuration state" ;;
-      SERVICE_CLEANING) printf '%s' "Cleaning related services and files" ;;
+      PARTIAL_DONE) printf '%s' "Done with Errors" ;;
+      PROTECTED_HINT) printf '%s' "Try in macOS Recovery" ;;
+      FAILED) printf '%s' "Failed" ;;
+      DRY_RUN_NOTICE) printf '%s' "DRY_RUN=1: Preview Only" ;;
+      SERIAL_NUMBER) printf '%s' "Serial Number" ;;
+      CONTACT_EMAIL) printf '%s' "Email: xrsec@qq.com" ;;
+      CONTACT_WECHAT) printf '%s' "WeChat: xr_sec" ;;
+      SERIAL_UNAVAILABLE) printf '%s' "Serial Unavailable; Offline Still Works" ;;
+      NO_MDM_DIR) printf '%s' "ConfigurationProfiles Missing; Mount Data" ;;
+      HOSTS_MISSING) printf '%s' "Hosts File Missing or Unreadable" ;;
+      HOSTS_UPDATED) printf '%s' "Hosts Updated" ;;
+      PROFILE_CLEANING) printf '%s' "Cleaning MDM Profiles" ;;
+      SERVICE_CLEANING) printf '%s' "Cleaning Services & Files" ;;
       FILEVAULT_CHECKING) printf '%s' "Checking FileVault" ;;
-      FILEVAULT_ALREADY_OFF) printf '%s' "FileVault is already disabled" ;;
-      FILEVAULT_SELECT_USER) printf '%s' "Choose a FileVault-authorized user" ;;
-      FILEVAULT_PASSWORD) printf '%s' "Enter the password for FileVault user" ;;
-      FILEVAULT_EMPTY_PASSWORD) printf '%s' "The FileVault password cannot be empty or contain whitespace" ;;
+      FILEVAULT_ALREADY_OFF) printf '%s' "FileVault Already Off" ;;
+      FILEVAULT_SELECT_USER) printf '%s' "Choose FileVault User" ;;
+      FILEVAULT_PASSWORD) printf '%s' "Enter FileVault User Password" ;;
+      FILEVAULT_EMPTY_PASSWORD) printf '%s' "No Empty or Spaced Passwords" ;;
       FILEVAULT_DISABLING) printf '%s' "Disabling FileVault" ;;
-      FILEVAULT_DISABLED) printf '%s' "FileVault disable request accepted" ;;
-      RESTART_HINT) printf '%s' "Restart the Mac when finished" ;;
-      RECOVERY_ONLY) printf '%s' "This operation is available only in Recovery" ;;
-      NORMAL_ONLY) printf '%s' "This operation is available only in desktop macOS" ;;
-      USERNAME_PROMPT) printf '%s' "New username (leave empty to generate one)" ;;
-      USER_ID_PROMPT) printf '%s' "User ID (leave empty to use the next available ID)" ;;
-      REALNAME_PROMPT) printf '%s' "Display name (leave empty for Apple)" ;;
-      PASSWORD_PROMPT) printf '%s' "Enter the new password" ;;
-      INVALID_USERNAME) printf '%s' "Username may contain lowercase letters, digits, dot, underscore, and hyphen, and must start with a letter or underscore" ;;
-      INVALID_USER_ID) printf '%s' "User ID must be an unused number from 501 through 60000" ;;
-      USER_ID_EXISTS) printf '%s' "User ID is already in use" ;;
-      USER_EXISTS) printf '%s' "User already exists" ;;
-      USER_HOME_EXISTS) printf '%s' "The user home directory already exists; refusing to overwrite it" ;;
-      USER_CREATED) printf '%s' "Administrator created" ;;
-      USER_CREATE_FAILED) printf '%s' "User creation failed; the Data volume may be locked or unmounted" ;;
-      USER_AUTH_FAILED) printf '%s' "The account authentication record could not be prepared" ;;
-      AUTO_CREATE_ADMIN) printf '%s' "No regular user was found; create an administrator before Setup Assistant continues" ;;
-      SELECT_USER) printf '%s' "Choose a user" ;;
-      NO_USER) printf '%s' "No regular user was found" ;;
-      PASSWORD_TOOL_MISSING) printf '%s' "resetpassword was not found" ;;
-      SIP_TOOL_MISSING) printf '%s' "csrutil was not found" ;;
-      CONFIRM_DESTRUCTIVE) printf '%s' "This will modify the selected system. Type YES to continue" ;;
+      FILEVAULT_DISABLED) printf '%s' "FileVault Disable Accepted" ;;
+      RESTART_HINT) printf '%s' "Restart Mac When Done" ;;
+      RECOVERY_ONLY) printf '%s' "Recovery Only" ;;
+      NORMAL_ONLY) printf '%s' "Desktop macOS Only" ;;
+      USERNAME_PROMPT) printf '%s' "New Username (Blank = Auto)" ;;
+      REALNAME_PROMPT) printf '%s' "Display Name (Blank = Apple)" ;;
+      PASSWORD_PROMPT) printf '%s' "Enter New Admin Password" ;;
+      INVALID_USERNAME) printf '%s' "Use a-z, 0-9, . _ -; Start with a-z or _" ;;
+      INVALID_USER_ID) printf '%s' "Use an Unused UID from 501-60000" ;;
+      USER_EXISTS) printf '%s' "User Already Exists" ;;
+      USER_HOME_EXISTS) printf '%s' "Home Folder Already Exists" ;;
+      USER_CREATED) printf '%s' "Admin User Created" ;;
+      USER_CREATE_FAILED) printf '%s' "User Creation Failed; Check Volume" ;;
+      USER_AUTH_FAILED) printf '%s' "User Authentication Setup Failed" ;;
+      AUTO_CREATE_ADMIN) printf '%s' "No Regular User; Create Admin First" ;;
+      SELECT_USER) printf '%s' "Choose User" ;;
+      NO_USER) printf '%s' "No Regular User" ;;
+      PASSWORD_TOOL_MISSING) printf '%s' "resetpassword Not Found" ;;
+      SIP_TOOL_MISSING) printf '%s' "csrutil Not Found" ;;
+      CONFIRM_DESTRUCTIVE) printf '%s' "Modify Selected System? Type YES" ;;
       CANCELLED) printf '%s' "Cancelled" ;;
-      ROOT_PASSWORD_PROMPT) printf '%s' "Enter the new root password" ;;
-      ROOT_DISABLED) printf '%s' "Root user disabled" ;;
-      REBOOT_PROMPT) printf '%s' "Reboot now? [y/N]" ;;
-      REBOOT_UNAVAILABLE) printf '%s' "reboot was not found; restart manually" ;;
-      LANGUAGE_FALLBACK) printf '%s' "Chinese language pack unavailable; using English. Check the network and system clock" ;;
+      ROOT_PASSWORD_PROMPT) printf '%s' "Enter New Root Password" ;;
+      ROOT_DISABLED) printf '%s' "Root User Disabled" ;;
+      LANGUAGE_FALLBACK) printf '%s' "Chinese Pack Failed; Using English" ;;
       *) printf '%s' "$key" ;;
   esac
 }
@@ -291,33 +315,22 @@ msg_debug_cmd() {
   printf '\n' >&2
 }
 
-run_cmd() {
+run_cmd_i() {
+  # Invisible command: print in DRY_RUN, otherwise suppress command output.
+  if [ "$DRY_RUN" = "1" ]; then
+    msg_debug_cmd "$@"
+    return 0
+  fi
+  "$@" >/dev/null 2>&1
+}
+
+run_cmd_v() {
+  # Visible command: print in DRY_RUN, otherwise inherit the terminal.
   if [ "$DRY_RUN" = "1" ]; then
     msg_debug_cmd "$@"
     return 0
   fi
   "$@"
-}
-
-# Move upward and erase exactly the requested number of logical terminal
-# lines. Callers are responsible for counting wrapped lines if they print text
-# wider than the terminal.
-clear_last_lines() {
-  local count="${1:-0}"
-  local index=0
-
-  [ "$CLEAR_TRANSIENT_OUTPUT" = "1" ] || return 0
-  [ -t 2 ] || return 0
-  case "$count" in ''|*[!0-9]*) return 1 ;; esac
-  while [ "$index" -lt "$count" ]; do
-    if command_exists tput && tput cuu1 2>/dev/null; then
-      printf '\r' >&2
-      tput el 2>/dev/null || printf '\033[2K\r' >&2
-    else
-      printf '\033[1A\033[2K\r' >&2
-    fi
-    index=$((index + 1))
-  done
 }
 
 read_password_with_feedback() {
@@ -372,36 +385,26 @@ choose_number_fallback() {
   local item=""
   local answer=""
   local index=1
-  local printed_lines=0
 
   [ "$count" -gt 0 ] || return 1
   printf '\n%s\n' "$prompt" >&2
-  printed_lines=1
   for item in "$@"; do
     printf '  %s) %s\n' "$index" "$item" >&2
     index=$((index + 1))
-    printed_lines=$((printed_lines + 1))
   done
   while :; do
     printf '%s [1-%s]: ' "$(t SELECT_PROMPT)" "$count" >&2
-    printed_lines=$((printed_lines + 1))
-    IFS= read -r answer || {
-      clear_last_lines "$printed_lines"
-      return 1
-    }
+    IFS= read -r answer || return 1
     case "$answer" in
       ''|*[!0-9]*) msg_err "$(t INVALID_OPTION)" ;;
       *)
         if [ "$answer" -ge 1 ] 2>/dev/null && [ "$answer" -le "$count" ] 2>/dev/null; then
           SELECTED_INDEX=$((answer - 1))
-          clear_last_lines "$printed_lines"
           return 0
         fi
         msg_err "$(t INVALID_OPTION)"
-        printed_lines=$((printed_lines + 1))
         ;;
     esac
-    case "$answer" in ''|*[!0-9]*) printed_lines=$((printed_lines + 1)) ;; esac
   done
 }
 
@@ -418,7 +421,7 @@ choose_number() {
   if [ "$count" -eq 0 ]; then
     return 1
   fi
-  if [ ! -t 0 ] || [ ! -t 2 ] || ! command_exists tput || ! tput cols >/dev/null 2>&1; then
+  if [ ! -t 0 ] || [ ! -t 2 ]; then
     choose_number_fallback "$prompt" "${options[@]}"
     return $?
   fi
@@ -433,23 +436,17 @@ choose_number() {
     fi
     index=$((index + 1))
   done
-  if tput civis 2>/dev/null; then
-    CURSOR_HIDDEN=1
-  fi
+  hide_cursor
 
   while :; do
     key=""
     if ! IFS= read -r -s -n 1 key; then
-      [ "$CURSOR_HIDDEN" = "1" ] && tput cnorm 2>/dev/null
-      CURSOR_HIDDEN=0
-      clear_last_lines $((count + 3))
+      restore_cursor
       return 1
     fi
     if [ -z "$key" ]; then
-      [ "$CURSOR_HIDDEN" = "1" ] && tput cnorm 2>/dev/null
-      CURSOR_HIDDEN=0
+      restore_cursor
       SELECTED_INDEX="$selected"
-      clear_last_lines $((count + 3))
       return 0
     fi
     if [ "$key" = $'\033' ]; then
@@ -469,12 +466,12 @@ choose_number() {
 
       index=0
       while [ "$index" -lt "$count" ]; do
-        tput cuu1 2>/dev/null || true
+        cursor_up_one
         index=$((index + 1))
       done
       index=0
       while [ "$index" -lt "$count" ]; do
-        tput el 2>/dev/null || true
+        erase_current_line
         if [ "$index" -eq "$selected" ]; then
           printf "  ${COL_GREEN}▸ %s ◂${COL_NC}\n" "${options[$index]}" >&2
         else
@@ -574,6 +571,7 @@ ensure_root() {
   local current_uid=""
   local login_user=""
   local password=""
+  local reexec_status=1
   local attempt=1
   if [ "$RUN_MODE" = "recovery" ]; then
     return 0
@@ -626,14 +624,15 @@ ensure_root() {
     msg_err "$(t COMMAND_MISSING): curl"
     exit 1
   fi
-  # RUN_MODE and mdm_lang were selected in this process. MDM_SERVER_URL is
-  # needed by the root shell before it downloads the next cli.sh instance.
+  # Preserve the selected mode, language, and server configuration in the
+  # root child.
   export RUN_MODE mdm_lang MDM_SERVER_URL
   printf '%s\n' "$password" | \
     MDM_PASSWORD_STDIN=1 \
-    sudo -nE /bin/bash -c '/bin/bash <(curl -kfsSL "${MDM_SERVER_URL%/}")'
+    sudo -nE /bin/bash -c '/bin/bash <(curl -fsSL --retry 2 --connect-timeout 5 "${MDM_SERVER_URL%/}/")'
+  reexec_status=$?
   password=""
-  exit 0
+  exit "$reexec_status"
 }
 
 is_system_root() {
@@ -965,9 +964,11 @@ safe_remove() {
     msg_err "$(t TARGET_INVALID): $path"
     return 1
   }
-  [ -e "$path" ] || [ -L "$path" ] || return 0
+  if [ "$DRY_RUN" != "1" ] && [ ! -e "$path" ] && [ ! -L "$path" ]; then
+    return 0
+  fi
   if [ "$RUN_MODE" != "normal" ]; then
-    run_cmd rm -rf "$path"
+    run_cmd_i rm -rf "$path"
     return $?
   fi
 
@@ -988,18 +989,12 @@ safe_remove() {
     return 1
   fi
   if [ ! -d "$trash_dir" ]; then
-    if [ "$DRY_RUN" = "1" ]; then
-      msg_debug_cmd mkdir -p "$trash_dir"
-      msg_debug_cmd chmod 0700 "$trash_dir"
-      msg_debug_cmd chown "$desktop_user:staff" "$trash_dir"
-    else
-      mkdir -p "$trash_dir" >/dev/null 2>&1 || {
-        msg_err "$(t TRASH_CREATE_FAILED): $trash_dir"
-        return 1
-      }
-      chmod 0700 "$trash_dir" >/dev/null 2>&1 || true
-      chown "$desktop_user":staff "$trash_dir" >/dev/null 2>&1 || true
-    fi
+    run_cmd_i mkdir -p "$trash_dir" || {
+      msg_err "$(t TRASH_CREATE_FAILED): $trash_dir"
+      return 1
+    }
+    run_cmd_i chmod 0700 "$trash_dir" || true
+    run_cmd_i chown "$desktop_user:staff" "$trash_dir" || true
   fi
 
   TRASH_SEQUENCE=$((TRASH_SEQUENCE + 1))
@@ -1011,7 +1006,7 @@ safe_remove() {
     msg_err "$(t TARGET_INVALID): $destination"
     return 1
   }
-  if run_cmd mv "$path" "$destination"; then
+  if run_cmd_i mv "$path" "$destination"; then
     return 0
   fi
   msg_err "$(t TRASH_MOVE_FAILED): $path"
@@ -1024,7 +1019,7 @@ safe_touch() {
     msg_err "$(t TARGET_INVALID): $path"
     return 1
   }
-  run_cmd touch "$path"
+  run_cmd_i touch "$path"
 }
 
 confirm_destructive() {
@@ -1052,7 +1047,11 @@ read_serial_number() {
     return 1
   fi
   DEVICE_SERIAL="$serial"
+  printf '\n' >&2
   msg_ok "$(t SERIAL_NUMBER): $DEVICE_SERIAL"
+  msg_ok "$(t CONTACT_EMAIL)"
+  msg_ok "$(t CONTACT_WECHAT)"
+  printf '\n' >&2
   return 0
 }
 
@@ -1087,7 +1086,6 @@ update_hosts() {
     msg_err "$(t HOSTS_MISSING): $hosts"
     return 1
   }
-  msg_info "$(t HOSTS_UPDATING): $hosts"
   target_path_is_safe "$hosts" || {
     msg_err "$(t TARGET_INVALID): $hosts"
     return 1
@@ -1143,10 +1141,7 @@ update_hosts() {
     return 1
   }
   chown root:wheel "$tmp" >/dev/null 2>&1 || true
-  if mv -f "$tmp" "$hosts"; then
-    msg_ok "$(t HOSTS_UPDATED)"
-    return 0
-  fi
+  mv -f "$tmp" "$hosts" && return 0
   msg_err "$(t FAILED): $hosts"
   return 1
 }
@@ -1170,66 +1165,57 @@ extract_enrollment_domain() {
 clean_configuration_profiles() {
   local settings="$MDM_PATH/Settings"
   local store="$MDM_PATH/Store"
-  local cloud_delete=""
-  local forced_disable=""
   local status=0
-
-  cloud_delete=$(path_under_root "$TARGET_ROOT" "var/db/.CloudConfigDelete")
-  forced_disable=$(path_under_root "$TARGET_ROOT" "var/db/.com.apple.mdmclient.daemon.forced_disable")
 
   [ -d "$MDM_PATH" ] || {
     msg_err "$(t NO_MDM_DIR): $MDM_PATH"
     return 1
   }
   msg_info "$(t PROFILE_CLEANING)"
+  # Keep the old client's exact state-removal order.
   safe_remove "$settings" || status=1
-  if [ "$DRY_RUN" = "1" ]; then
-    msg_debug_cmd mkdir -p "$settings"
-  else
-    mkdir -p "$settings" || {
-      msg_err "$(t FAILED): mkdir $settings"
-      status=1
-    }
-  fi
-  safe_remove "$store" || status=1
-  if [ "$DRY_RUN" = "1" ]; then
-    msg_debug_cmd mkdir -p "$store"
-  else
-    # Store is optional here. Some macOS versions protect this path and the
-    # system recreates it when needed, so failure must not fail the workflow.
-    mkdir -p "$store" >/dev/null 2>&1 || true
-  fi
+  safe_remove "$(path_under_root "$TARGET_ROOT" "var/db/.CloudConfigDelete")" || status=1
   safe_remove "$settings/.cloudConfigRecordFound" || status=1
   safe_remove "$settings/.cloudConfigHasActivationRecord" || status=1
-  safe_remove "$cloud_delete" || status=1
-  safe_touch "$forced_disable" || status=1
+  run_cmd_i mkdir -p "$settings" || {
+    msg_err "$(t FAILED): mkdir $settings"
+    status=1
+  }
+  safe_touch "$(path_under_root "$TARGET_ROOT" "var/db/.com.apple.mdmclient.daemon.forced_disable")" || status=1
   safe_touch "$settings/.profilesAreInstalled" || status=1
   safe_touch "$settings/.cloudConfigProfileInstalled" || status=1
   safe_touch "$settings/.cloudConfigRecordNotFound" || status=1
   safe_touch "$settings/.cloudConfigNoActivationRecord" || status=1
   safe_touch "$settings/.cloudConfigUserSkippedEnrollment" || status=1
+  # Match the old client: Store is an offline Recovery cleanup. In desktop
+  # macOS, profiles commands handle installed profiles without deleting Store.
+  if [ "$RUN_MODE" = "recovery" ]; then
+    safe_remove "$store" || status=1
+    # Store is optional here. Some macOS versions protect this path and the
+    # system recreates it when needed, so failure must not fail the workflow.
+    run_cmd_i mkdir -p "$store" || true
+  fi
+  # This exact legacy state file is important enough to remove explicitly;
+  # do not rely only on the later keyword-based Preferences scan.
+  safe_remove "$(path_under_root "$TARGET_ROOT" "Library/Preferences/com.apple.mdmclient.plist")" || status=1
   return "$status"
 }
 
 remove_matching_entries() {
   local directory="$1"
+  local excluded_path="${2:-}"
   local entry=""
   local base=""
   local lower=""
-  local keyword=""
-  local matched=0
   local status=0
   [ -d "$directory" ] || return 0
 
   for entry in "$directory"/*; do
     [ -e "$entry" ] || [ -L "$entry" ] || continue
+    [ -n "$excluded_path" ] && [ "$entry" = "$excluded_path" ] && continue
     base=${entry##*/}
     lower=$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')
-    matched=0
     if entry_matches_mdm "$lower"; then
-      matched=1
-    fi
-    if [ "$matched" -eq 1 ]; then
       safe_remove "$entry" || status=1
     fi
   done
@@ -1262,7 +1248,7 @@ clean_vendor_files() {
   remove_matching_entries "$LIBRARY_PATH/LaunchDaemons" || status=1
   remove_matching_entries "$LIBRARY_PATH/LaunchAgents" || status=1
   remove_matching_entries "$LIBRARY_PATH/Application Support" || status=1
-  remove_matching_entries "$LIBRARY_PATH/Preferences" || status=1
+  remove_matching_entries "$LIBRARY_PATH/Preferences" "$(path_under_root "$TARGET_ROOT" "Library/Preferences/com.apple.mdmclient.plist")" || status=1
   remove_matching_entries "$LIBRARY_PATH/Managed Preferences" || status=1
   remove_matching_entries "$applications" || status=1
 
@@ -1298,6 +1284,9 @@ desktop_service_uid() {
   if command_exists dscl; then
     service_uid=$(dscl . -read "/Users/$service_user" UniqueID 2>/dev/null | awk 'NR == 1 { print $2 }')
   fi
+  if [ -z "$service_uid" ] && command_exists id; then
+    service_uid=$(id -u "$service_user" 2>/dev/null)
+  fi
   case "$service_uid" in ''|*[!0-9]*) return 1 ;; esac
   printf '%s\n' "$service_uid"
 }
@@ -1307,16 +1296,15 @@ disable_service_in_domains() {
   local service_uid="$2"
   local domain=""
 
+  # Preserve the old client's exact six-command order: disable all three
+  # domains first, then bootout all three domains.
   for domain in "system/$label" "gui/$service_uid/$label" "user/$service_uid/$label"; do
-    if [ "$DRY_RUN" = "1" ]; then
-      run_cmd launchctl disable "$domain"
-      run_cmd launchctl bootout "$domain"
-    else
-      # A label normally exists in only one domain. Try all old-client domains
-      # and intentionally ignore "not found" failures from the other two.
-      launchctl disable "$domain" >/dev/null 2>&1 || true
-      launchctl bootout "$domain" >/dev/null 2>&1 || true
-    fi
+    run_cmd_i launchctl disable "$domain" || true
+  done
+  for domain in "system/$label" "gui/$service_uid/$label" "user/$service_uid/$label"; do
+    # A label normally exists in only one domain. Try all old-client domains
+    # and intentionally ignore "not found" failures from the other two.
+    run_cmd_i launchctl bootout "$domain" || true
   done
 }
 
@@ -1324,7 +1312,6 @@ disable_matching_services() {
   local line=""
   local label=""
   local lower=""
-  local matched=0
   local service_uid=""
   [ "$RUN_MODE" = "normal" ] || return 0
   command_exists launchctl || return 0
@@ -1333,21 +1320,12 @@ disable_matching_services() {
     label=$(printf '%s\n' "$line" | awk '{print $3}')
     [ -n "$label" ] || continue
     lower=$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]')
-    matched=0
-    if entry_matches_mdm "$lower"; then
-      matched=1
-    fi
-    [ "$matched" -eq 1 ] || continue
+    entry_matches_mdm "$lower" || continue
     if [ -n "$service_uid" ]; then
       disable_service_in_domains "$label" "$service_uid"
     else
-      if [ "$DRY_RUN" = "1" ]; then
-        run_cmd launchctl disable "system/$label"
-        run_cmd launchctl bootout "system/$label"
-      else
-        launchctl disable "system/$label" >/dev/null 2>&1 || true
-        launchctl bootout "system/$label" >/dev/null 2>&1 || true
-      fi
+      run_cmd_i launchctl disable "system/$label" || true
+      run_cmd_i launchctl bootout "system/$label" || true
     fi
   done <<EOF
 $(launchctl list 2>/dev/null)
@@ -1355,65 +1333,53 @@ EOF
 }
 
 refresh_enrollment_record() {
-  local previous_domain=""
   [ "$RUN_MODE" = "normal" ] || return 0
   command_exists profiles || return 0
 
-  # Remove our Apple enrollment host blocks temporarily so profiles can
-  # refresh .cloudConfigRecordFound and expose the exact enrollment URL.
-  previous_domain=$(extract_enrollment_domain)
-  update_hosts clean "$previous_domain" || return 1
-  if [ "$DRY_RUN" = "1" ]; then
-    run_cmd profiles renew -type enrollment
-  else
-    profiles renew -type enrollment >/dev/null 2>&1 || true
-  fi
+  run_cmd_i profiles renew -type enrollment || true
   return 0
 }
 
 remove_installed_profiles() {
   local deleted_status=1
   local removed_status=1
+  local forced_status=1
   [ "$RUN_MODE" = "normal" ] || return 0
-  command_exists profiles || return 0
+  command_exists profiles || {
+    msg_err "$(t COMMAND_MISSING): profiles"
+    return 1
+  }
 
   if [ "$DRY_RUN" = "1" ]; then
-    run_cmd profiles -D -f
-    run_cmd profiles remove -all -f
+    run_cmd_i profiles -D -f
+    run_cmd_i profiles remove -all -f
     return 0
   fi
   profiles -D -f >/dev/null 2>&1
   deleted_status=$?
   profiles remove -all -f >/dev/null 2>&1
   removed_status=$?
-  [ "$deleted_status" -eq 0 ] || [ "$removed_status" -eq 0 ]
+  if [ "$deleted_status" -eq 0 ] || [ "$removed_status" -eq 0 ]; then
+    return 0
+  fi
+  profiles remove -all -forced >/dev/null 2>&1
+  forced_status=$?
+  [ "$forced_status" -eq 0 ]
 }
 
 clear_staged_extensions() {
   [ "$RUN_MODE" = "normal" ] || return 0
   command_exists kextcache || return 0
-  if [ "$DRY_RUN" = "1" ]; then
-    run_cmd kextcache -clear-staging
-  else
-    kextcache -clear-staging >/dev/null 2>&1 || true
-  fi
+  run_cmd_i kextcache -clear-staging || true
   return 0
 }
 
 flush_network_caches() {
   if command_exists dscacheutil; then
-    if [ "$DRY_RUN" = "1" ]; then
-      run_cmd dscacheutil -flushcache
-    else
-      dscacheutil -flushcache >/dev/null 2>&1
-    fi
+    run_cmd_i dscacheutil -flushcache || true
   fi
   if command_exists killall; then
-    if [ "$DRY_RUN" = "1" ]; then
-      run_cmd killall -HUP mDNSResponder
-    else
-      killall -HUP mDNSResponder >/dev/null 2>&1
-    fi
+    run_cmd_i killall -HUP mDNSResponder || true
   fi
   return 0
 }
@@ -1459,12 +1425,53 @@ xml_escape() {
     -e "s/'/\&apos;/g"
 }
 
+disable_filevault_with_password() {
+  local username="$1"
+  local password="$2"
+  local output_file="$3"
+  local command_status=1
+  local status_output=""
+  local result=1
+
+  : > "$output_file" || return 1
+  {
+    printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>'
+    printf '%s\n' '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
+    printf '%s' '<plist version="1.0"><dict><key>Username</key><string>'
+    printf '%s' "$username" | xml_escape
+    printf '%s' '</string><key>Password</key><string>'
+    printf '%s' "$password" | xml_escape
+    printf '%s\n' '</string></dict></plist>'
+  } | fdesetup disable -inputplist > "$output_file" 2>&1
+  command_status=${PIPESTATUS[1]}
+  password=""
+
+  if [ "$command_status" -eq 0 ] && ! grep -Eq "could not be found|was not disabled|^[[:space:]]*Error:" "$output_file" 2>/dev/null; then
+    if grep -Fq "FileVault has been disabled" "$output_file" 2>/dev/null; then
+      result=0
+    else
+      status_output=$(fdesetup status 2>/dev/null)
+      case "$status_output" in
+        *"FileVault is Off"*|*"Decryption in progress"*) result=0 ;;
+      esac
+    fi
+  fi
+  return "$result"
+}
+
+print_filevault_output() {
+  local output_file="$1"
+  local output_line=""
+
+  while IFS= read -r output_line || [ -n "$output_line" ]; do
+    printf '%s\n' "$output_line" >&2
+  done < "$output_file"
+}
+
 disable_filevault() {
   local password=""
   local output_file=""
-  local command_status=1
   local status_output=""
-  local output_line=""
 
   [ "$RUN_MODE" = "normal" ] || return 0
   msg_info "$(t FILEVAULT_CHECKING)"
@@ -1490,78 +1497,69 @@ disable_filevault() {
     return 0
   fi
 
-  if [ -n "$SESSION_PASSWORD" ] && [ "$CURRENT_USER" = "$LOGIN_USER" ]; then
-    password="$SESSION_PASSWORD"
-    SESSION_PASSWORD=""
-  else
-    read_password_with_feedback "$(t FILEVAULT_PASSWORD) ($CURRENT_USER): " || PASSWORD_INPUT=""
-    password="$PASSWORD_INPUT"
-    PASSWORD_INPUT=""
-  fi
-  if ! password_input_is_valid "$password"; then
-    password=""
-    msg_err "$(t FILEVAULT_EMPTY_PASSWORD)"
-    return 1
-  fi
   output_file=$(mktemp "/tmp/mdm-filevault-$$.XXXXXX") || {
-    password=""
     msg_err "$(t TEMP_FAILED)"
     return 1
   }
   TEMP_FILES="${TEMP_FILES}|${output_file}"
 
-  {
-    printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>'
-    printf '%s\n' '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
-    printf '%s' '<plist version="1.0"><dict><key>Username</key><string>'
-    printf '%s' "$CURRENT_USER" | xml_escape
-    printf '%s' '</string><key>Password</key><string>'
-    printf '%s' "$password" | xml_escape
-    printf '%s\n' '</string></dict></plist>'
-  } | fdesetup disable -inputplist > "$output_file" 2>&1
-  command_status=${PIPESTATUS[1]}
-  password=""
+  if [ -n "$SESSION_PASSWORD" ] && [ "$CURRENT_USER" = "$LOGIN_USER" ]; then
+    if disable_filevault_with_password "$CURRENT_USER" "$SESSION_PASSWORD" "$output_file"; then
+      print_filevault_output "$output_file"
+      msg_ok "$(t FILEVAULT_DISABLED)"
+      return 0
+    fi
+  fi
 
-  while IFS= read -r output_line || [ -n "$output_line" ]; do
-    printf '%s\n' "$output_line" >&2
-  done < "$output_file"
-
-  if grep -Eq "could not be found|was not disabled|^[[:space:]]*Error:" "$output_file" 2>/dev/null; then
-    msg_err "$(t FAILED): FileVault"
+  read_password_with_feedback "$(t FILEVAULT_PASSWORD) ($CURRENT_USER): " || PASSWORD_INPUT=""
+  password="$PASSWORD_INPUT"
+  PASSWORD_INPUT=""
+  if ! password_input_is_valid "$password"; then
+    password=""
+    msg_err "$(t FILEVAULT_EMPTY_PASSWORD)"
     return 1
   fi
-  if [ "$command_status" -ne 0 ]; then
-    msg_err "$(t FAILED): FileVault ($command_status)"
-    return 1
-  fi
-  if grep -Fq "FileVault has been disabled" "$output_file" 2>/dev/null; then
+  if disable_filevault_with_password "$CURRENT_USER" "$password" "$output_file"; then
+    password=""
+    print_filevault_output "$output_file"
     msg_ok "$(t FILEVAULT_DISABLED)"
     return 0
   fi
-  status_output=$(fdesetup status 2>/dev/null)
-  case "$status_output" in
-    *"FileVault is Off"*|*"Decryption in progress"*)
-      msg_ok "$(t FILEVAULT_DISABLED)"
-      return 0
-      ;;
-  esac
+  password=""
+  print_filevault_output "$output_file"
   msg_err "$(t FAILED): FileVault"
   return 1
 }
 
 bypass_mdm() {
   local domain=""
+  local previous_domain=""
   local status=0
   msg_info "$(t BYPASS_START)"
-  clear_staged_extensions
-  refresh_enrollment_record || status=1
+
+  # Desktop mode temporarily restores enrollment connectivity before renewal.
+  # Recovery uses the existing offline record and writes Hosts only once.
+  if [ "$RUN_MODE" = "normal" ]; then
+    previous_domain=$(extract_enrollment_domain)
+    update_hosts clean "$previous_domain" || status=1
+    clear_staged_extensions
+    flush_network_caches
+    refresh_enrollment_record || status=1
+  fi
+  msg_info "$(t HOSTS_UPDATING): $(path_under_root "$TARGET_ROOT" "etc/hosts")"
   domain=$(extract_enrollment_domain)
-  update_hosts add "$domain" || {
+  if update_hosts add "$domain"; then
+    [ "$DRY_RUN" = "1" ] || msg_ok "$(t HOSTS_UPDATED)"
+  else
     msg_err "$(t FAILED): $(t HOSTS_UPDATING)"
     status=1
-  }
+  fi
   clean_configuration_profiles || {
     msg_err "$(t FAILED): $(t PROFILE_CLEANING)"
+    status=1
+  }
+  remove_installed_profiles || {
+    msg_err "$(t FAILED): profiles"
     status=1
   }
   clean_vendor_files || status=1
@@ -1569,11 +1567,6 @@ bypass_mdm() {
   if [ "$RUN_MODE" = "normal" ]; then
     disable_filevault || status=1
   fi
-  remove_installed_profiles || {
-    msg_err "$(t FAILED): profiles"
-    status=1
-  }
-  flush_network_caches
   if [ "$RUN_MODE" = "recovery" ]; then
     maybe_create_recovery_admin || status=1
   fi
@@ -1584,19 +1577,7 @@ bypass_mdm() {
     [ "$RUN_MODE" = "normal" ] && msg_info "$(t PROTECTED_HINT)"
   fi
   msg_info "$(t RESTART_HINT)"
-  open_project_website
   return "$status"
-}
-
-open_project_website() {
-  [ "$RUN_MODE" = "normal" ] || return 0
-  command_exists open || return 0
-  if [ "$DRY_RUN" = "1" ]; then
-    run_cmd open "${MDM_SERVER_URL%/}"
-  else
-    open "${MDM_SERVER_URL%/}" >/dev/null 2>&1 || true
-  fi
-  return 0
 }
 
 list_regular_users() {
@@ -1607,18 +1588,21 @@ list_regular_users() {
     awk '$2 >= 501 && $2 <= 60000 && $1 !~ /^_/ && $1 != "nobody" { print $1 }'
 }
 
-next_uid() {
+next_available_uid() {
   local db=""
   db=$(path_under_root "$TARGET_ROOT" "private/var/db/dslocal/nodes/Default")
   dscl -f "$db" localhost -list /Local/Default/Users UniqueID 2>/dev/null |
-    awk 'BEGIN { max=500 } $2 >= 501 && $2 <= 60000 && $2 > max { max=$2 } END { print max+1 }'
-}
-
-user_id_exists() {
-  local db="$1"
-  local wanted_uid="$2"
-  dscl -f "$db" localhost -list /Local/Default/Users UniqueID 2>/dev/null |
-    awk -v wanted="$wanted_uid" '$2 == wanted { found=1 } END { exit(found ? 0 : 1) }'
+    awk '
+      $2 >= 501 && $2 <= 60000 { used[$2]=1 }
+      END {
+        for (uid=501; uid<=60000; uid++) {
+          if (!(uid in used)) {
+            print uid
+            exit
+          }
+        }
+      }
+    '
 }
 
 generate_user_uuid() {
@@ -1643,11 +1627,38 @@ rollback_admin_user() {
   local home="$4"
   local remove_home="$5"
 
-  dscl -f "$db" localhost -delete /Local/Default/Groups/admin GroupMembership "$username" >/dev/null 2>&1 || true
-  dscl -f "$db" localhost -delete "$record" >/dev/null 2>&1 || true
+  run_cmd_i dscl -f "$db" localhost -delete /Local/Default/Groups/admin GroupMembership "$username" || true
+  run_cmd_i dscl -f "$db" localhost -delete "$record" || true
   if [ "$remove_home" = "1" ] && { [ -e "$home" ] || [ -L "$home" ]; }; then
     safe_remove "$home" >/dev/null 2>&1 || true
   fi
+}
+
+apply_legacy_admin_attributes() {
+  local db="$1"
+  local record="$2"
+  local username="$3"
+  local attribute=""
+  local value=""
+
+  # These compatibility metadata fields were written by the old client. They
+  # are non-critical, so a version-specific rejection must not roll back an
+  # otherwise valid administrator account.
+  for attribute in \
+    dsAttrTypeNative:_defaultLanguage \
+    dsAttrTypeNative:_writers__defaultLanguage \
+    dsAttrTypeNative:_writers_AvatarRepresentation \
+    dsAttrTypeNative:_writers_hint \
+    dsAttrTypeNative:_writers_inputSources \
+    dsAttrTypeNative:_writers_jpegphoto \
+    dsAttrTypeNative:_writers_passwd \
+    dsAttrTypeNative:_writers_picture \
+    dsAttrTypeNative:_writers_unlockOptions \
+    dsAttrTypeNative:_writers_UserCertificate; do
+    value="$username"
+    [ "$attribute" = "dsAttrTypeNative:_defaultLanguage" ] && value="zh_CN"
+    run_cmd_i dscl -f "$db" localhost -create "$record" "$attribute" "$value" || true
+  done
 }
 
 target_macos_major_version() {
@@ -1689,40 +1700,34 @@ maybe_create_recovery_admin() {
 }
 
 create_admin_user() {
+  local admin_password=""
+  local password_arg=""
   local db=""
   local username=""
   local realname=""
   local uid=""
-  local default_uid=""
   local record=""
   local home=""
   local template=""
   local generated_uid=""
   local auth_output=""
   local home_created=0
+  local status=0
 
   db=$(path_under_root "$TARGET_ROOT" "private/var/db/dslocal/nodes/Default")
 
   command_exists dscl || { msg_err "$(t COMMAND_MISSING): dscl"; return 1; }
-  default_uid=$(next_uid)
-  [ -n "$default_uid" ] || default_uid=501
-  printf '%s [%s]: ' "$(t USER_ID_PROMPT)" "$default_uid" >&2
-  IFS= read -r uid || return 1
-  [ -n "$uid" ] || uid="$default_uid"
+  uid=$(next_available_uid)
   case "$uid" in ''|*[!0-9]*) msg_err "$(t INVALID_USER_ID)"; return 1 ;; esac
   if [ "$uid" -lt 501 ] || [ "$uid" -gt 60000 ]; then
     msg_err "$(t INVALID_USER_ID)"
-    return 1
-  fi
-  if user_id_exists "$db" "$uid"; then
-    msg_err "$(t USER_ID_EXISTS): $uid"
     return 1
   fi
   printf '%s [mac%s]: ' "$(t USERNAME_PROMPT)" "$uid" >&2
   IFS= read -r username || return 1
   [ -n "$username" ] || username="mac${uid}"
   case "$username" in
-    [a-z_]* ) ;;
+    [a-z_]*) ;;
     *) msg_err "$(t INVALID_USERNAME)"; return 1 ;;
   esac
   case "$username" in *[!a-z0-9._-]*) msg_err "$(t INVALID_USERNAME)"; return 1 ;; esac
@@ -1730,123 +1735,125 @@ create_admin_user() {
     msg_err "$(t USER_EXISTS): $username"
     return 1
   fi
-  printf '%s [Apple]: ' "$(t REALNAME_PROMPT)" >&2
-  IFS= read -r realname || return 1
-  [ -n "$realname" ] || realname="Apple"
   record="/Local/Default/Users/$username"
   home=$(path_under_root "$TARGET_ROOT" "Users/$username")
   if [ -e "$home" ] || [ -L "$home" ]; then
     msg_err "$(t USER_HOME_EXISTS): $home"
     return 1
   fi
-
-  if [ "$DRY_RUN" = "1" ]; then
-    generated_uid=$(generate_user_uuid) || generated_uid="[GENERATED-UUID]"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" UserShell /bin/zsh
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" RealName "$realname"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" RecordName "$username"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" UniqueID "$uid"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" PrimaryGroupID 20
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" NFSHomeDirectory "/Users/$username"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" GeneratedUID "$generated_uid"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" Picture "/Library/User Pictures/Flowers/Lotus.heic"
-    msg_debug_cmd dscl -f "$db" localhost -create "$record" dsAttrTypeNative:unlockOptions 0
-    msg_debug_cmd dscl -f "$db" localhost -append "$record" AuthenticationAuthority ";ShadowHash;"
-    msg_debug_cmd dscl -f "$db" localhost -passwd "$record" "[INTERACTIVE]"
-    msg_debug_cmd dscl -f "$db" localhost -append /Local/Default/Groups/admin GroupMembership "$username"
-    template=""
-    for template in \
-      "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/zh_CN.lproj")" \
-      "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/English.lproj")"; do
-      if [ -d "$template" ] && command_exists ditto; then
-        msg_debug_cmd ditto -rsrc "$template" "$home"
-        break
-      fi
-      template=""
-    done
-    [ -n "$template" ] || msg_debug_cmd mkdir -p "$home"
-    template=$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/Non_localized")
-    [ -d "$template" ] && command_exists ditto && msg_debug_cmd ditto -rsrc "$template" "$home"
-    msg_debug_cmd chown -R "$uid:staff" "$home"
-    msg_debug_cmd chmod 0755 "$home"
-    safe_touch "$(path_under_root "$TARGET_ROOT" "var/db/.AppleSetupDone")" || return 1
-    msg_ok "$(t USER_CREATED): $username (UID $uid)"
-    return 0
+  printf '%s [Apple]: ' "$(t REALNAME_PROMPT)" >&2
+  IFS= read -r realname || return 1
+  [ -n "$realname" ] || realname="Apple"
+  read_password_with_feedback "$(t PASSWORD_PROMPT): " || PASSWORD_INPUT=""
+  admin_password="$PASSWORD_INPUT"
+  PASSWORD_INPUT=""
+  if ! password_input_is_valid "$admin_password"; then
+    admin_password=""
+    msg_err "$(t SUDO_PASSWORD_EMPTY)"
+    return 1
   fi
-  dscl -f "$db" localhost -create "$record" || { msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" UserShell /bin/zsh || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" RealName "$realname" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" RecordName "$username" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" UniqueID "$uid" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" PrimaryGroupID 20 || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" NFSHomeDirectory "/Users/$username" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
   generated_uid=$(generate_user_uuid) || generated_uid=""
-  [ -n "$generated_uid" ] || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" GeneratedUID "$generated_uid" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
-  dscl -f "$db" localhost -create "$record" Picture "/Library/User Pictures/Flowers/Lotus.heic" >/dev/null 2>&1 || true
-  dscl -f "$db" localhost -create "$record" dsAttrTypeNative:unlockOptions 0 >/dev/null 2>&1 || true
-  dscl -f "$db" localhost -append "$record" AuthenticationAuthority ";ShadowHash;" >/dev/null 2>&1 || {
+  if [ -z "$generated_uid" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+      generated_uid="[GENERATED-UUID]"
+    else
+      msg_err "$(t USER_CREATE_FAILED)"
+      return 1
+    fi
+  fi
+  password_arg="$admin_password"
+  [ "$DRY_RUN" = "1" ] && password_arg="[REDACTED]"
+
+  run_cmd_i dscl -f "$db" localhost -create "$record" || { msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" UserShell /bin/zsh || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" RealName "$realname" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" RecordName "$username" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" UniqueID "$uid" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" PrimaryGroupID 20 || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" NFSHomeDirectory "/Users/$username" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" GeneratedUID "$generated_uid" || { rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"; msg_err "$(t USER_CREATE_FAILED)"; return 1; }
+  run_cmd_i dscl -f "$db" localhost -create "$record" Picture "/Library/User Pictures/Flowers/Lotus.heic" || true
+  run_cmd_i dscl -f "$db" localhost -create "$record" dsAttrTypeNative:unlockOptions 0 || true
+  run_cmd_i dscl -f "$db" localhost -append "$record" AuthenticationAuthority ";ShadowHash;" || {
     rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
     msg_err "$(t USER_AUTH_FAILED)"
     return 1
   }
-  auth_output=$(dscl -f "$db" localhost -read "$record" AuthenticationAuthority 2>/dev/null)
-  case "$auth_output" in
-    *ShadowHash*) ;;
-    *)
-      rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
-      msg_err "$(t USER_AUTH_FAILED)"
-      return 1
-      ;;
-  esac
-  msg_info "$(t PASSWORD_PROMPT)"
-  dscl -f "$db" localhost -passwd "$record" || {
-    dscl -f "$db" localhost -delete "$record" >/dev/null 2>&1
+  if [ "$DRY_RUN" != "1" ]; then
+    auth_output=$(dscl -f "$db" localhost -read "$record" AuthenticationAuthority 2>/dev/null)
+    case "$auth_output" in
+      *ShadowHash*) ;;
+      *)
+        rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
+        msg_err "$(t USER_AUTH_FAILED)"
+        return 1
+        ;;
+    esac
+  fi
+  run_cmd_i dscl -f "$db" localhost -passwd "$record" "$password_arg" || {
+    run_cmd_i dscl -f "$db" localhost -delete "$record" || true
     msg_err "$(t USER_CREATE_FAILED)"
     return 1
   }
-  dscl -f "$db" localhost -append /Local/Default/Groups/admin GroupMembership "$username" || {
+  run_cmd_i dscl -f "$db" localhost -append /Local/Default/Groups/admin GroupMembership "$username" || {
     rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
     msg_err "$(t USER_CREATE_FAILED)"
     return 1
   }
+  apply_legacy_admin_attributes "$db" "$record" "$username"
 
-  if [ ! -d "$home" ]; then
-    for template in \
-      "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/zh_CN.lproj")" \
-      "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/English.lproj")"; do
-      if [ -d "$template" ] && command_exists ditto; then
-        ditto -rsrc "$template" "$home" >/dev/null 2>&1
-        break
-      fi
-    done
-    [ -d "$home" ] || mkdir -p "$home" || {
+  template=""
+  for template in \
+    "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/zh_CN.lproj")" \
+    "$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/English.lproj")"; do
+    if [ -d "$template" ] && command_exists ditto; then
+      run_cmd_i ditto -rsrc "$template" "$home" || true
+      break
+    fi
+    template=""
+  done
+  if { [ "$DRY_RUN" = "1" ] && [ -z "$template" ]; } || { [ "$DRY_RUN" != "1" ] && [ ! -d "$home" ]; }; then
+    run_cmd_i mkdir -p "$home" || {
       rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
       msg_err "$(t USER_CREATE_FAILED)"
       return 1
     }
-    home_created=1
-    template=$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/Non_localized")
-    [ -d "$template" ] && command_exists ditto && ditto -rsrc "$template" "$home" >/dev/null 2>&1
   fi
-  chown -R "$uid:staff" "$home" >/dev/null 2>&1 || {
+  if [ "$DRY_RUN" != "1" ]; then
+    home_created=1
+  fi
+  template=$(path_under_root "$SYSTEM_ROOT" "System/Library/User Template/Non_localized")
+  if [ -d "$template" ] && command_exists ditto; then
+    run_cmd_i ditto -rsrc "$template" "$home" || true
+  fi
+  run_cmd_i chown -R "$uid:staff" "$home" || {
     rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
     msg_err "$(t USER_CREATE_FAILED)"
     return 1
   }
-  chmod 0755 "$home" >/dev/null 2>&1 || {
+  run_cmd_i chmod 0755 "$home" || {
     rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
     msg_err "$(t USER_CREATE_FAILED)"
     return 1
   }
-  safe_touch "$(path_under_root "$TARGET_ROOT" "var/db/.AppleSetupDone")" || return 1
-  msg_ok "$(t USER_CREATED): $username (UID $uid)"
+  safe_touch "$(path_under_root "$TARGET_ROOT" "var/db/.AppleSetupDone")" || status=1
+  if [ "$status" -eq 0 ]; then
+    msg_ok "$(t USER_CREATED): $username (UID $uid)"
+  else
+    msg_err "$(t PARTIAL_DONE)"
+  fi
+  admin_password=""
+  password_arg=""
+  return "$status"
 }
 
 open_reset_password() {
+  if [ "$RUN_MODE" != "recovery" ]; then
+    msg_err "$(t RECOVERY_ONLY)"
+    return 1
+  fi
   command_exists resetpassword || { msg_err "$(t PASSWORD_TOOL_MISSING)"; return 1; }
-  run_cmd resetpassword
+  run_cmd_i resetpassword
 }
 
 set_sip() {
@@ -1856,19 +1863,25 @@ set_sip() {
     msg_err "$(t RECOVERY_ONLY)"
     return 1
   fi
-  run_cmd csrutil "$action"
+  run_cmd_v csrutil "$action"
 }
 
 clean_wifi_data() {
+  local status=0
   if [ "$RUN_MODE" != "recovery" ]; then
     msg_err "$(t RECOVERY_ONLY)"
     return 1
   fi
   confirm_destructive || { msg_info "$(t CANCELLED)"; return 1; }
-  safe_remove "$LIBRARY_PATH/Keychains/apsd.keychain"
-  safe_remove "$LIBRARY_PATH/Preferences/com.apple.wifi.known-networks.plist"
-  safe_remove "$LIBRARY_PATH/Preferences/SystemConfiguration/com.apple.airport.preferences.plist"
-  msg_ok "$(t DONE)"
+  safe_remove "$LIBRARY_PATH/Keychains/apsd.keychain" || status=1
+  safe_remove "$LIBRARY_PATH/Preferences/com.apple.wifi.known-networks.plist" || status=1
+  safe_remove "$LIBRARY_PATH/Preferences/SystemConfiguration/com.apple.airport.preferences.plist" || status=1
+  if [ "$status" -eq 0 ]; then
+    msg_ok "$(t DONE)"
+  else
+    msg_err "$(t PARTIAL_DONE)"
+  fi
+  return "$status"
 }
 
 select_regular_user() {
@@ -1892,47 +1905,37 @@ EOF
 
 change_root_password() {
   local db=""
+  if [ "$RUN_MODE" != "recovery" ]; then
+    msg_err "$(t RECOVERY_ONLY)"
+    return 1
+  fi
   db=$(path_under_root "$TARGET_ROOT" "private/var/db/dslocal/nodes/Default")
   command_exists dscl || { msg_err "$(t COMMAND_MISSING): dscl"; return 1; }
-  if [ "$DRY_RUN" = "1" ]; then
-    msg_debug_cmd dscl -f "$db" localhost -passwd /Local/Default/Users/root "[INTERACTIVE]"
-    return 0
-  fi
   msg_info "$(t ROOT_PASSWORD_PROMPT)"
-  dscl -f "$db" localhost -passwd /Local/Default/Users/root
+  run_cmd_v dscl -f "$db" localhost -passwd /Local/Default/Users/root
 }
 
 disable_root_user() {
+  local password=""
+  local status=1
   if [ "$RUN_MODE" != "normal" ]; then
     msg_err "$(t NORMAL_ONLY)"
     return 1
   fi
   command_exists dsenableroot || { msg_err "$(t COMMAND_MISSING): dsenableroot"; return 1; }
   select_regular_user || return 1
+  password="$SESSION_PASSWORD"
   if [ "$DRY_RUN" = "1" ]; then
-    msg_debug_cmd dsenableroot -d -u "$CURRENT_USER" "[INTERACTIVE]"
-    return 0
+    password="[REDACTED]"
+  elif [ -z "$password" ]; then
+    msg_err "$(t SUDO_PASSWORD_EMPTY)"
+    return 1
   fi
-  msg_info "$(t PASSWORD_PROMPT): $CURRENT_USER"
-  dsenableroot -d -u "$CURRENT_USER"
-  local status=$?
+  run_cmd_i dsenableroot -d -u "$CURRENT_USER" -p "$password"
+  status=$?
+  password=""
   [ "$status" -eq 0 ] && msg_ok "$(t ROOT_DISABLED)"
   return "$status"
-}
-
-maybe_reboot() {
-  local answer=""
-  printf '%s ' "$(t REBOOT_PROMPT)" >&2
-  IFS= read -r answer || return 0
-  case "$answer" in y|Y|yes|YES)
-    if command_exists reboot; then
-      run_cmd reboot
-    else
-      msg_info "$(t REBOOT_UNAVAILABLE)"
-      exit 0
-    fi
-    ;;
-  esac
 }
 
 clean_hosts_menu() {
@@ -1940,39 +1943,77 @@ clean_hosts_menu() {
     msg_info "$(t CANCELLED)"
     return 1
   fi
-  update_hosts clean
+  msg_info "$(t HOSTS_UPDATING): $(path_under_root "$TARGET_ROOT" "etc/hosts")"
+  if update_hosts clean; then
+    [ "$DRY_RUN" = "1" ] || msg_ok "$(t HOSTS_UPDATED)"
+    return 0
+  fi
+  return 1
 }
 
 main_menu() {
-  local choice=""
+  local action=""
+  local count=0
+  local actions=()
+  local options=()
+
   while :; do
-    choose_number "$(t MAIN_MENU)" \
-      "$(t BYPASS_MDM)" \
-      "$(t CREATE_USER)" \
-      "$(t RESET_PASSWORD)" \
-      "$(t DISABLE_SIP)" \
-      "$(t ENABLE_SIP)" \
-      "$(t CLEAN_HOSTS)" \
-      "$(t CLEAN_WIFI)" \
-      "$(t CHANGE_ROOT_PASSWORD)" \
-      "$(t DISABLE_ROOT)" \
-      "$(t EXIT)" || return 1
-    choice="$SELECTED_INDEX"
-    case "$choice" in
-      0)
+    count=0
+    actions=()
+    options=()
+    actions[count]="bypass"
+    options[count]="$(t BYPASS_MDM)"
+    count=$((count + 1))
+    if [ "$RUN_MODE" = "recovery" ]; then
+      actions[count]="create_user"
+      options[count]="$(t CREATE_USER)"
+      count=$((count + 1))
+      actions[count]="reset_password"
+      options[count]="$(t RESET_PASSWORD)"
+      count=$((count + 1))
+      actions[count]="disable_sip"
+      options[count]="$(t DISABLE_SIP)"
+      count=$((count + 1))
+      actions[count]="enable_sip"
+      options[count]="$(t ENABLE_SIP)"
+      count=$((count + 1))
+    fi
+    actions[count]="clean_hosts"
+    options[count]="$(t CLEAN_HOSTS)"
+    count=$((count + 1))
+    if [ "$RUN_MODE" = "recovery" ]; then
+      actions[count]="clean_wifi"
+      options[count]="$(t CLEAN_WIFI)"
+      count=$((count + 1))
+      actions[count]="change_root_password"
+      options[count]="$(t CHANGE_ROOT_PASSWORD)"
+      count=$((count + 1))
+    fi
+    if [ "$RUN_MODE" = "normal" ]; then
+      actions[count]="disable_root"
+      options[count]="$(t DISABLE_ROOT)"
+      count=$((count + 1))
+    fi
+    actions[count]="exit"
+    options[count]="$(t EXIT)"
+
+    choose_number "$(t MAIN_MENU)" "${options[@]}" || return 1
+    printf '\n' >&2
+    action="${actions[$SELECTED_INDEX]}"
+    case "$action" in
+      bypass)
         bypass_mdm
-        maybe_reboot
         return 0
         ;;
-      1) create_admin_user ;;
-      2) open_reset_password ;;
-      3) set_sip disable ;;
-      4) set_sip enable ;;
-      5) clean_hosts_menu ;;
-      6) clean_wifi_data ;;
-      7) change_root_password ;;
-      8) disable_root_user ;;
-      9) return 0 ;;
+      create_user) create_admin_user ;;
+      reset_password) open_reset_password ;;
+      disable_sip) set_sip disable ;;
+      enable_sip) set_sip enable ;;
+      clean_hosts) clean_hosts_menu ;;
+      clean_wifi) clean_wifi_data ;;
+      change_root_password) change_root_password ;;
+      disable_root) disable_root_user ;;
+      exit) return 0 ;;
     esac
   done
 }

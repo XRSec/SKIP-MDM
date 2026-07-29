@@ -62,7 +62,6 @@ Recovery 运行时仍必须确认。
 | `MDM_SERVER_URL`         | `http://127.0.0.1:9000`  | Node.js 服务端基址；当前用于本地联调，生产设置为 `https://mdm.xrsec.fun` |
 | `MDM_LANG_PACK_URL`      | 语言包 URL               | 覆盖中文语言包下载地址；生产环境必须使用 HTTPS                           |
 | `MDM_LANG_PACK_FILE`     | 空                       | 开发测试时从本地文件加载中文包                                           |
-| `CLEAR_TRANSIENT_OUTPUT` | `1`                      | 设为 `0` 时保留菜单等临时输出                                            |
 | `TRASH_DATE_FORMAT`      | `%Y%m%d%H%M%S`           | 桌面垃圾篓重命名的时间戳格式                                             |
 | `MDM_KEYWORDS`           | 小写空格分隔列表         | 覆盖内置的 MDM/UEM/RMM 文件与服务匹配词                                  |
 | `MDM_EXTRA_KEYWORDS`     | 小写空格分隔列表         | 在内置或自定义 `MDM_KEYWORDS` 后追加部署专用关键词                       |
@@ -99,16 +98,18 @@ KEY<Tab>VALUE
 
 1. 经 `sudo -S -v` 验证，最多尝试三次。
 2. 验证成功后，通过标准输入传递给重新启动的 root `cli.sh`。
-3. 密码不出现在命令行、环境变量、日志或临时文件。
-4. root 子进程读取密码后，将标准输入恢复为 `/dev/tty`，保证方向键菜单正常工作。
-5. FileVault 使用密码后立即清空内存变量；退出和信号处理也会清空。
+3. root 子进程读取密码后，将标准输入恢复为 `/dev/tty`，保证方向键菜单正常工作。
+4. 该密码保存在 root Shell 内存中供 `dsenableroot` 使用；退出和信号处理会清空。
 
 `MDM_PASSWORD_STDIN=1` 只表示 root 子进程需要从 stdin 读取一行密码，本身不包含密码。root 子进程通过 sudo 自动设置的 `SUDO_USER` 识别原登录用户，不再额外传递用户名。
-提权重启使用 `sudo -nE`：`-n` 保证 sudo 凭据失效时立即失败而不再次显示系统密码提示，`-E` 将本次命令临时设置的非敏感运行配置传给 root 子进程；密码不属于保留的环境变量。
+提权重启使用 `sudo -nE`：`-n` 保证 sudo 凭据失效时立即失败而不再次显示系统密码提示，`-E` 将本次命令临时设置的运行配置传给 root 子进程。
 
 无论入口是本地文件还是 `/dev/fd/*`，正常桌面模式的非 root 脚本都会在 sudo 内启动 `/bin/bash -c`，通过
-`curl -kfsSL "${MDM_SERVER_URL%/}/"` 创建进程替换并运行第二层 `cli.sh`，随后非 root 父进程以状态 0 退出。第二层继承 `MDM_PASSWORD_STDIN=1`，
-读取密码后恢复 `/dev/tty`，不会重复显示法律声明或发送确认 Ping。
+`/bin/bash <(curl -fsSL --retry 2 --connect-timeout 5 "${MDM_SERVER_URL%/}/")` 运行第二层 `cli.sh`，不创建脚本落地文件。非 root
+父进程返回 sudo 子进程的退出状态。第二层继承 `MDM_PASSWORD_STDIN=1`，读取密码后恢复 `/dev/tty`，不会重复显示法律声明或发送确认 Ping。
+
+正常模式的“停用 root 用户”复用该预取密码并调用 `dsenableroot -d -u <用户> -p <密码>`，不再二次询问客户。DRY_RUN 仅显示
+`[REDACTED]`，命令结束后清空本次调用的局部密码副本；继承密码继续保留给本次进程内的后续操作。
 
 ### Recovery
 
@@ -144,17 +145,17 @@ Recovery 优先解析 `diskutil apfs list` 中角色为 `System` 和 `Data` 的�
 
 多个候选系统卷必须由用户选择。目标根目录必须经过路径校验，空值、`/` 误判或目标卷以外路径不得执行递归删除。
 
-## 7. 菜单与临时输出
+## 7. 菜单与终端输出
 
-语言、主菜单、系统卷和用户选择使用上下方向键及 Enter。若 `tput` 不存在、终端能力不可用或 stdin/stderr 不是 TTY，则降级为数字菜单。
+语言、主菜单、系统卷和用户选择使用上下方向键及 Enter。方向键读取不依赖 `tput`：`tput` 或 terminfo 不可用时，使用 ANSI 光标上移、清行和光标显示/隐藏序列原地刷新菜单。只有 stdin 或 stderr 不是 TTY 时才降级为数字菜单。
 
-`clear_last_lines N` 会逐行向上移动并清除 N 个逻辑行。菜单会根据标题、提示、空行、选项和错误次数动态统计打印行数，确认后删除临时界面。终端自动换行形成的物理行不在逻辑计数内；调试时可设置：
+菜单确认或输入结束后不再回删输出，已经打印的标题、选项、提示和错误都会保留。方向键切换选项时仍会原地刷新当前菜单帧，否则每次按键都会重复打印整套选项；这不影响确认后的终端记录保留。
 
-```bash
-CLEAR_TRANSIENT_OUTPUT=0 /bin/bash src/shell/cli.sh
-```
+系统命令统一通过 `run_cmd_i`（真实执行静默）或 `run_cmd_v`（继承终端输入输出）调用；两者在 DRY_RUN 下都只打印命令。“打开密码重置工具”仅在 Recovery 调用 `resetpassword` UI。
 
-“清理并停用 MDM”执行完并询问是否重启后直接退出，不返回主菜单。
+主菜单按模式生成：normal 不显示创建管理员、密码重置、SIP、Wi-Fi/APNS 和“设置 Root 密码”维护项；Recovery 不显示“停用 root 用户”。两种模式都将独立 Hosts 菜单显示为“清理 Apple Hosts”。函数内部仍保留模式校验，防止绕过菜单误调用。
+
+“清理并停用 MDM”执行完会提示用户重启并直接退出，不执行自动重启，也不返回主菜单。
 
 ## 8. 删除与垃圾篓
 
@@ -174,18 +175,17 @@ Recovery 对已经校验且属于目标卷的路径直接执行删除，因为�
 
 `bypass_mdm` 按以下顺序尽力执行：
 
-1. 正常模式下尽力清理暂存的 kext，并暂时移除本工具写入的 Apple 注册 Hosts 项。
-2. 执行 `profiles renew -type enrollment`，刷新 `.cloudConfigRecordFound` 后读取精确注册域名。
-3. 幂等写回 Apple 注册域名和读取到的精确域名 Hosts 屏蔽项。
-4. 清理并重建 `ConfigurationProfiles/Settings` 和必要标记文件。
-5. 清理 `Store`；重新创建 `Store` 失败不影响总体状态。
-6. 按 `MDM_KEYWORDS` 清理系统级 LaunchDaemons、LaunchAgents、Application Support、Preferences、Managed Preferences 和 Applications；再通过目标系统 dscl 数据库遍历所有 UID 501–60000 的普通用户，清理各用户的 LaunchAgents、Application Support、Preferences、Managed Preferences 和 Applications。部署方可通过 `MDM_EXTRA_KEYWORDS` 追加足够精确的关键词。
-7. 正常模式下对匹配的 launchd label 尽力执行 `system`、`gui/<uid>` 和 `user/<uid>` 三个 domain 的 `disable` 与 `bootout`。
-8. 正常模式下处理 FileVault。
-9. 正常模式下依次尝试 `profiles -D -f` 和 `profiles remove -all -f`；任一语法成功即视为 profiles 阶段成功。
-10. 刷新 DNS 与 mDNS 缓存。
-11. Recovery 的目标系统为 macOS 13 或更高版本且没有普通用户时，进入管理员创建流程。
-12. 正常模式完成后，在 `open` 可用时打开 `${MDM_SERVER_URL%/}`，然后询问是否重启并退出主菜单。
+1. 正常模式暂时移除本工具写入的 Apple 注册 Hosts 项，随后尽力执行 `kextcache -clear-staging`、`dscacheutil -flushcache` 和 `killall -HUP mDNSResponder`，保持旧客户端顺序；Recovery 不刷新当前 Recovery 环境的 DNS/mDNS 缓存。
+2. 正常模式执行 `profiles renew -type enrollment`，刷新 `.cloudConfigRecordFound` 后读取精确注册域名。
+3. 幂等写回 Apple 注册域名和读取到的精确域名 Hosts 屏蔽项。normal 的 renew 前临时清理保持静默，只在 renew 后最终写入时显示一次 Hosts 更新提示；Recovery 直接使用离线记录并只改写、提示一次，不先执行清理写入。
+4. 按旧客户端顺序清理 `ConfigurationProfiles/Settings`、`.CloudConfigDelete`、`.cloudConfigRecordFound` 和 `.cloudConfigHasActivationRecord`，然后重建 `Settings` 并写入必要标记文件。DRY_RUN 会显示这四次计划删除，即使对应路径已经不存在；真实执行对不存在的路径保持幂等。
+5. 标记写入后，仅在 Recovery 清理并重建 `Store`；重新创建失败不影响总体状态。随后显式清理 `Library/Preferences/com.apple.mdmclient.plist`，不只依赖关键词扫描。正常桌面模式保留 `Store`，由后续 `profiles` 命令处理已安装描述文件。
+6. 正常模式紧接配置状态清理，依次执行旧客户端使用的 `profiles -D -f` 和 `profiles remove -all -f`；任一旧语法成功即视为 profiles 阶段成功。若两条都失败，再尝试现代 `profiles` 帮助中使用的 `profiles remove -all -forced`。三条都失败或缺少 `profiles` 命令时才把该阶段记为失败。
+7. 按 `MDM_KEYWORDS` 清理系统级 LaunchDaemons、LaunchAgents、Application Support、Preferences、Managed Preferences 和 Applications；再通过目标系统 dscl 数据库遍历所有 UID 501–60000 的普通用户，清理各用户的 LaunchAgents、Application Support、Preferences、Managed Preferences 和 Applications。部署方可通过 `MDM_EXTRA_KEYWORDS` 追加足够精确的关键词。
+8. 正常模式下对匹配的 launchd label 按旧客户端顺序尽力执行六条命令：先对 `system`、`gui/<uid>` 和 `user/<uid>` 三个 domain 分别执行 `launchctl disable`，再对同三个 domain 分别执行 `launchctl bootout`。UID 优先从目标登录用户的 dscl 记录读取，失败时使用 `id -u`；仍无法取得 UID 时只处理两条 system domain 命令，不构造空 UID domain。
+9. 正常模式下处理 FileVault。
+10. Recovery 的目标系统为 macOS 13 或更高版本且没有普通用户时，进入管理员创建流程。
+11. 正常模式完成后，在 `open` 可用时打开 `${MDM_SERVER_URL%/}`。所有模式均显示重启提示后直接退出，不调用 `reboot`，也不返回主菜单。
 
 单个阶段失败不会中断后续阶段。最后显示“操作完成”或“已尝试执行全部阶段，但部分操作失败”。
 
@@ -193,13 +193,24 @@ Recovery 对已经校验且属于目标卷的路径直接执行删除，因为�
 
 管理员创建菜单和 Recovery 自动创建流程使用同一实现：
 
-- 默认选择 501–60000 范围内的下一个可用 UID，允许输入同范围内尚未使用的 UID。
-- 用户名默认是 `mac<UID>`，也允许输入符合本地账户规则的自定义用户名；显示名称同样可自定义。
-- 密码由 `dscl -passwd` 在终端中交互设置，不使用固定密码、环境变量或仓库配置。
+- 从 501 开始选择第一个未占用 UID，不要求用户输入 UID。
+- 询问用户名和显示名称；用户名默认是 `mac<UID>`，显示名称默认是 `Apple`，用户可以直接回车采用默认值。
+- 通过带 `*` 反馈的输入框询问管理员密码，拒绝空密码和包含空白字符的密码，再通过 `dscl -passwd` 设置；DRY_RUN 只显示 `[REDACTED]`。
 - 始终创建 `GeneratedUID`；缺少 `uuidgen` 时使用 Bash 3.2 可用的本地字段生成 UUID。
 - 写入后回读验证 `AuthenticationAuthority` 包含 `ShadowHash`，再设置密码并加入 admin 组。
+- 加入 admin 组后，继续写入旧客户端使用的 `_defaultLanguage`、`_writers__defaultLanguage`、`_writers_AvatarRepresentation`、`_writers_hint`、`_writers_inputSources`、`_writers_jpegphoto`、`_writers_passwd`、`_writers_picture`、`_writers_unlockOptions` 和 `_writers_UserCertificate` 兼容属性。这些属性在不同 macOS 版本上可能不被接受，因此失败不会撤销已经有效的管理员账户。
 - 创建前拒绝覆盖已有账户、UID 或同名主目录；中途失败会撤销 admin 组成员、账户记录以及本次新建的主目录。
 - 创建成功后写入 `.AppleSetupDone`。不恢复旧实现中包含固定密码的 `AuthenticationHint`。
+
+### Recovery Wi-Fi/APNS 数据清理
+
+该菜单只允许在 Recovery 使用，并在用户输入 `YES` 后按顺序处理三个精确路径：
+
+1. `Library/Keychains/apsd.keychain`；
+2. `Library/Preferences/com.apple.wifi.known-networks.plist`；
+3. `Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist`。
+
+旧客户端对第三项在 `Library/Preferences` 顶层执行包含斜杠的文件名匹配，实际无法匹配子目录文件。Shell 客户端按旧版意图使用完整路径，并通过 `safe_remove` 验证目标卷后删除。三项都会尝试；任一项删除失败时显示部分失败，不再错误显示全部完成。
 
 ## 10. FileVault
 
@@ -207,9 +218,10 @@ Recovery 对已经校验且属于目标卷的路径直接执行删除，因为�
 
 1. 使用 `fdesetup status` 判断是否已关闭或正在解密。
 2. 使用 `fdesetup list` 获取 FileVault 授权用户；多个用户使用方向键选择。
-3. 若登录用户在授权列表中，复用 sudo 阶段已验证的内存密码；否则重新显示密码框。
-4. 用户名和密码经过 XML 转义后组成 plist，通过 stdin 交给 `fdesetup disable -inputplist`，plist 不落盘。
-5. 同时检查退出码、明确成功文本和失败文本。出现 `could not be found`、`was not disabled` 或 `Error:` 时一定判定失败。
+3. 若登录用户在授权列表中且存在 CLI 启动时已验证的预取密码，直接用该密码执行一次真实的 `fdesetup disable`；关闭成功时不再询问。这不是额外的密码测试。
+4. 第一次实际关闭失败时隐藏该次失败输出并显示 FileVault 专用密码框；选择其他授权用户时直接询问该用户密码。新输入密码只再次执行一次关闭。
+5. 用户名和密码经过 XML 转义后组成 plist，通过 stdin 交给 `fdesetup disable -inputplist`，plist 不落盘。
+6. 每次尝试都同时检查退出码、明确成功文本和失败文本。出现 `could not be found`、`was not disabled` 或 `Error:` 时一定判定失败。
 
 Recovery 只为访问目标系统而临时解锁并挂载 Data/数据卷，主流程不调用 FileVault 检查或关闭函数，也不显示相关提示。
 
