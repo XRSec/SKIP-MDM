@@ -14,7 +14,7 @@ ROOT_REQUEST	正在请求 root 权限
 ROOT_ACTIVE	已使用 root 权限运行
 SUDO_PASSWORD_PROMPT	请输入当前用户密码
 SUDO_PASSWORD_EMPTY	密码不能为空或包含空格，请设置不含空格的非空密码
-SUDO_PASSWORD_INVALID	密码验证失败
+SUDO_PASSWORD_INVALID	密码不能包含空格
 PASSWORD_VERIFYING	正在验证密码
 PASSWORD_VERIFIED	密码验证成功
 SUDO_UNAVAILABLE	未找到 sudo，请以 root 用户重新运行
@@ -76,8 +76,8 @@ RECOVERY_ONLY	此操作只能在 Recovery 中执行
 NORMAL_ONLY	此操作只能在正常桌面系统中执行
 USERNAME_PROMPT	新用户名（留空则使用自动生成值）
 REALNAME_PROMPT	显示名称（留空使用 Apple）
-PASSWORD_PROMPT	请输入新的管理员密码
-INVALID_USERNAME	用户名只能包含小写字母、数字、点、下划线和连字符，且必须以字母或下划线开头
+PASSWORD_PROMPT	请输入新的管理员密码 留空时默认使用 1234
+INVALID_USERNAME	用户名只能包含大小写字母、数字、点、下划线和连字符，且必须以字母或下划线开头
 INVALID_USER_ID	用户 ID 必须是 501 到 60000 之间尚未使用的数字
 USER_EXISTS	用户已存在
 USER_HOME_EXISTS	用户主目录已经存在，已拒绝覆盖

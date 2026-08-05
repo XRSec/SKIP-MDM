@@ -163,7 +163,7 @@ t() {
       ROOT_ACTIVE) printf '%s' "Running as Root" ;;
       SUDO_PASSWORD_PROMPT) printf '%s' "Current User Password" ;;
       SUDO_PASSWORD_EMPTY) printf '%s' "No Empty or Spaced Passwords" ;;
-      SUDO_PASSWORD_INVALID) printf '%s' "Wrong Password" ;;
+      SUDO_PASSWORD_INVALID) printf '%s' "Password must not contain spaces. Default 1234" ;;
       PASSWORD_VERIFYING) printf '%s' "Checking Password" ;;
       PASSWORD_VERIFIED) printf '%s' "Password OK" ;;
       SUDO_UNAVAILABLE) printf '%s' "sudo Not Found; Run as Root" ;;
@@ -226,7 +226,7 @@ t() {
       USERNAME_PROMPT) printf '%s' "New Username (Blank = Auto)" ;;
       REALNAME_PROMPT) printf '%s' "Display Name (Blank = Apple)" ;;
       PASSWORD_PROMPT) printf '%s' "Enter New Admin Password" ;;
-      INVALID_USERNAME) printf '%s' "Use a-z, 0-9, . _ -; Start with a-z or _" ;;
+      INVALID_USERNAME)   printf '%s' "Use A-Z, a-z, 0-9, . _ -; Start with a letter or _" ;;
       INVALID_USER_ID) printf '%s' "Use an Unused UID from 501-60000" ;;
       USER_EXISTS) printf '%s' "User Already Exists" ;;
       USER_HOME_EXISTS) printf '%s' "Home Folder Already Exists" ;;
@@ -1725,12 +1725,12 @@ create_admin_user() {
   fi
   printf '%s [mac%s]: ' "$(t USERNAME_PROMPT)" "$uid" >&2
   IFS= read -r username || return 1
+  # 未输入用户名时使用默认值
   [ -n "$username" ] || username="mac${uid}"
-  case "$username" in
-    [a-z_]*) ;;
-    *) msg_err "$(t INVALID_USERNAME)"; return 1 ;;
-  esac
-  case "$username" in *[!a-z0-9._-]*) msg_err "$(t INVALID_USERNAME)"; return 1 ;; esac
+  # 首字符允许大小写字母或下划线，不要求必须包含下划线
+  case "$username" in [a-zA-Z_]*) ;; *) msg_err "$(t INVALID_USERNAME)"; return 1 ;; esac
+  # 整个用户名允许大小写字母、数字、点、下划线和连字符
+  case "$username" in *[!a-zA-Z0-9._-]*) msg_err "$(t INVALID_USERNAME)"; return 1 ;; esac
   if dscl -f "$db" localhost -read "/Local/Default/Users/$username" >/dev/null 2>&1; then
     msg_err "$(t USER_EXISTS): $username"
     return 1
@@ -1747,9 +1747,12 @@ create_admin_user() {
   read_password_with_feedback "$(t PASSWORD_PROMPT): " || PASSWORD_INPUT=""
   admin_password="$PASSWORD_INPUT"
   PASSWORD_INPUT=""
-  if ! password_input_is_valid "$admin_password"; then
+  # 密码为空时自动使用默认密码 1234
+  if [ -z "$admin_password" ]; then
+    admin_password="1234"
+  elif ! password_input_is_valid "$admin_password"; then
     admin_password=""
-    msg_err "$(t SUDO_PASSWORD_EMPTY)"
+    msg_err "$(t SUDO_PASSWORD_INVALID)"
     return 1
   fi
   generated_uid=$(generate_user_uuid) || generated_uid=""
