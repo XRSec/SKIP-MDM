@@ -34,6 +34,7 @@ DEFAULT_MDM_KEYWORDS="com.apple.mdmclient com.apple.managedclient com.apple.devi
 MDM_KEYWORDS="${MDM_KEYWORDS:-$DEFAULT_MDM_KEYWORDS}"
 MDM_EXTRA_KEYWORDS="${MDM_EXTRA_KEYWORDS:-}"
 MDM_KEYWORDS="$MDM_KEYWORDS $MDM_EXTRA_KEYWORDS"
+LAUNCHD_CORE_SERVICES="com.apple.mdmclient.daemon.runatboot com.apple.ManagedClient.cloudconfigurationd com.apple.ManagedClient.enroll com.apple.ManagedClient.startup"
 
 # ---------------------------------------------------------------------------
 # UI configuration
@@ -967,6 +968,9 @@ safe_remove() {
   if [ "$DRY_RUN" != "1" ] && [ ! -e "$path" ] && [ ! -L "$path" ]; then
     return 0
   fi
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    command_exists chflags && chflags -R noschg,nouchg "$path" >/dev/null 2>&1 || true
+  fi
   if [ "$RUN_MODE" != "normal" ]; then
     run_cmd_i rm -rf "$path"
     return $?
@@ -1172,11 +1176,24 @@ clean_configuration_profiles() {
     return 1
   }
   msg_info "$(t PROFILE_CLEANING)"
-  # Keep the old client's exact state-removal order.
+
+  # 解除标志与工件目录的文件保护锁，避免 rm/mv 权限被拒
+  if command_exists chflags; then
+    chflags -R noschg,nouchg "$settings" "$MDM_PATH/MDM_Enrollments" "$MDM_PATH/.deprecation_support" 2>/dev/null || true
+  fi
+
+  # 清理工件目录与复发源文件（防止静默重新注册）
+  safe_remove "$settings/Enrollments" || status=1
+  safe_remove "$MDM_PATH/MDM_Enrollments" || status=1
+  safe_remove "$MDM_PATH/.deprecation_support" || status=1
   safe_remove "$settings" || status=1
   safe_remove "$(path_under_root "$TARGET_ROOT" "var/db/.CloudConfigDelete")" || status=1
   safe_remove "$settings/.cloudConfigRecordFound" || status=1
   safe_remove "$settings/.cloudConfigHasActivationRecord" || status=1
+  safe_remove "$settings/.cloudConfigRecordSignatures" || status=1
+  safe_remove "$settings/.cloudConfigTimerCheck" || status=1
+  safe_remove "$settings/com.apple.mdm.depnag.plist" || status=1
+  safe_remove "$settings/com.apple.mdm.prelogin.plist" || status=1
   run_cmd_i mkdir -p "$settings" || {
     msg_err "$(t FAILED): mkdir $settings"
     status=1
@@ -1187,6 +1204,7 @@ clean_configuration_profiles() {
   safe_touch "$settings/.cloudConfigRecordNotFound" || status=1
   safe_touch "$settings/.cloudConfigNoActivationRecord" || status=1
   safe_touch "$settings/.cloudConfigUserSkippedEnrollment" || status=1
+
   # Match the old client: Store is an offline Recovery cleanup. In desktop
   # macOS, profiles commands handle installed profiles without deleting Store.
   if [ "$RUN_MODE" = "recovery" ]; then
@@ -1241,6 +1259,7 @@ clean_vendor_files() {
   local applications=""
   local users_root=""
   local regular_users_text=""
+  local pref_file=""
   local status=0
   applications=$(path_under_root "$TARGET_ROOT" "Applications")
   users_root=$(path_under_root "$TARGET_ROOT" "Users")
@@ -1250,6 +1269,7 @@ clean_vendor_files() {
   remove_matching_entries "$LIBRARY_PATH/Application Support" || status=1
   remove_matching_entries "$LIBRARY_PATH/Preferences" "$(path_under_root "$TARGET_ROOT" "Library/Preferences/com.apple.mdmclient.plist")" || status=1
   remove_matching_entries "$LIBRARY_PATH/Managed Preferences" || status=1
+  safe_remove "$(path_under_root "$TARGET_ROOT" "Library/Managed Preferences")" || status=1
   remove_matching_entries "$applications" || status=1
 
   regular_users_text=$(list_regular_users) || {
@@ -1264,7 +1284,12 @@ clean_vendor_files() {
     remove_matching_entries "$user_home/Library/LaunchAgents" || status=1
     remove_matching_entries "$user_home/Library/Application Support" || status=1
     remove_matching_entries "$user_home/Library/Preferences" || status=1
+    for pref_file in "$user_home/Library/Preferences"/com.apple.mdm*.plist "$user_home/Library/Preferences"/com.apple.enrollment*.plist; do
+      [ -e "$pref_file" ] || continue
+      safe_remove "$pref_file" || status=1
+    done
     remove_matching_entries "$user_home/Library/Managed Preferences" || status=1
+    safe_remove "$user_home/Library/Managed Preferences" || status=1
     remove_matching_entries "$user_home/Applications" || status=1
   done <<EOF
 $regular_users_text
@@ -1308,11 +1333,48 @@ disable_service_in_domains() {
   done
 }
 
+persist_launchd_disabled() {
+  local label="$1"
+  local disabled_plist=""
+  local plist_dir=""
+  local pb="/usr/libexec/PlistBuddy"
+
+  disabled_plist=$(path_under_root "$TARGET_ROOT" "private/var/db/com.apple.xpc.launchd/disabled.plist")
+  plist_dir=${disabled_plist%/*}
+
+  if [ ! -f "$disabled_plist" ]; then
+    run_cmd_i mkdir -p "$plist_dir" || true
+    if [ "$DRY_RUN" = "1" ]; then
+      msg_debug_cmd touch "$disabled_plist"
+    else
+      printf '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict/></plist>\n' >"$disabled_plist" 2>/dev/null || true
+    fi
+  fi
+
+  if [ -x "$pb" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+      msg_debug_cmd "$pb" -c "Set :$label true" "$disabled_plist"
+    else
+      "$pb" -c "Add :$label bool true" "$disabled_plist" 2>/dev/null || \
+      "$pb" -c "Set :$label true" "$disabled_plist" 2>/dev/null || true
+    fi
+  fi
+}
+
 disable_matching_services() {
   local line=""
   local label=""
   local lower=""
   local service_uid=""
+
+  # 无论 normal 还是 recovery，均在 Data 卷持久化写入 disabled.plist
+  for label in $LAUNCHD_CORE_SERVICES; do
+    persist_launchd_disabled "$label"
+    if [ "$RUN_MODE" = "normal" ] && command_exists launchctl; then
+      run_cmd_i launchctl disable "system/$label" || true
+    fi
+  done
+
   [ "$RUN_MODE" = "normal" ] || return 0
   command_exists launchctl || return 0
   service_uid=$(desktop_service_uid) || service_uid=""
@@ -1321,6 +1383,7 @@ disable_matching_services() {
     [ -n "$label" ] || continue
     lower=$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]')
     entry_matches_mdm "$lower" || continue
+    persist_launchd_disabled "$label"
     if [ -n "$service_uid" ]; then
       disable_service_in_domains "$label" "$service_uid"
     else
@@ -1793,16 +1856,36 @@ create_admin_user() {
         ;;
     esac
   fi
-  run_cmd_i dscl -f "$db" localhost -passwd "$record" "$password_arg" || {
+  local passwd_ok=0
+  if [ "$DRY_RUN" = "1" ]; then
+    msg_debug_cmd dscl -f "$db" localhost -passwd "$record" "[REDACTED]"
+    passwd_ok=1
+  else
+    # 优先使用 stdin 管道传密，避免口令明文暴露在进程参数列表中
+    if printf '%s\n%s\n' "$admin_password" "$admin_password" | dscl -f "$db" localhost -passwd "$record" >/dev/null 2>&1; then
+      passwd_ok=1
+    elif dscl -f "$db" localhost -passwd "$record" "$password_arg" >/dev/null 2>&1; then
+      passwd_ok=1
+    fi
+  fi
+  if [ "$passwd_ok" -ne 1 ]; then
     run_cmd_i dscl -f "$db" localhost -delete "$record" || true
     msg_err "$(t USER_CREATE_FAILED)"
     return 1
-  }
+  fi
+  if [ "$DRY_RUN" != "1" ]; then
+    if ! dscl -f "$db" localhost -read "$record" ShadowHashData >/dev/null 2>&1; then
+      rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
+      msg_err "$(t USER_AUTH_FAILED)"
+      return 1
+    fi
+  fi
   run_cmd_i dscl -f "$db" localhost -append /Local/Default/Groups/admin GroupMembership "$username" || {
     rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
     msg_err "$(t USER_CREATE_FAILED)"
     return 1
   }
+  run_cmd_i dscl -f "$db" localhost -append /Local/Default/Groups/admin GroupMembers "$generated_uid" || true
   apply_legacy_admin_attributes "$db" "$record" "$username"
 
   template=""
