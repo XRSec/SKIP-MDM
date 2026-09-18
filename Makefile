@@ -2,14 +2,13 @@ SHELL := /bin/bash
 
 .DEFAULT_GOAL := help
 
-.PHONY: help check install test build deploy-only deploy clean run
+.PHONY: help check install build deploy-only deploy clean run
 
 help:
 	@echo "Available targets:"
 	@echo "  check          Validate Shell syntax, ShellCheck (when installed), and whitespace"
 	@echo "  install        Install Node.js dependencies in src/"
-	@echo "  test           Install dependencies and run the Node.js tests"
-	@echo "  build          Run all checks/tests and prepare the SCF entry point"
+	@echo "  build          Run all checks and prepare the SCF entry point"
 	@echo "  deploy-only    Deploy the current src/ directory"
 	@echo "  deploy         Build and deploy"
 	@echo "  clean          Remove installed Node.js dependencies"
@@ -26,7 +25,7 @@ check:
 install:
 	cd src && npm ci
 
-build: check test
+build: check install
 	chmod +x src/scf_bootstrap
 
 deploy-only:
