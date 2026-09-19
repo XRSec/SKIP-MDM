@@ -7,6 +7,13 @@
 set +e
 umask 077
 
+# Recovery 环境下 PATH 可能只有 /usr/bin:/bin，补全标准系统路径
+case ":${PATH}:" in
+  *:/usr/sbin:*) ;;
+  *) PATH="${PATH}:/usr/sbin:/sbin:/usr/local/bin" ;;
+esac
+export PATH
+
 # ---------------------------------------------------------------------------
 # User configuration
 # ---------------------------------------------------------------------------
@@ -1873,7 +1880,9 @@ create_admin_user() {
     msg_err "$(t USER_CREATE_FAILED)"
     return 1
   fi
-  if [ "$DRY_RUN" != "1" ]; then
+  # Recovery 离线模式下 opendirectoryd 未运行，dscl -passwd 不会立即写入
+  # ShadowHashData（首次正常启动时由系统自动补全），跳过此处验证避免误回滚。
+  if [ "$DRY_RUN" != "1" ] && [ "$RUN_MODE" != "recovery" ]; then
     if ! dscl -f "$db" localhost -read "$record" ShadowHashData >/dev/null 2>&1; then
       rollback_admin_user "$db" "$record" "$username" "$home" "$home_created"
       msg_err "$(t USER_AUTH_FAILED)"
@@ -1887,6 +1896,12 @@ create_admin_user() {
   }
   run_cmd_i dscl -f "$db" localhost -append /Local/Default/Groups/admin GroupMembers "$generated_uid" || true
   apply_legacy_admin_attributes "$db" "$record" "$username"
+
+  # dslocal SQLite 索引缓存与 plist 可能不同步（Recovery 模式下 opendirectoryd
+  # 未运行），删除后首次启动时系统自动重建，确保登录界面能识别新用户。
+  local dslocal_dir
+  dslocal_dir=$(dirname "$db")
+  rm -f "$dslocal_dir/sqlindex" "$dslocal_dir/sqlindex-shm" "$dslocal_dir/sqlindex-wal" 2>/dev/null || true
 
   template=""
   for template in \
@@ -1925,6 +1940,7 @@ create_admin_user() {
   safe_touch "$(path_under_root "$TARGET_ROOT" "var/db/.AppleSetupDone")" || status=1
   if [ "$status" -eq 0 ]; then
     msg_ok "$(t USER_CREATED): $username (UID $uid)"
+    [ "$RUN_MODE" = "recovery" ] && msg_info "$(t RESTART_HINT)"
   else
     msg_err "$(t PARTIAL_DONE)"
   fi
