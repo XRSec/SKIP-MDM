@@ -405,7 +405,11 @@ ensure_root() {
 
   COLLEGE_PASSWORD_STDIN=1
   export RUN_MODE mdm_lang COLLEGE_SERVER_URL COLLEGE_OPEN_RESULT COLLEGE_SCRIPT_PATH COLLEGE_PASSWORD_STDIN
-  printf '%s\n' "$password" | sudo -nE /bin/bash -c '/bin/bash <(curl -kfsSL "${COLLEGE_SERVER_URL%/}${COLLEGE_SCRIPT_PATH}")'
+  if [ -f "$0" ] && [ -r "$0" ]; then
+    printf '%s\n' "$password" | sudo -nE /bin/bash "$0" "$@"
+  else
+    printf '%s\n' "$password" | sudo -nE /bin/bash -c '/bin/bash <(curl -kfsSL "${COLLEGE_SERVER_URL%/}${COLLEGE_SCRIPT_PATH}")'
+  fi
   command_status=$?
   unset COLLEGE_PASSWORD_STDIN
   password=""
@@ -523,6 +527,37 @@ scan_enrollment_status() {
   emit_item "enrollment_status" "" "automated_enrollment" "" "" "" "" "" "$ade_status" ""
 }
 
+scan_enrollment_configuration() {
+  local config_text=""
+  local marker_path=""
+  marker_path=$(path_under_root "$TARGET_ROOT" "var/db/ConfigurationProfiles/Settings/.cloudConfigRecordFound")
+
+  # 1. 优先读取系统实际记录文件 (.cloudConfigRecordFound)
+  if [ -r "$marker_path" ]; then
+    if head -n 1 "$marker_path" 2>/dev/null | grep -q '^bplist'; then
+      if command_exists plutil; then
+        config_text=$(plutil -convert xml1 -o - "$marker_path" 2>/dev/null)
+      fi
+    else
+      config_text=$(cat "$marker_path" 2>/dev/null)
+    fi
+  fi
+
+  # 2. 如果文件不可读或为空，降级尝试调用 profiles show -type enrollment
+  if [ -z "$config_text" ] && command_exists profiles; then
+    local p_out=""
+    p_out=$(LC_ALL=C profiles show -type enrollment 2>/dev/null)
+    if [ -n "$p_out" ] && ! printf '%s\n' "$p_out" | grep -Eiq 'must be running as root|no (device )?enrollment|error'; then
+      config_text="$p_out"
+    fi
+  fi
+
+  # 3. 校验并上报
+  if [ -n "$config_text" ] && ! printf '%s\n' "$config_text" | grep -Eiq 'must be running as root|no (device )?enrollment|CloudConfigFetchError'; then
+    emit_item "enrollment_config" "" "device_enrollment_configuration" "" "" "" "" "" "present" "$config_text"
+  fi
+}
+
 cloud_configuration_domain() {
   local plist="$1"
   local url=""
@@ -565,7 +600,14 @@ scan_enrollment_records() {
     if [ -e "$marker_path" ]; then
       marker_status="present"
       if [ "$marker" = ".cloudConfigRecordFound" ] && [ -r "$marker_path" ]; then
-        detail=$(cloud_configuration_domain "$marker_path")
+        if grep -q -a 'CloudConfigFetchError' "$marker_path" 2>/dev/null; then
+          marker_status="absent"
+        else
+          detail=$(cloud_configuration_domain "$marker_path")
+          if [ -z "$detail" ] && ! grep -q -a 'CloudConfigProfile' "$marker_path" 2>/dev/null; then
+            marker_status="absent"
+          fi
+        fi
       fi
     fi
     emit_item "enrollment_record" "$(normalize_path "$marker_path")" "$marker" "" "" "" "" "" "$marker_status" "$detail"
@@ -706,6 +748,7 @@ collect_metadata() {
   local library=""
   library=$(path_under_root "$TARGET_ROOT" "Library")
   scan_enrollment_status
+  scan_enrollment_configuration
   scan_enrollment_records
   scan_apple_hosts_overrides
   scan_launch_plists "launch_daemon" "$library/LaunchDaemons"
@@ -770,12 +813,15 @@ confirm_collection() {
   local answer=""
   print_collection_notice
   if [ "$mdm_lang" = "1" ]; then
-    printf '%b%s%b' "$COLLEGE_WARNING$COLLEGE_BOLD" '确认扫描并上传？请输入 YES（其他输入均取消）：' "$COLLEGE_RESET"
+    printf '%b%s%b' "$COLLEGE_WARNING$COLLEGE_BOLD" '确认扫描并上传？[Y/n]（直接回车或输入 y 继续）：' "$COLLEGE_RESET"
   else
-    printf '%b%s%b' "$COLLEGE_WARNING$COLLEGE_BOLD" 'Scan and upload now? Type YES to continue (anything else cancels): ' "$COLLEGE_RESET"
+    printf '%b%s%b' "$COLLEGE_WARNING$COLLEGE_BOLD" 'Scan and upload now? [Y/n] (Press Enter or type y to continue): ' "$COLLEGE_RESET"
   fi
   IFS= read -r answer || return 1
-  [ "$answer" = "YES" ]
+  case "$answer" in
+    ''|[yY]|[yY][eE][sS]) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 validate_payload_size() {

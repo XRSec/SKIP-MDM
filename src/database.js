@@ -144,9 +144,9 @@ function createReportStore(options = {}) {
       await initialize();
       const [result] = await getPool().execute(
         `UPDATE college_reports
-         SET status = 'ready', payload = ?, analysis = ?
+         SET status = 'ready', payload = NULL, analysis = ?
          WHERE id = ? AND expires_at > CURRENT_TIMESTAMP(3)`,
-        [JSON.stringify(record.payload), JSON.stringify(record.analysis), record.id]
+        [JSON.stringify(record.analysis), record.id]
       );
       return result.affectedRows === 1;
     },

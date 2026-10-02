@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 const bashObfuscate = require('bash-obfuscate');
 
 const DEFAULT_CHUNK_SIZE = 4;
@@ -18,7 +19,10 @@ function obfuscateShell(source, options = {}) {
 }
 
 function createShellObfuscator(filePath, options = {}) {
-  const outputPath = options.outputPath || DEFAULT_OUTPUT_FILE;
+  const defaultOutput = filePath
+    ? `/tmp/mdm-${path.basename(filePath, path.extname(filePath))}-obfuscated.sh`
+    : DEFAULT_OUTPUT_FILE;
+  const outputPath = options.outputPath || defaultOutput;
 
   return function getObfuscatedShell() {
     try {

@@ -7,6 +7,7 @@ const ALLOWED_TYPES = new Set([
   'launch_daemon',
   'application',
   'application_support',
+  'enrollment_config',
   'enrollment_record',
   'enrollment_status',
   'hosts_override',
@@ -89,15 +90,17 @@ const RULES = [
   { id: 'rustdesk', product: 'RustDesk', company: 'RustDesk', category: 'remote', confidence: 'medium', keywords: ['rustdesk'] }
 ];
 
-function cleanString(value, maxLength = MAX_FIELD_LENGTH) {
+function cleanString(value, maxLength = MAX_FIELD_LENGTH, preserveNewlines = false) {
   if (value === undefined || value === null) return '';
-  return String(value).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, maxLength);
+  const regex = preserveNewlines ? /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g : /[\u0000-\u001f\u007f]/g;
+  return String(value).replace(regex, ' ').trim().slice(0, maxLength);
 }
 
 function normalizeItem(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const type = cleanString(value.type, 64);
   if (!ALLOWED_TYPES.has(type)) return null;
+  const isConfig = type === 'enrollment_config';
   return {
     type,
     path: cleanString(value.path),
@@ -108,7 +111,7 @@ function normalizeItem(value) {
     signingId: cleanString(value.signing_id || value.signingId, 512),
     packageId: cleanString(value.package_id || value.packageId, 512),
     status: cleanString(value.status, 64),
-    detail: cleanString(value.detail, 512)
+    detail: isConfig ? cleanString(value.detail, 32768, true) : cleanString(value.detail, 512)
   };
 }
 
@@ -193,22 +196,141 @@ function commandsForEvidence(rule, evidence) {
   return commands;
 }
 
+function parseEnrollmentConfiguration(text) {
+  if (!text || typeof text !== 'string') return null;
+  const raw = text.trim();
+  if (!raw || raw.includes('CloudConfigFetchError')) return null;
+
+  function extractString(key) {
+    const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*<string>([^<]*)</string>`, 'i'));
+    if (xmlMatch) {
+      return xmlMatch[1]
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .trim();
+    }
+    const asciiQuoted = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*"([^"]*)"\\s*;`, 'm'));
+    if (asciiQuoted) return asciiQuoted[1].trim();
+    const asciiUnquoted = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*([^;\\n\\r]+?)\\s*;`, 'm'));
+    if (asciiUnquoted) {
+      const val = asciiUnquoted[1].trim();
+      if (!val.startsWith('(') && !val.startsWith('{')) return val;
+    }
+    return null;
+  }
+
+  function extractBoolean(key) {
+    const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*(?:<(true|false)/>|<integer>([01])</integer>)`, 'i'));
+    if (xmlMatch) {
+      if (xmlMatch[1]) return xmlMatch[1].toLowerCase() === 'true';
+      if (xmlMatch[2]) return xmlMatch[2] === '1';
+    }
+    const asciiMatch = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*([01]|true|false)\\s*;`, 'i'));
+    if (asciiMatch) {
+      const val = asciiMatch[1].toLowerCase();
+      return val === '1' || val === 'true';
+    }
+    return null;
+  }
+
+  function extractInteger(key) {
+    const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*<integer>(\\d+)</integer>`, 'i'));
+    if (xmlMatch) return parseInt(xmlMatch[1], 10);
+    const asciiMatch = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*(\\d+)\\s*;`, 'm'));
+    if (asciiMatch) return parseInt(asciiMatch[1], 10);
+    return null;
+  }
+
+  function extractArray(key) {
+    const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*<array>([\\s\\S]*?)</array>`, 'i'));
+    if (xmlMatch) {
+      const items = xmlMatch[1].match(/<string>([^<]+)<\/string>/g);
+      return items ? items.map((it) => it.replace(/<\/?string>/g, '').trim()) : [];
+    }
+    const asciiMatch = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*\\(\\s*([\\s\\S]*?)\\s*\\)\\s*;`, 'm'));
+    if (asciiMatch) {
+      return asciiMatch[1]
+        .split(/[,\n]/)
+        .map((s) => s.trim().replace(/^["'\s]+|["'\s]+$/g, ''))
+        .filter(Boolean);
+    }
+    return [];
+  }
+
+  const orgName = extractString('OrganizationName');
+  const configURL = extractString('ConfigurationURL');
+  const isSupervised = extractBoolean('IsSupervised');
+
+  if (!orgName && !configURL && isSupervised === null && !raw.includes('Device Enrollment configuration')) {
+    return null;
+  }
+
+  return {
+    organizationName: orgName,
+    organizationDepartment: extractString('OrganizationDepartment'),
+    organizationEmail: extractString('OrganizationEmail'),
+    organizationSupportEmail: extractString('OrganizationSupportEmail'),
+    organizationPhone: extractString('OrganizationPhone'),
+    organizationSupportPhone: extractString('OrganizationSupportPhone'),
+    organizationAddress: extractString('OrganizationAddress'),
+    organizationAddressLine1: extractString('OrganizationAddressLine1'),
+    organizationAddressLine2: extractString('OrganizationAddressLine2'),
+    organizationCity: extractString('OrganizationCity'),
+    organizationCountry: extractString('OrganizationCountry'),
+    organizationRegion: extractString('OrganizationRegion'),
+    organizationZipCode: extractString('OrganizationZipCode'),
+    organizationMagic: extractString('OrganizationMagic'),
+    configurationURL: configURL,
+    configurationWebURL: extractString('ConfigurationWebURL'),
+    mdmServerUID: extractString('MDMServerUID'),
+    mdmProtocolVersion: extractInteger('MDMProtocolVersion'),
+    isSupervised,
+    isMandatory: extractBoolean('IsMandatory'),
+    isMDMUnremovable: extractBoolean('IsMDMUnremovable'),
+    isMultiUser: extractBoolean('IsMultiUser'),
+    allowPairing: extractBoolean('AllowPairing'),
+    autoAdvanceSetup: extractBoolean('AutoAdvanceSetup'),
+    awaitDeviceConfigured: extractBoolean('AwaitDeviceConfigured'),
+    hasUndergoneMigration: extractBoolean('HasUndergoneMigration'),
+    ignoreMDMFromBackup: extractBoolean('IgnoreMDMFromBackup'),
+    skipSetup: extractArray('SkipSetup'),
+    anchorCertificates: extractArray('AnchorCertificates'),
+    raw
+  };
+}
+
 function managementStatus(items) {
   const statusItem = (label) => items.find((item) => item.type === 'enrollment_status' && item.label === label);
   const recordItem = (label) => items.find((item) => item.type === 'enrollment_record' && item.label === label);
+  const configItem = items.find((item) => item.type === 'enrollment_config' || item.label === 'device_enrollment_configuration');
+  const enrollmentConfiguration = configItem && configItem.detail ? parseEnrollmentConfiguration(configItem.detail) : null;
   const command = statusItem('profiles_command');
   const mdm = statusItem('mdm_enrollment');
   const automated = statusItem('automated_enrollment');
   const cloudRecord = recordItem('.cloudConfigRecordFound');
   const profileInstalled = recordItem('.cloudConfigProfileInstalled');
+  let cloudConfigDomain = cloudRecord ? cloudRecord.detail : '';
+  if (!cloudConfigDomain && enrollmentConfiguration && enrollmentConfiguration.configurationURL) {
+    try {
+      cloudConfigDomain = new URL(enrollmentConfiguration.configurationURL).hostname;
+    } catch {}
+  }
+  let cloudConfigRecord = cloudRecord ? cloudRecord.status : (enrollmentConfiguration ? 'present' : 'unknown');
+  if (cloudConfigRecord === 'present' && !cloudConfigDomain && !enrollmentConfiguration) {
+    cloudConfigRecord = 'absent';
+  }
   return {
     profilesCommand: command ? command.status : (mdm || automated ? 'available' : 'unknown'),
     mdmEnrollment: mdm ? mdm.status : 'unknown',
     automatedEnrollment: automated ? automated.status : 'unknown',
-    cloudConfigRecord: cloudRecord ? cloudRecord.status : 'unknown',
-    cloudConfigDomain: cloudRecord ? cloudRecord.detail : '',
+    cloudConfigRecord,
+    cloudConfigDomain,
     cloudConfigProfileInstalled: profileInstalled ? profileInstalled.status : 'unknown',
-    runningProcessCount: items.filter((item) => item.type === 'running_process').length
+    runningProcessCount: items.filter((item) => item.type === 'running_process').length,
+    enrollmentConfiguration
   };
 }
 
@@ -285,5 +407,6 @@ module.exports = {
   MAX_ITEMS,
   RULES,
   analyzeCollection,
-  normalizeCollection
+  normalizeCollection,
+  parseEnrollmentConfiguration
 };

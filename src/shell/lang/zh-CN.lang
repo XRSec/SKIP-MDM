@@ -89,7 +89,7 @@ SELECT_USER	请选择用户
 NO_USER	未找到普通用户
 PASSWORD_TOOL_MISSING	未找到 resetpassword 工具
 SIP_TOOL_MISSING	未找到 csrutil 工具
-CONFIRM_DESTRUCTIVE	此操作会修改所选系统卷。输入 YES 继续
+CONFIRM_DESTRUCTIVE	此操作会修改所选系统卷。是否继续？[Y/n]
 CANCELLED	已取消
 ROOT_PASSWORD_PROMPT	请输入新的 root 密码
 ROOT_DISABLED	root 用户已停用

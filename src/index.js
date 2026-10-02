@@ -116,7 +116,8 @@ function getPublicBaseUrl(req) {
   if (/^https:\/\/[A-Za-z0-9.-]+(?::\d+)?$/.test(configured)) return configured;
   const forwarded = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
   const protocol = forwarded === 'https' ? 'https' : 'http';
-  const host = String(req.headers.host || '').trim();
+  const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+  const host = (forwardedHost || String(req.headers.host || '')).trim();
   if (!/^[A-Za-z0-9.:[\]-]+$/.test(host)) return '';
   return `${protocol}://${host}`;
 }
@@ -152,12 +153,12 @@ function serveFile(req, res, filePath, contentType, cacheFrontend = false, cache
   fs.createReadStream(filePath).on('error', () => res.destroy()).pipe(res);
 }
 
-function serveGeneratedShell(req, res, getBody) {
+function serveGeneratedShell(req, res, getBody, label = 'Shell') {
   let body;
   try {
     body = getBody();
   } catch (error) {
-    process.stderr.write(`Failed to obfuscate CLI: ${error.message}\n`);
+    process.stderr.write(`Failed to obfuscate ${label}: ${error.message}\n`);
     sendJson(res, 500, { ok: false, error: 'content_unavailable' });
     return;
   }
@@ -183,6 +184,7 @@ function createRequestHandler(options = {}) {
   const legalNoticeFile = path.join(contentRoot, 'html', 'legal-notice.html');
   const englishLegalNoticeFile = path.join(contentRoot, 'html', 'legal-notice.en.html');
   const getObfuscatedCli = createShellObfuscator(cliFile);
+  const getObfuscatedCollege = createShellObfuscator(collegeScriptFile);
   const pingStore = options.pingStore || createPingStore();
   const reportStore = options.reportStore || createReportStore();
 
@@ -200,7 +202,7 @@ function createRequestHandler(options = {}) {
     if (url.pathname === '/' && (req.method === 'GET' || req.method === 'HEAD')) {
       res.setHeader('Vary', 'User-Agent');
       if (prefersCli(req)) {
-        serveGeneratedShell(req, res, getObfuscatedCli);
+        serveGeneratedShell(req, res, getObfuscatedCli, 'CLI');
       } else {
         serveFile(req, res, indexFile, 'text/html; charset=utf-8', false, 'no-store');
       }
@@ -213,7 +215,7 @@ function createRequestHandler(options = {}) {
     }
 
     if (url.pathname === '/college.sh' && (req.method === 'GET' || req.method === 'HEAD')) {
-      serveFile(req, res, collegeScriptFile, 'text/x-shellscript; charset=utf-8');
+      serveGeneratedShell(req, res, getObfuscatedCollege, 'College');
       return;
     }
 

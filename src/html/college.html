@@ -80,6 +80,14 @@
     .health-warning h2 { margin: 0 0 8px; font-size: 22px; }
     .health-warning p { margin: 0; font-size: 14px; line-height: 1.65; }
     .health-hosts { margin: 12px 0 0; padding-left: 20px; font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    .health-shield { margin: 0 0 24px; padding: 16px 20px; border: 1px solid rgba(11,114,83,.25); border-radius: 16px; color: #075c43; background: rgba(240,253,244,.9); display: flex; flex-direction: column; gap: 6px; }
+    .health-shield h3 { margin: 0; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .health-shield p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink); }
+    .health-shield-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .health-shield-tag { padding: 3px 8px; border-radius: 6px; background: rgba(11,114,83,.12); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: #075c43; }
+    .health-notice { margin: 0 0 24px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 16px; color: var(--muted); background: rgba(7,28,24,.03); display: flex; flex-direction: column; gap: 6px; }
+    .health-notice h3 { margin: 0; font-size: 14.5px; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+    .health-notice p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink); }
     details { margin-top: 18px; border-top: 1px solid var(--line); }
     summary { padding: 17px 0 0; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 750; }
     .evidence { margin: 13px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
@@ -91,6 +99,50 @@
     .state { margin: 28px 0; padding: 30px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--muted); background: var(--card); text-align: center; line-height: 1.65; }
     .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 15px); padding: 11px 15px; border-radius: 11px; color: white; background: var(--night); opacity: 0; pointer-events: none; transition: .2s; }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+
+    /* Cloud Enrollment Configuration Card */
+    .management-wrapper { margin: 0 0 30px; }
+    .enrollment-config-card { margin: 0 0 30px; padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: 0 16px 40px rgba(8,28,24,.05); }
+    .enrollment-config-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+    .enrollment-config-header h2 { margin: 0; font-size: 25px; letter-spacing: -.035em; }
+    .enrollment-config-header p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .config-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .config-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .config-pill.alert { background: rgba(241,112,71,.14); color: #9c2e12; border: 1px solid rgba(241,112,71,.3); }
+    .config-pill.success { background: rgba(11,114,83,.1); color: var(--green); border: 1px solid rgba(11,114,83,.25); }
+    .config-pill.neutral { background: rgba(7,28,24,.05); color: var(--muted); border: 1px solid var(--line); }
+
+    .config-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-bottom: 20px; }
+    .config-group { padding: 18px 20px; border-radius: 16px; background: rgba(255,255,255,.65); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+    .config-group.full-width { grid-column: 1 / -1; }
+    .config-group-title { font-size: 13.5px; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .config-kv-list { display: grid; gap: 9px; min-width: 0; }
+    .config-kv-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; min-width: 0; }
+    .config-kv-label { color: var(--muted); flex: 0 0 auto; font-size: 12.5px; }
+    .config-kv-value { font-weight: 700; color: var(--ink); text-align: right; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+    .config-kv-value.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .config-kv-value.truncate a { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .config-kv-value a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+    .config-link-wrap { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; min-width: 0; max-width: 75%; }
+    .config-copy-btn { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; background: white; font-size: 11px; cursor: pointer; color: var(--muted); font-weight: 750; }
+    .config-copy-btn:hover { color: var(--ink); border-color: var(--ink); }
+
+    .skip-setup-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .skip-setup-tag { display: inline-block; padding: 4px 10px; border-radius: 8px; background: rgba(7,28,24,.05); border: 1px solid rgba(7,28,24,.08); font-size: 12px; font-weight: 600; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .raw-config-details { margin-top: 14px; border-top: 1px solid var(--line); }
+    .raw-config-summary { padding: 14px 0 0; cursor: pointer; font-size: 13px; font-weight: 800; color: var(--green); display: flex; align-items: center; justify-content: space-between; }
+    .raw-config-pre-wrap { position: relative; margin-top: 12px; border-radius: 14px; overflow: hidden; background: var(--night); }
+    .raw-config-pre-wrap pre { padding: 16px; font-size: 12px; line-height: 1.6; max-height: 400px; overflow-y: auto; color: #efffd0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .raw-config-copy-btn { position: absolute; top: 12px; right: 12px; padding: 6px 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: rgba(255,255,255,.1); color: white; font-size: 11.5px; font-weight: 750; cursor: pointer; }
+    .raw-config-copy-btn:hover { background: rgba(255,255,255,.2); }
+
+    .paste-config-box { margin-top: 16px; padding: 16px; border-radius: 12px; background: rgba(7,28,24,.03); border: 1px dashed var(--line); }
+    .paste-config-textarea { width: 100%; min-height: 110px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; outline: none; background: white; resize: vertical; box-sizing: border-box; }
+    .paste-config-textarea:focus { border-color: var(--green); }
+    .paste-config-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+
     footer { padding: 0 0 34px; color: var(--muted); font-size: 12px; }
     @media (max-width: 720px) {
       header { padding-top: 12px; }
@@ -101,6 +153,10 @@
       .metric { min-height: 82px; padding: 13px 14px; }
       .metric-value { font-size: 20px; }
       .detail-grid { grid-template-columns: 1fr; }
+      .config-groups { grid-template-columns: 1fr; }
+      .config-kv-item { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .config-kv-value { text-align: left; }
+      .config-link-wrap { max-width: 100%; width: 100%; justify-content: space-between; }
       .finding-head, .toolbar { align-items: flex-start; flex-direction: column; }
       .badges { justify-content: flex-start; }
     }
@@ -185,38 +241,393 @@
       return labels[value] || value;
     }
 
-    function renderManagementDetail(management) {
-      const section = element('section', 'management-detail');
-      section.append(
-        element('h2', '', '云配置信息'),
-        element('p', '', '展示设备本地云配置记录中已提取的字段；完整 URL、证书和 plist 内容不会上传。')
-      );
-      const fields = [
-        ['ConfigurationURL（仅主机名）', management.cloudConfigDomain || '未读取到'],
-        ['云配置记录', statusText(management.cloudConfigRecord)],
-        ['云配置描述文件', statusText(management.cloudConfigProfileInstalled)]
-      ];
-      const grid = element('div', 'detail-grid');
-      for (const field of fields) {
-        const row = element('div', 'detail-row');
-        row.append(element('span', 'detail-label', field[0]), element('strong', 'detail-value', field[1]));
-        grid.append(row);
+
+    function parseEnrollmentConfig(text) {
+      if (!text || typeof text !== 'string') return null;
+      const raw = text.trim();
+      if (!raw || raw.includes('CloudConfigFetchError')) return null;
+
+      function extractString(key) {
+        const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*<string>([^<]*)</string>`, 'i'));
+        if (xmlMatch) {
+          return xmlMatch[1]
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'")
+            .trim();
+        }
+        const asciiQuoted = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*"([^"]*)"\\s*;`, 'm'));
+        if (asciiQuoted) return asciiQuoted[1].trim();
+        const asciiUnquoted = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*([^;\\n\\r]+?)\\s*;`, 'm'));
+        if (asciiUnquoted) {
+          const val = asciiUnquoted[1].trim();
+          if (!val.startsWith('(') && !val.startsWith('{')) return val;
+        }
+        return null;
       }
-      section.append(grid);
-      return section;
+
+      function extractBoolean(key) {
+        const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*(?:<(true|false)/>|<integer>([01])</integer>)`, 'i'));
+        if (xmlMatch) {
+          if (xmlMatch[1]) return xmlMatch[1].toLowerCase() === 'true';
+          if (xmlMatch[2]) return xmlMatch[2] === '1';
+        }
+        const asciiMatch = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*([01]|true|false)\\s*;`, 'i'));
+        if (asciiMatch) {
+          const val = asciiMatch[1].toLowerCase();
+          return val === '1' || val === 'true';
+        }
+        return null;
+      }
+
+      function extractInteger(key) {
+        const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*<integer>(\\d+)</integer>`, 'i'));
+        if (xmlMatch) return parseInt(xmlMatch[1], 10);
+        const asciiMatch = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*(\\d+)\\s*;`, 'm'));
+        if (asciiMatch) return parseInt(asciiMatch[1], 10);
+        return null;
+      }
+
+      function extractArray(key) {
+        const xmlMatch = raw.match(new RegExp(`<key>${key}</key>\\s*<array>([\\s\\S]*?)</array>`, 'i'));
+        if (xmlMatch) {
+          const items = xmlMatch[1].match(/<string>([^<]+)<\/string>/g);
+          return items ? items.map((it) => it.replace(/<\/?string>/g, '').trim()) : [];
+        }
+        const asciiMatch = raw.match(new RegExp(`(?:^|[\\s;{])${key}\\s*=\\s*\\(\\s*([\\s\\S]*?)\\s*\\)\\s*;`, 'm'));
+        if (asciiMatch) {
+          return asciiMatch[1]
+            .split(/[,\n]/)
+            .map((s) => s.trim().replace(/^["'\s]+|["'\s]+$/g, ''))
+            .filter(Boolean);
+        }
+        return [];
+      }
+
+      const orgName = extractString('OrganizationName');
+      const configURL = extractString('ConfigurationURL');
+      const isSupervised = extractBoolean('IsSupervised');
+
+      if (!orgName && !configURL && isSupervised === null && !raw.includes('Device Enrollment configuration')) {
+        return null;
+      }
+
+      return {
+        organizationName: orgName,
+        organizationDepartment: extractString('OrganizationDepartment'),
+        organizationEmail: extractString('OrganizationEmail'),
+        organizationSupportEmail: extractString('OrganizationSupportEmail'),
+        organizationPhone: extractString('OrganizationPhone'),
+        organizationSupportPhone: extractString('OrganizationSupportPhone'),
+        organizationAddress: extractString('OrganizationAddress'),
+        organizationAddressLine1: extractString('OrganizationAddressLine1'),
+        organizationAddressLine2: extractString('OrganizationAddressLine2'),
+        organizationCity: extractString('OrganizationCity'),
+        organizationCountry: extractString('OrganizationCountry'),
+        organizationRegion: extractString('OrganizationRegion'),
+        organizationZipCode: extractString('OrganizationZipCode'),
+        organizationMagic: extractString('OrganizationMagic'),
+        configurationURL: configURL,
+        configurationWebURL: extractString('ConfigurationWebURL'),
+        mdmServerUID: extractString('MDMServerUID'),
+        mdmProtocolVersion: extractInteger('MDMProtocolVersion'),
+        isSupervised,
+        isMandatory: extractBoolean('IsMandatory'),
+        isMDMUnremovable: extractBoolean('IsMDMUnremovable'),
+        isMultiUser: extractBoolean('IsMultiUser'),
+        allowPairing: extractBoolean('AllowPairing'),
+        autoAdvanceSetup: extractBoolean('AutoAdvanceSetup'),
+        awaitDeviceConfigured: extractBoolean('AwaitDeviceConfigured'),
+        hasUndergoneMigration: extractBoolean('HasUndergoneMigration'),
+        ignoreMDMFromBackup: extractBoolean('IgnoreMDMFromBackup'),
+        skipSetup: extractArray('SkipSetup'),
+        anchorCertificates: extractArray('AnchorCertificates'),
+        raw
+      };
     }
 
-    function renderHealthWarning(health) {
-      if (!health || health.status !== 'unhealthy' || !Array.isArray(health.unexpectedAppleHostOverrides) || health.unexpectedAppleHostOverrides.length === 0) return null;
-      const section = element('section', 'health-warning');
-      section.append(
-        element('h2', '', '系统不健康'),
-        element('p', '', '/etc/hosts 中存在非预期的 Apple 服务域名覆盖，部分 Apple 服务可能不可用。请核对以下域名：')
-      );
-      const list = element('ul', 'health-hosts');
-      for (const hostname of health.unexpectedAppleHostOverrides) list.append(element('li', '', hostname));
-      section.append(list);
-      return section;
+    function renderManagementDetail(management) {
+      const container = element('div', 'management-wrapper');
+
+      function buildEnrollmentCard(cfg) {
+        const card = element('section', 'enrollment-config-card');
+        const header = element('div', 'enrollment-config-header');
+        const titleWrap = element('div');
+        titleWrap.append(
+          element('h2', '', '云配置与设备注册信息 (Device Enrollment Configuration)'),
+          element('p', '', '提取自 macOS 系统的设备配置 (profiles show -type enrollment / .cloudConfigRecordFound)')
+        );
+        header.append(titleWrap);
+        card.append(header);
+
+        // Badges banner
+        const badgesWrap = element('div', 'config-badges');
+        if (cfg.isSupervised !== null) {
+          badgesWrap.append(element('span', `config-pill ${cfg.isSupervised ? 'alert' : 'neutral'}`, cfg.isSupervised ? '✅ 受监管设备 (IsSupervised=1)' : '❌ 未受监管 (IsSupervised=0)'));
+        }
+        if (cfg.isMandatory !== null) {
+          badgesWrap.append(element('span', `config-pill ${cfg.isMandatory ? 'alert' : 'neutral'}`, cfg.isMandatory ? '⚠️ 强制配置 (IsMandatory=1)' : '可选配置'));
+        }
+        if (cfg.isMDMUnremovable !== null) {
+          badgesWrap.append(element('span', `config-pill ${cfg.isMDMUnremovable ? 'alert' : 'neutral'}`, cfg.isMDMUnremovable ? '🔒 MDM 不可移除 (IsMDMUnremovable=1)' : '🔓 MDM 可移除'));
+        }
+        if (cfg.allowPairing !== null) {
+          badgesWrap.append(element('span', `config-pill ${cfg.allowPairing ? 'neutral' : 'alert'}`, cfg.allowPairing ? '✅ 允许配对' : '❌ 禁止配对 (AllowPairing=0)'));
+        }
+        if (cfg.awaitDeviceConfigured) {
+          badgesWrap.append(element('span', 'config-pill alert', '⏳ 等待设备配置 (AwaitDeviceConfigured=1)'));
+        }
+        if (cfg.isMultiUser) {
+          badgesWrap.append(element('span', 'config-pill neutral', '👥 多用户模式 (IsMultiUser=1)'));
+        }
+        if (cfg.autoAdvanceSetup) {
+          badgesWrap.append(element('span', 'config-pill neutral', '⏩ 自动推进安装 (AutoAdvanceSetup=1)'));
+        }
+        card.append(badgesWrap);
+
+        const groups = element('div', 'config-groups');
+
+        // Group 1: 组织信息
+        const orgGroup = element('div', 'config-group');
+        orgGroup.append(element('div', 'config-group-title', '🏢 组织机构信息'));
+        const orgList = element('div', 'config-kv-list');
+        const addKv = (parentList, label, val, isLink = false, copyVal = null, truncate = false) => {
+          if (val === null || val === undefined || val === '') return;
+          const row = element('div', 'config-kv-item');
+          row.append(element('span', 'config-kv-label', label));
+          const valWrap = element('span', `config-kv-value${truncate ? ' truncate' : ''}`);
+          valWrap.title = String(val);
+          if (isLink) {
+            const link = element('a', '', val);
+            link.href = val;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.title = String(val);
+            valWrap.append(link);
+          } else {
+            valWrap.textContent = String(val);
+          }
+          if (copyVal) {
+            const wrap = element('div', 'config-link-wrap');
+            wrap.append(valWrap);
+            const copyBtn = element('button', 'config-copy-btn', '复制');
+            copyBtn.type = 'button';
+            copyBtn.title = '复制完整内容';
+            copyBtn.addEventListener('click', () => copyText(copyVal));
+            wrap.append(copyBtn);
+            row.append(wrap);
+          } else {
+            row.append(valWrap);
+          }
+          parentList.append(row);
+        };
+
+        addKv(orgList, '组织名称', cfg.organizationName);
+        addKv(orgList, '部门', cfg.organizationDepartment);
+        addKv(orgList, '组织邮箱', cfg.organizationEmail, false, cfg.organizationEmail);
+        addKv(orgList, '支持邮箱', cfg.organizationSupportEmail, false, cfg.organizationSupportEmail);
+        addKv(orgList, '组织电话', cfg.organizationPhone, false, cfg.organizationPhone);
+        addKv(orgList, '支持电话', cfg.organizationSupportPhone, false, cfg.organizationSupportPhone);
+        addKv(orgList, '组织地址', cfg.organizationAddress);
+        const cityCountryZip = [cfg.organizationCity, cfg.organizationRegion, cfg.organizationCountry, cfg.organizationZipCode].filter(Boolean).join(' · ');
+        if (cityCountryZip && cityCountryZip !== cfg.organizationAddress) {
+          addKv(orgList, '城市 / 国家 / 邮编', cityCountryZip);
+        }
+        addKv(orgList, '组织 Magic 码', cfg.organizationMagic, false, cfg.organizationMagic, true);
+        orgGroup.append(orgList);
+
+        // Group 2: MDM 服务端配置
+        const mdmGroup = element('div', 'config-group');
+        mdmGroup.append(element('div', 'config-group-title', '☁️ MDM 服务端配置'));
+        const mdmList = element('div', 'config-kv-list');
+        addKv(mdmList, '配置 URL (ConfigurationURL)', cfg.configurationURL, true, cfg.configurationURL, true);
+        addKv(mdmList, '认证网页 (ConfigurationWebURL)', cfg.configurationWebURL, true, cfg.configurationWebURL, true);
+        addKv(mdmList, 'MDM 服务器 UID', cfg.mdmServerUID, false, cfg.mdmServerUID, true);
+        addKv(mdmList, 'MDM 协议版本', cfg.mdmProtocolVersion);
+        addKv(mdmList, 'MDM 注册状态', statusText(management.mdmEnrollment));
+        addKv(mdmList, '自动化注册 (ADE / DEP)', statusText(management.automatedEnrollment));
+        mdmGroup.append(mdmList);
+
+        // Group 3: 设备设置与限制策略
+        const devGroup = element('div', 'config-group');
+        devGroup.append(element('div', 'config-group-title', '⚙️ 设备策略与约束'));
+        const devList = element('div', 'config-kv-list');
+        addKv(devList, '是否受监管 (IsSupervised)', cfg.isSupervised !== null ? (cfg.isSupervised ? '✅ 是' : '❌ 否') : null);
+        addKv(devList, '是否强制注册 (IsMandatory)', cfg.isMandatory !== null ? (cfg.isMandatory ? '✅ 是' : '❌ 否') : null);
+        addKv(devList, 'MDM 不可移除 (IsMDMUnremovable)', cfg.isMDMUnremovable !== null ? (cfg.isMDMUnremovable ? '✅ 是' : '❌ 否') : null);
+        addKv(devList, '允许配对 (AllowPairing)', cfg.allowPairing !== null ? (cfg.allowPairing ? '✅ 允许 (1)' : '❌ 禁止 (0)') : null);
+        addKv(devList, '等待设备配置 (AwaitDeviceConfigured)', cfg.awaitDeviceConfigured !== null ? (cfg.awaitDeviceConfigured ? '✅ 是 (1)' : '❌ 否 (0)') : null);
+        addKv(devList, '多用户模式 (IsMultiUser)', cfg.isMultiUser !== null ? (cfg.isMultiUser ? '✅ 是 (1)' : '❌ 否 (0)') : null);
+        addKv(devList, '自动推进设置 (AutoAdvanceSetup)', cfg.autoAdvanceSetup !== null ? (cfg.autoAdvanceSetup ? '✅ 是 (1)' : '❌ 否 (0)') : null);
+        addKv(devList, '已迁移 (HasUndergoneMigration)', cfg.hasUndergoneMigration !== null ? (cfg.hasUndergoneMigration ? '✅ 是' : '❌ 否') : null);
+        addKv(devList, '从备份忽略 MDM (IgnoreMDMFromBackup)', cfg.ignoreMDMFromBackup !== null ? (cfg.ignoreMDMFromBackup ? '✅ 是' : '❌ 否') : null);
+        addKv(devList, '云配置记录文件', statusText(management.cloudConfigRecord));
+        addKv(devList, '云配置描述文件', statusText(management.cloudConfigProfileInstalled));
+        devGroup.append(devList);
+
+        // Group 4: 证书与跳过步骤 (如果都有或其中一个有)
+        const otherGroup = element('div', 'config-group');
+        otherGroup.append(element('div', 'config-group-title', '⏭️ 跳过的设置助手步骤 (SkipSetup)'));
+        if (Array.isArray(cfg.skipSetup) && cfg.skipSetup.length > 0) {
+          const skipTagsWrap = element('div', 'skip-setup-tags');
+          for (const s of cfg.skipSetup) {
+            skipTagsWrap.append(element('span', 'skip-setup-tag', s));
+          }
+          otherGroup.append(skipTagsWrap);
+        } else {
+          otherGroup.append(element('div', 'empty-state', '无跳过项或未配置'));
+        }
+
+        if (Array.isArray(cfg.anchorCertificates) && cfg.anchorCertificates.length > 0) {
+          const certTitle = element('div', 'config-group-title', '🔒 锚点证书 (AnchorCertificates)');
+          certTitle.style.marginTop = '12px';
+          otherGroup.append(certTitle);
+          const certTags = element('div', 'skip-setup-tags');
+          for (const c of cfg.anchorCertificates) {
+            certTags.append(element('span', 'skip-setup-tag', c));
+          }
+          otherGroup.append(certTags);
+        }
+        groups.append(orgGroup, mdmGroup, devGroup, otherGroup);
+        card.append(groups);
+
+        // Raw configuration collapsible
+        if (cfg.raw) {
+          const rawDetails = element('details', 'raw-config-details');
+          const summary = element('summary', 'raw-config-summary');
+          summary.append(element('span', '', '查看完整配置 (Device Enrollment configuration · 点击展开)'));
+          const preWrap = element('div', 'raw-config-pre-wrap');
+          const copyRawBtn = element('button', 'raw-config-copy-btn', '复制完整配置');
+          copyRawBtn.type = 'button';
+          copyRawBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyText(cfg.raw);
+          });
+          const pre = element('pre', '', cfg.raw);
+          preWrap.append(copyRawBtn, pre);
+          rawDetails.append(summary, preWrap);
+          card.append(rawDetails);
+        }
+
+        return card;
+      }
+
+      if (management.enrollmentConfiguration) {
+        container.append(buildEnrollmentCard(management.enrollmentConfiguration));
+      } else {
+        // Render fallback summary card
+        const baseSection = element('section', 'management-detail');
+        baseSection.append(
+          element('h2', '', '云配置与监管状态'),
+          element('p', '', '展示设备本地云配置与描述文件记录；完整 URL、证书和 plist 敏感内容不会上传。')
+        );
+        let supervisedLabel = '否（未受监管 / 正常个人设备）';
+        const hasValidCloudConfig = Boolean(management.enrollmentConfiguration || management.cloudConfigDomain);
+        if (management.mdmEnrollment === 'yes' || management.automatedEnrollment === 'yes') {
+          supervisedLabel = '是（已激活 MDM 监管）';
+        } else if (hasValidCloudConfig && (management.cloudConfigRecord === 'present' || management.cloudConfigProfileInstalled === 'present')) {
+          supervisedLabel = '否（当前未激活 MDM；仅存留本地云配置记录）';
+        }
+        const fields = [
+          ['是否受监管 (IsSupervised)', supervisedLabel],
+          ['MDM 注册状态', statusText(management.mdmEnrollment)],
+          ['自动化设备注册 (ADE / DEP)', statusText(management.automatedEnrollment)],
+          ['云配置记录 (.cloudConfigRecordFound)', statusText(management.cloudConfigRecord)],
+          ['云配置描述文件', statusText(management.cloudConfigProfileInstalled)],
+          ['MDM / 配置域名 (ConfigurationURL)', management.cloudConfigDomain || '未读取到'],
+          ['Profiles 诊断命令', statusText(management.profilesCommand)],
+          ['运行中系统级进程', `${management.runningProcessCount || 0} 个`]
+        ];
+        const grid = element('div', 'detail-grid');
+        for (const field of fields) {
+          const row = element('div', 'detail-row');
+          row.append(element('span', 'detail-label', field[0]), element('strong', 'detail-value', field[1]));
+          grid.append(row);
+        }
+        baseSection.append(grid);
+
+        // Interactive Paste / Test configuration
+        const pasteDetails = element('details', 'raw-config-details');
+        const pasteSummary = element('summary', 'raw-config-summary');
+        pasteSummary.append(element('span', '', '📋 本次扫描未获取到完整配置文本？点击可手动粘贴 Device Enrollment configuration 进行即时渲染'));
+        const pasteBox = element('div', 'paste-config-box');
+        const textarea = element('textarea', 'paste-config-textarea');
+        textarea.placeholder = '在此粘贴 profiles show -type enrollment 输出的 Device Enrollment configuration: { ... } 或 XML 描述内容...';
+        const actions = element('div', 'paste-config-actions');
+        const renderBtn = element('button', 'comp-action-btn', '立即渲染配置');
+        renderBtn.type = 'button';
+        renderBtn.style.padding = '8px 16px';
+        renderBtn.style.background = 'var(--green)';
+        renderBtn.style.color = 'white';
+        renderBtn.style.borderColor = 'var(--green)';
+        renderBtn.addEventListener('click', () => {
+          const text = textarea.value.trim();
+          if (!text) {
+            window.alert('请先粘贴配置文本');
+            return;
+          }
+          const parsed = parseEnrollmentConfig(text);
+          if (!parsed) {
+            window.alert('无法解析配置文本，请确认包含 Device Enrollment configuration 或有效键值');
+            return;
+          }
+          container.innerHTML = '';
+          container.append(buildEnrollmentCard(parsed));
+        });
+        actions.append(renderBtn);
+        pasteBox.append(textarea, actions);
+        pasteDetails.append(pasteSummary, pasteBox);
+        baseSection.append(pasteDetails);
+
+        container.append(baseSection);
+      }
+
+      return container;
+    }
+
+
+
+    function renderHealthBanner(health, management) {
+      if (!health) return null;
+      if (health.status === 'unhealthy' && Array.isArray(health.unexpectedAppleHostOverrides) && health.unexpectedAppleHostOverrides.length > 0) {
+        const section = element('section', 'health-warning');
+        section.append(
+          element('h2', '', '系统不健康'),
+          element('p', '', '/etc/hosts 中存在非预期的 Apple 服务域名覆盖，部分 Apple 服务可能不可用。请核对以下域名：')
+        );
+        const list = element('ul', 'health-hosts');
+        for (const hostname of health.unexpectedAppleHostOverrides) list.append(element('li', '', hostname));
+        section.append(list);
+        return section;
+      }
+
+      if (Array.isArray(health.appleHostOverrides) && health.appleHostOverrides.length > 0) {
+        const section = element('section', 'health-shield');
+        section.append(
+          element('h3', '', '🛡️ MDM 域名网络屏蔽已生效'),
+          element('p', '', '已通过 /etc/hosts 阻断 Apple 设备注册服务，可有效防止系统后台静默联网重新激活监管或弹出提醒：')
+        );
+        const tags = element('div', 'health-shield-tags');
+        for (const h of health.appleHostOverrides) {
+          tags.append(element('span', 'health-shield-tag', h));
+        }
+        section.append(tags);
+        return section;
+      }
+
+      const hasCloudRecord = management && (management.cloudConfigRecord === 'present' || management.cloudConfigProfileInstalled === 'present' || management.enrollmentConfiguration);
+      if (hasCloudRecord) {
+        const section = element('section', 'health-notice');
+        section.append(
+          element('h3', '', '💡 提示：/etc/hosts 未检测到 Apple MDM 屏蔽'),
+          element('p', '', '当前设备未在 /etc/hosts 中屏蔽 Apple 注册服务器（如 iprofiles.apple.com）。若设备在联网状态下重新触发监管配置或弹窗，建议在 Hosts 中添加屏蔽条目以阻止自动连线。')
+        );
+        return section;
+      }
+
+      return null;
     }
 
     function renderFinding(finding) {
@@ -267,9 +678,10 @@
     function render(payload) {
       const report = payload.report;
       const management = report.source.management || {};
-      const healthWarning = renderHealthWarning(report.source.health);
+      const healthBanner = renderHealthBanner(report.source.health, management);
       content.textContent = '';
       const summary = element('section', 'summary');
+      const hasHostsBlocked = report.source.health && Array.isArray(report.source.health.appleHostOverrides) && report.source.health.appleHostOverrides.length > 0;
       summary.append(
         metric('采集项目', report.source.itemCount),
         metric('发现组件', report.summary.findingCount),
@@ -277,6 +689,7 @@
         metric('MDM 注册', statusText(management.mdmEnrollment), statusTone(management.mdmEnrollment)),
         metric('ADE/DEP', statusText(management.automatedEnrollment), statusTone(management.automatedEnrollment)),
         metric('云配置记录', statusText(management.cloudConfigRecord), statusTone(management.cloudConfigRecord)),
+        metric('Hosts 屏蔽', hasHostsBlocked ? `${report.source.health.appleHostOverrides.length} 个域名` : '未屏蔽', hasHostsBlocked ? 'success' : ''),
         metric('运行进程', management.runningProcessCount || 0)
       );
       const toolbar = element('div', 'toolbar');
@@ -290,7 +703,7 @@
       if (report.findings.length === 0) list.append(element('div', 'state', '没有匹配到当前规则库中的监管组件。'));
       for (const finding of report.findings) list.append(renderFinding(finding));
       content.append(summary);
-      if (healthWarning) content.append(healthWarning);
+      if (healthBanner) content.append(healthBanner);
       content.append(renderManagementDetail(management), toolbar, list);
     }
 

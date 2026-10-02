@@ -246,7 +246,7 @@ t() {
       NO_USER) printf '%s' "No Regular User" ;;
       PASSWORD_TOOL_MISSING) printf '%s' "resetpassword Not Found" ;;
       SIP_TOOL_MISSING) printf '%s' "csrutil Not Found" ;;
-      CONFIRM_DESTRUCTIVE) printf '%s' "Modify Selected System? Type YES" ;;
+      CONFIRM_DESTRUCTIVE) printf '%s' "Modify Selected System? [Y/n]" ;;
       CANCELLED) printf '%s' "Cancelled" ;;
       ROOT_PASSWORD_PROMPT) printf '%s' "Enter New Root Password" ;;
       ROOT_DISABLED) printf '%s' "Root User Disabled" ;;
@@ -1038,7 +1038,10 @@ confirm_destructive() {
   [ "$DRY_RUN" = "1" ] && return 0
   printf '%s: ' "$(t CONFIRM_DESTRUCTIVE)" >&2
   IFS= read -r answer || return 1
-  [ "$answer" = "YES" ]
+  case "$answer" in
+    ''|[yY]|[yY][eE][sS]) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 read_serial_number() {
