@@ -1082,6 +1082,104 @@ send_legal_notice_ping() {
   return 0
 }
 
+
+update_proxy_bypass() {
+  local action="$1"
+  local extra_domain="${2:-}"
+  local service=""
+  local services_text=""
+  local current_domains=""
+  local domain=""
+  local target_domain=""
+  local -a add_list=("iprofiles.apple.com" "mdmenrollment.apple.com" "deviceenrollment.apple.com")
+  local -a remove_list=("iprofiles.apple.com" "mdmenrollment.apple.com" "deviceenrollment.apple.com" "gdmf.apple.com" "acmdm.apple.com" "albert.apple.com")
+  local new_domains=()
+  local changed=0
+  local found=0
+
+  if [ "$RUN_MODE" != "normal" ] || ! command_exists networksetup; then
+    return 0
+  fi
+
+  if [ -n "$extra_domain" ]; then
+    case "$extra_domain" in
+      *[!A-Za-z0-9._-]*) extra_domain="" ;;
+    esac
+  fi
+
+  if [ "$action" = "add" ]; then
+    [ -n "$extra_domain" ] && add_list+=("$extra_domain")
+  elif [ "$action" = "clean" ]; then
+    [ -n "$extra_domain" ] && remove_list+=("$extra_domain")
+  else
+    return 0
+  fi
+
+  services_text=$(networksetup -listallnetworkservices 2>/dev/null | awk 'NR>1 {sub(/^\*/, ""); print}') || return 0
+
+  while IFS= read -r service; do
+    [ -n "$service" ] || continue
+    current_domains=$(networksetup -getproxybypassdomains "$service" 2>/dev/null) || continue
+    
+    new_domains=()
+    changed=0
+
+    if [ "$current_domains" != "There aren't any bypass domains set on $service." ] && [ -n "$current_domains" ]; then
+      while IFS= read -r domain; do
+        [ -n "$domain" ] || continue
+        if [ "$action" = "clean" ]; then
+          local skip=0
+          local rdomain=""
+          for rdomain in "${remove_list[@]}"; do
+            if [ "$domain" = "$rdomain" ]; then
+              skip=1
+              changed=1
+              break
+            fi
+          done
+          if [ "$skip" -eq 0 ]; then
+            new_domains[${#new_domains[@]}]="$domain"
+          fi
+        else
+          new_domains[${#new_domains[@]}]="$domain"
+        fi
+      done <<EOM
+$current_domains
+EOM
+    fi
+
+    if [ "$action" = "add" ]; then
+      for target_domain in "${add_list[@]}"; do
+        found=0
+        if [ ${#new_domains[@]} -gt 0 ]; then
+          for domain in "${new_domains[@]}"; do
+            if [ "$domain" = "$target_domain" ]; then
+              found=1
+              break
+            fi
+          done
+        fi
+        if [ "$found" -eq 0 ]; then
+          new_domains[${#new_domains[@]}]="$target_domain"
+          changed=1
+        fi
+      done
+    fi
+
+    if [ "$changed" -eq 1 ]; then
+      if [ ${#new_domains[@]} -eq 0 ]; then
+        run_cmd_i networksetup -setproxybypassdomains "$service" "Empty"
+      else
+        run_cmd_i networksetup -setproxybypassdomains "$service" "${new_domains[@]}"
+      fi
+    fi
+  done <<EOM
+$services_text
+EOM
+
+  return 0
+}
+
 update_hosts() {
   local mode="$1"
   local extra_domain="${2:-}"
@@ -1614,6 +1712,7 @@ bypass_mdm() {
   # Recovery uses the existing offline record and writes Hosts only once.
   if [ "$RUN_MODE" = "normal" ]; then
     previous_domain=$(extract_enrollment_domain)
+    update_proxy_bypass clean "$previous_domain"
     update_hosts clean "$previous_domain" || status=1
     clear_staged_extensions
     flush_network_caches
@@ -1622,6 +1721,8 @@ bypass_mdm() {
   msg_info "$(t HOSTS_UPDATING): $(path_under_root "$TARGET_ROOT" "etc/hosts")"
   domain=$(extract_enrollment_domain)
   if update_hosts add "$domain"; then
+    update_proxy_bypass add "$domain"
+    flush_network_caches
     [ "$DRY_RUN" = "1" ] || msg_ok "$(t HOSTS_UPDATED)"
   else
     msg_err "$(t FAILED): $(t HOSTS_UPDATING)"
@@ -2048,6 +2149,8 @@ clean_hosts_menu() {
     msg_info "$(t CANCELLED)"
     return 1
   fi
+  update_proxy_bypass clean
+  flush_network_caches
   msg_info "$(t HOSTS_UPDATING): $(path_under_root "$TARGET_ROOT" "etc/hosts")"
   if update_hosts clean; then
     [ "$DRY_RUN" = "1" ] || msg_ok "$(t HOSTS_UPDATED)"

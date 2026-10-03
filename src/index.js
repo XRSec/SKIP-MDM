@@ -142,7 +142,7 @@ function serveFile(req, res, filePath, contentType, cacheFrontend = false, cache
   if (contentType.startsWith('text/html')) {
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://xrsec.s3.bitiful.net https://xrsec-fun.s3.bitiful.net; connect-src 'self' https://xrsec.s3.bitiful.net https://xrsec-fun.s3.bitiful.net; base-uri 'self'; form-action 'self'"
+      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://img.xrsec.fun; connect-src 'self' https://img.xrsec.fun; base-uri 'self'; form-action 'self'"
     );
   }
 
