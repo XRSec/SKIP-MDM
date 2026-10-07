@@ -42,6 +42,8 @@ MDM_KEYWORDS="${MDM_KEYWORDS:-$DEFAULT_MDM_KEYWORDS}"
 MDM_EXTRA_KEYWORDS="${MDM_EXTRA_KEYWORDS:-}"
 MDM_KEYWORDS="$MDM_KEYWORDS $MDM_EXTRA_KEYWORDS"
 LAUNCHD_CORE_SERVICES="com.apple.mdmclient.daemon.runatboot com.apple.ManagedClient.cloudconfigurationd com.apple.ManagedClient.enroll com.apple.ManagedClient.startup"
+DEFAULT_APPLE_DOMAINS="iprofiles.apple.com mdmenrollment.apple.com deviceenrollment.apple.com"
+LEGACY_APPLE_DOMAINS="gdmf.apple.com acmdm.apple.com albert.apple.com"
 
 # ---------------------------------------------------------------------------
 # UI configuration
@@ -1091,8 +1093,16 @@ update_proxy_bypass() {
   local current_domains=""
   local domain=""
   local target_domain=""
-  local -a add_list=("iprofiles.apple.com" "mdmenrollment.apple.com" "deviceenrollment.apple.com")
-  local -a remove_list=("iprofiles.apple.com" "mdmenrollment.apple.com" "deviceenrollment.apple.com" "gdmf.apple.com" "acmdm.apple.com" "albert.apple.com")
+  local -a add_list=()
+  local -a remove_list=()
+  local domain_item=""
+  for domain_item in $DEFAULT_APPLE_DOMAINS; do
+    add_list+=("$domain_item")
+    remove_list+=("$domain_item")
+  done
+  for domain_item in $LEGACY_APPLE_DOMAINS; do
+    remove_list+=("$domain_item")
+  done
   local new_domains=()
   local changed=0
   local found=0
@@ -1208,14 +1218,12 @@ update_hosts() {
   }
   TEMP_FILES="${TEMP_FILES}|${tmp}"
 
-  awk -v extra="$extra_domain" '
+  awk -v core="$DEFAULT_APPLE_DOMAINS" -v legacy="$LEGACY_APPLE_DOMAINS" -v extra="$extra_domain" '
     BEGIN {
-      blocked["iprofiles.apple.com"]=1
-      blocked["mdmenrollment.apple.com"]=1
-      blocked["deviceenrollment.apple.com"]=1
-      blocked["gdmf.apple.com"]=1
-      blocked["acmdm.apple.com"]=1
-      blocked["albert.apple.com"]=1
+      split(core, core_arr, " ")
+      for (i in core_arr) blocked[core_arr[i]]=1
+      split(legacy, legacy_arr, " ")
+      for (i in legacy_arr) blocked[legacy_arr[i]]=1
       if (extra != "") blocked[extra]=1
     }
     {
@@ -1231,10 +1239,10 @@ update_hosts() {
   }
 
   if [ "$mode" = "add" ]; then
-    printf '%s\n' \
-      "0.0.0.0 iprofiles.apple.com" \
-      "0.0.0.0 mdmenrollment.apple.com" \
-      "0.0.0.0 deviceenrollment.apple.com" >> "$tmp"
+    local blocked_domain=""
+    for blocked_domain in $DEFAULT_APPLE_DOMAINS; do
+      printf '0.0.0.0 %s\n' "$blocked_domain" >> "$tmp"
+    done
     [ -n "$extra_domain" ] && printf '0.0.0.0 %s\n' "$extra_domain" >> "$tmp"
   fi
 

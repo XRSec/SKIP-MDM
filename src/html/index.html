@@ -522,6 +522,7 @@
       cursor: pointer;
       font-size: 13px;
       font-weight: 750;
+      text-decoration: none;
     }
     .glass-action:hover, .glass-action:focus-visible { background: rgba(255,255,255,.88); }
     .glass-action:disabled { cursor: wait; opacity: .62; }
@@ -573,6 +574,7 @@
     <button class="glass-action" id="languageButton" type="button" aria-label="Switch language">🌐 EN</button>
     <button class="glass-action" id="downloadDfuTools" type="button">💻 DFU-Tools</button>
     <button class="glass-action" id="analyzeCommand" type="button">🔎 <span data-i18n="analyzeTab">分析监管</span></button>
+    <a class="glass-action" id="secureTokenLink" href="/securetoken">🔐 <span data-i18n="secureTokenTab">SecureToken</span></a>
     <button class="glass-action" id="copyWechat" type="button">💬 <span data-i18n="wechat">微信 xr_sec</span></button>
   </div>
 
@@ -662,7 +664,7 @@
         simpleCopy: '免费的 Mac 监管处理工具，支持 Intel、Apple Silicon 和 macOS Recovery。',
         eyebrow: '战略合作 · 资源共建', heroTitle: '让 Mac 设备服务<br>成为<span class="accent">增长生意</span>',
         heroCopy: '我们正在把成熟的设备服务能力，升级为更清晰、更可靠、可规模化的合作网络。现面向渠道伙伴、生态伙伴与战略投资人开放合作。',
-        talk: '洽谈合作', explore: '查看合作方向', open: '开放中', ready: '在线可用', bypassTab: '绕过监管', analyzeTab: '分析监管', bypassTitle: '实用工具 → 终端', bypassCopy: '打开“实用工具”中的“终端”，点击下方按钮复制命令，粘贴后按回车运行。', analyzeTitle: '扫描并生成监管报告', analyzeCopy: '主动采集管理组件元数据，确认后上传并获得限时分析 URL。', copyCommand: '一键复制', commandNote: '通过 curl 获取脚本并在终端运行，请按照脚本提示完成授权与确认。', commandCopied: '终端命令已复制', focus: '本阶段合作重点', briefTitle: '连接产品能力、市场渠道与长期资源',
+        talk: '洽谈合作', explore: '查看合作方向', open: '开放中', ready: '在线可用', bypassTab: '绕过监管', analyzeTab: '分析监管', secureTokenTab: 'SecureToken', bypassTitle: '实用工具 → 终端', bypassCopy: '打开“实用工具”中的“终端”，点击下方按钮复制命令，粘贴后按回车运行。', analyzeTitle: '扫描并生成监管报告', analyzeCopy: '主动采集管理组件元数据，确认后上传并获得限时分析 URL。', copyCommand: '一键复制', commandNote: '通过 curl 获取脚本并在终端运行，请按照脚本提示完成授权与确认。', commandCopied: '终端命令已复制', focus: '本阶段合作重点', briefTitle: '连接产品能力、市场渠道与长期资源',
         tagChannel: '渠道共建', tagEco: '生态合作', tagCapital: '战略投资', tickerOne: 'Intel & Apple Silicon', tickerTwo: '中英双语服务', tickerThree: 'Web & CLI 触达', tickerFour: '灵活合作机制',
         valueLabel: '为什么是现在', valueTitle: '从技术能力，走向可复制的合作价值', valueDesc: '项目已经形成清晰的服务入口与跨架构交付能力。下一阶段的关键不是堆叠功能，而是连接更好的渠道、服务场景和商业资源。',
         valueOneTitle: '轻量可达', valueOneCopy: '一个入口同时服务网页访客与命令行用户，降低触达成本，为进一步产品化保留空间。', valueTwoTitle: '面向真实场景', valueTwoCopy: '聚焦 Mac 设备服务链路，以稳定、清晰、可协作为原则，适合与既有服务网络组合。', valueThreeTitle: '合作优先', valueThreeCopy: '支持渠道、生态和资源多种合作方式，以共同验证、阶段复盘和长期价值为导向。',
@@ -679,7 +681,7 @@
         simpleCopy: 'A free Mac management tool for Intel, Apple Silicon and macOS Recovery.',
         eyebrow: 'Strategic partnership · Shared growth', heroTitle: 'Turn Mac device services<br>into a <span class="accent">growth business</span>',
         heroCopy: 'We are turning proven device-service capabilities into a clearer, more reliable and scalable partner network—open to channel partners, ecosystem builders and strategic investors.',
-        talk: 'Start a conversation', explore: 'Explore partnerships', open: 'Now open', ready: 'Online', bypassTab: 'Bypass MDM', analyzeTab: 'Analyze MDM', bypassTitle: 'Utilities → Terminal', bypassCopy: 'Open Terminal from Utilities, copy the command below, paste it and press Return.', analyzeTitle: 'Scan and build a management report', analyzeCopy: 'Collects management metadata on demand, uploads after confirmation and returns an expiring report URL.', copyCommand: 'Copy command', commandNote: 'Fetches the script with curl and runs it in Terminal; follow the prompts to authorize and confirm.', commandCopied: 'Terminal command copied', focus: 'Current partnership focus', briefTitle: 'Connect product capability, market access and long-term resources',
+        talk: 'Start a conversation', explore: 'Explore partnerships', open: 'Now open', ready: 'Online', bypassTab: 'Bypass MDM', analyzeTab: 'Analyze MDM', secureTokenTab: 'SecureToken', bypassTitle: 'Utilities → Terminal', bypassCopy: 'Open Terminal from Utilities, copy the command below, paste it and press Return.', analyzeTitle: 'Scan and build a management report', analyzeCopy: 'Collects management metadata on demand, uploads after confirmation and returns an expiring report URL.', copyCommand: 'Copy command', commandNote: 'Fetches the script with curl and runs it in Terminal; follow the prompts to authorize and confirm.', commandCopied: 'Terminal command copied', focus: 'Current partnership focus', briefTitle: 'Connect product capability, market access and long-term resources',
         tagChannel: 'Channel growth', tagEco: 'Ecosystem', tagCapital: 'Investment', tickerOne: 'Intel & Apple Silicon', tickerTwo: 'Bilingual service', tickerThree: 'Web & CLI access', tickerFour: 'Flexible partnerships',
         valueLabel: 'Why now', valueTitle: 'From technical capability to repeatable partner value', valueDesc: 'The project has a clear service entry point and cross-architecture delivery capability. The next step is not more feature volume—it is better channels, use cases and commercial resources.',
         valueOneTitle: 'Easy to reach', valueOneCopy: 'One entry point serves both web visitors and command-line users, reducing friction while leaving room for deeper productization.', valueTwoTitle: 'Built for real use', valueTwoCopy: 'Focused on the Mac device-service journey, with stability, clarity and collaboration at the center.', valueThreeTitle: 'Partner first', valueThreeCopy: 'Channel, ecosystem and strategic resource models are all open, guided by joint validation and long-term value.',

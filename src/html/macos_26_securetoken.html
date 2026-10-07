@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>macOS 26 (Tahoe) SecureToken 诊断、主动赋权与死锁救援指南 · Skip MDM</title>
+  <style>
+    :root {
+      --paper: #F3F0E8;
+      --paper-sub: #E9E4D8;
+      --paper-soft: #F9F7F2;
+      --surface: #FFFFFF;
+      --ink: #102821;
+      --ink-secondary: #3A4D46;
+      --ink-muted: #4A5D56;
+      --line: rgba(16, 40, 33, 0.12);
+      --line-strong: rgba(16, 40, 33, 0.2);
+      --brand: #0D6F52;
+      --brand-hover: #09563F;
+      --terminal: #14191D;
+      --terminal-head: #1C2329;
+      --terminal-border: #2A343D;
+      --danger: #B91C1C;
+      --danger-dark: #991B1B;
+      --danger-text: #7F1D1D;
+      --danger-bg: #FEF2F2;
+      --danger-bg-hover: #FEE2E2;
+      --danger-line: rgba(185, 28, 28, 0.28);
+      --warn-bg: #FFFBEB;
+      --warn-text: #78350F;
+      --warn-line: rgba(146, 64, 14, 0.26);
+      --ok-bg: #ECFDF5;
+      --ok-text: #065F46;
+      --ok-deep: #064E3B;
+      --ok-line: rgba(13, 111, 82, 0.28);
+      --info-bg: #EFF6FF;
+      --info-text: #1E3A8A;
+      --info-line: rgba(30, 64, 175, 0.25);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-padding-top: 96px;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+      background-color: rgba(13, 111, 82, 0.16);
+      color: var(--ink);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button, input, textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+    }
+
+    h1, h2, h3, h4, p, ul, ol {
+      margin: 0;
+    }
+
+    section[id] {
+      scroll-margin-top: 96px;
+    }
+
+    @media (min-width: 640px) {
+      html { scroll-padding-top: 76px; }
+      section[id] { scroll-margin-top: 76px; }
+    }
+
+    .container {
+      max-width: 1024px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+      }
+    }
+
+    .prose-width {
+      max-width: 58ch;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Header */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background-color: rgba(243, 240, 232, 0.94);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(16, 40, 33, 0.1);
+    }
+
+    .header-inner {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    @media (min-width: 640px) {
+      .header-inner {
+        height: 56px;
+        padding-top: 0;
+        padding-bottom: 0;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      min-width: 0;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    @media (min-width: 640px) {
+      .nav-bar {
+        flex-wrap: nowrap;
+        font-size: 14px;
+      }
+    }
+
+    .nav-link {
+      flex-shrink: 0;
+      padding: 0.3rem 0.55rem;
+      border-radius: 8px;
+      color: var(--ink);
+      transition: background-color 160ms ease;
+    }
+
+    @media (min-width: 640px) {
+      .nav-link {
+        padding: 0.375rem 0.75rem;
+      }
+    }
+
+    .nav-link:hover {
+      background-color: rgba(16, 40, 33, 0.08);
+    }
+
+    .nav-link-primary {
+      background-color: var(--brand);
+      color: #FFFFFF;
+    }
+
+    .nav-link-primary:hover {
+      background-color: var(--brand-hover);
+    }
+
+    /* Main Layout */
+    .page-main {
+      padding-top: 2rem;
+      padding-bottom: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .page-main {
+        padding-top: 2.5rem;
+        padding-bottom: 2.5rem;
+      }
+    }
+
+    .section-divider {
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .stack-xs { display: flex; flex-direction: column; gap: 0.5rem; }
+    .stack-sm { display: flex; flex-direction: column; gap: 0.875rem; }
+    .stack-md { display: flex; flex-direction: column; gap: 1rem; }
+    .stack-lg { display: flex; flex-direction: column; gap: 1.5rem; }
+    .stack-xl { display: flex; flex-direction: column; gap: 2rem; }
+    .stack-2xl { display: flex; flex-direction: column; gap: 2.5rem; }
+
+    /* Typography */
+    .hero-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    @media (min-width: 640px) {
+      .hero-title {
+        font-size: 1.875rem;
+      }
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    @media (min-width: 640px) {
+      .section-title {
+        font-size: 1.5rem;
+      }
+    }
+
+    .sub-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    @media (min-width: 640px) {
+      .step-title {
+        font-size: 1.125rem;
+      }
+    }
+
+    .body-lead {
+      font-size: 15px;
+      color: var(--ink-secondary);
+      line-height: 1.65;
+    }
+
+    .body-sm {
+      font-size: 14px;
+      color: var(--ink-secondary);
+      line-height: 1.65;
+    }
+
+    .text-muted {
+      font-size: 14px;
+      color: var(--ink-muted);
+      line-height: 1.6;
+    }
+
+    .font-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    /* Surfaces */
+    .surface-card {
+      background-color: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 14px rgba(16, 40, 33, 0.04);
+    }
+
+    .surface-card-flush {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .surface-tint {
+      background-color: var(--paper-sub);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+
+    .callout-note {
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--ink-muted);
+      background-color: var(--paper-soft);
+      padding: 1rem 1.125rem;
+      font-size: 14px;
+      color: var(--ink);
+      line-height: 1.65;
+    }
+
+    .callout-danger {
+      border-radius: 12px;
+      border: 1px solid var(--danger-line);
+      background-color: var(--danger-bg);
+      padding: 1.25rem;
+      font-size: 14px;
+      color: var(--danger-text);
+      line-height: 1.65;
+    }
+
+    .callout-ok {
+      border-radius: 12px;
+      border: 1px solid var(--ok-line);
+      background-color: var(--ok-bg);
+      padding: 1.25rem;
+    }
+
+    .callout-info {
+      border-radius: 12px;
+      border: 1px solid var(--info-line);
+      background-color: var(--info-bg);
+      padding: 1.25rem;
+    }
+
+    .callout-warn {
+      border-radius: 12px;
+      border: 1px solid var(--warn-line);
+      background-color: var(--warn-bg);
+      padding: 1.25rem;
+      color: var(--warn-text);
+    }
+
+    /* Hero header row */
+    .hero-row {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .hero-row {
+        flex-direction: row;
+        align-items: flex-end;
+      }
+    }
+
+    .row-between {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem 0.75rem;
+    }
+
+    .row-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .row-gap-sm {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Buttons & Inputs */
+    .btn-interactive {
+      transition: background-color 160ms ease, border-color 160ms ease, transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .btn-interactive:active,
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid rgba(16, 40, 33, 0.16);
+      background-color: var(--surface);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .btn-back:hover {
+      background-color: var(--paper-soft);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border-radius: 12px;
+      background-color: var(--brand);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: background-color 160ms ease, transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--brand-hover);
+    }
+
+    .btn-dark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.625rem 1rem;
+      border-radius: 12px;
+      background-color: var(--ink);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .btn-dark:hover {
+      background-color: #1A3B31;
+    }
+
+    .btn-danger-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border-radius: 12px;
+      border: 1px solid rgba(185, 28, 28, 0.3);
+      background-color: var(--danger-bg);
+      color: var(--danger-dark);
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    @media (min-width: 640px) {
+      .btn-danger-outline {
+        align-self: flex-end;
+      }
+    }
+
+    .btn-danger-outline:hover {
+      background-color: var(--danger-bg-hover);
+    }
+
+    .btn-danger-solid {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border-radius: 12px;
+      background-color: var(--danger);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .btn-danger-solid:hover {
+      background-color: var(--danger-dark);
+    }
+
+    .step1-form {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 640px) {
+      .step1-form {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    .input-group {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .text-input,
+    .text-area {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      border-radius: 12px;
+      border: 1px solid var(--line-strong);
+      background-color: var(--paper-soft);
+      font-size: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .text-input::placeholder,
+    .text-area::placeholder {
+      color: var(--ink-muted);
+    }
+
+    .text-input:focus,
+    .text-area:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(13, 111, 82, 0.2);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      background-color: var(--ink);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-badge-green {
+      background-color: var(--brand);
+    }
+
+    .pill-target {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      background-color: var(--paper);
+      border: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .sample-pill {
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      border: 1px solid var(--line);
+      background-color: var(--paper-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .sample-pill:hover {
+      background-color: var(--paper-sub);
+    }
+
+    .code-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 14px;
+      color: var(--ink-muted);
+      padding: 0;
+    }
+
+    .code-toggle-btn:hover {
+      color: var(--ink);
+    }
+
+    .sample-link {
+      font-size: 14px;
+      font-weight: 500;
+      padding: 0;
+    }
+
+    .sample-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Code Blocks */
+    .inline-code {
+      background-color: rgba(16, 40, 33, 0.075);
+      color: var(--ink);
+      padding: 0.12rem 0.42rem;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+    }
+
+    .code-box {
+      background-color: var(--terminal);
+      color: #F1F5F9;
+      border-radius: 12px;
+      border: 1px solid var(--terminal-border);
+      overflow: hidden;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .code-box-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.5rem 0.9rem;
+      background-color: var(--terminal-head);
+      border-bottom: 1px solid var(--terminal-border);
+      font-size: 13px;
+      color: #CBD5E1;
+    }
+
+    .code-box pre,
+    .pre-terminal {
+      margin: 0;
+      padding: 0.9rem 1rem;
+      background-color: var(--terminal);
+      color: #F1F5F9;
+      border-radius: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .code-box pre {
+      border-radius: 0;
+    }
+
+    .copy-snippet-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 6px;
+      background-color: #2A343D;
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 500;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .copy-snippet-btn:hover {
+      background-color: #37444F;
+    }
+
+    .copy-snippet-btn.copied {
+      background-color: var(--brand);
+    }
+
+    /* Grids */
+    .grid-2 > *,
+    .grid-3 > *,
+    .grid-4 > *,
+    .grid-12 > * {
+      min-width: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .grid-2-tight {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 640px) {
+      .grid-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .grid-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    .grid-12 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (min-width: 1024px) {
+      .grid-12 {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+      }
+      .col-span-5 { grid-column: span 5 / span 5; }
+      .col-span-6 { grid-column: span 6 / span 6; }
+      .col-span-7 { grid-column: span 7 / span 7; }
+    }
+
+    /* Tabs & Stage Cards */
+    .tab-btn {
+      padding: 0.55rem 0.875rem;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: left;
+      background-color: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .tab-btn:hover {
+      background-color: var(--paper-soft);
+    }
+
+    .tab-btn.is-active {
+      background-color: var(--ink);
+      color: #FFFFFF;
+      border-color: var(--ink);
+    }
+
+    .stage-card {
+      text-align: left;
+      padding: 1rem;
+      border-radius: 12px;
+      background-color: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .stage-card:hover {
+      background-color: #FAF8F3;
+    }
+
+    .stage-card.is-active {
+      border: 2px solid var(--brand);
+      background-color: #FAFDFB;
+    }
+
+    .mode-row {
+      padding: 1.25rem;
+    }
+
+    .mode-row + .mode-row {
+      border-top: 1px solid var(--line);
+    }
+
+    .badge-ok {
+      padding: 0.25rem 0.625rem;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      font-weight: 600;
+      background-color: var(--ok-bg);
+      color: var(--ok-text);
+      border: 1px solid var(--ok-line);
+    }
+
+    .badge-danger {
+      padding: 0.25rem 0.625rem;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      font-weight: 600;
+      background-color: var(--danger-bg);
+      color: var(--danger-dark);
+      border: 1px solid var(--danger-line);
+    }
+
+    .badge-dark {
+      padding: 0.25rem 0.75rem;
+      border-radius: 8px;
+      background-color: var(--ink);
+      color: #FFFFFF;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .list-numbered {
+      margin: 0;
+      padding-left: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+      font-size: 14px;
+      color: var(--ink-secondary);
+      line-height: 1.65;
+    }
+
+    .list-plain {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+      font-size: 14px;
+      color: var(--ink-secondary);
+      line-height: 1.65;
+    }
+
+    .list-plain li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+    }
+
+    .sub-box {
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background-color: var(--paper-soft);
+      padding: 1rem;
+    }
+
+    .sub-box-danger {
+      border-radius: 12px;
+      border: 1px solid var(--danger-line);
+      background-color: var(--danger-bg);
+      padding: 1rem;
+    }
+
+    .divider-top {
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--line);
+    }
+
+    /* Native Inline SVG Charts */
+    .chart-shell {
+      position: relative;
+      width: 100%;
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 0.5rem;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .chart-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .chart-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    .chart-bar {
+      transition: opacity 140ms ease;
+    }
+
+    .chart-bar:hover {
+      opacity: 0.82;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background-color: var(--ink);
+      color: #FFFFFF;
+      padding: 0.375rem 0.625rem;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(16, 40, 33, 0.2);
+      opacity: 0;
+      transition: opacity 120ms ease;
+      z-index: 10;
+    }
+
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid rgba(16, 40, 33, 0.1);
+      background-color: var(--paper-sub);
+      margin-top: 1rem;
+    }
+
+    .footer-inner {
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 14px;
+      color: var(--ink-secondary);
+    }
+
+    /* Animations */
+    @keyframes panelEnter {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .panel-animate {
+      animation: panelEnter 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hero-enter-1 {
+      animation: panelEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .hero-enter-2 {
+      animation: panelEnter 240ms 60ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="/" class="btn-back btn-interactive">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          <span>Skip MDM</span>
+        </a>
+        <span class="brand-title">macOS 26 SecureToken</span>
+      </div>
+
+      <nav class="nav-bar">
+        <a href="#wizard-top" class="nav-link nav-link-primary">三步自检</a>
+        <a href="#deep-mechanism" class="nav-link">深度溯源</a>
+        <a href="#deadlock-rescue" class="nav-link">死锁与救援</a>
+        <a href="#github-practices" class="nav-link">GitHub 实践</a>
+        <a href="#audit-checklist" class="nav-link">防呆清单</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container page-main">
+
+    <!-- 首屏主角：三步交互式诊断工作台 -->
+    <section id="wizard-top" class="stack-lg">
+      <div class="hero-enter-1 hero-row">
+        <div class="stack-xs">
+          <h1 class="hero-title">macOS 26 (Tahoe) SecureToken 诊断与修复</h1>
+          <p class="prose-width body-lead">
+            按顺序完成三步自检，自动分辨真实卷宗所有权、假阳性标记与 KEK 失步；填入用户名后，下文所有修复与工程脚本将同步更新。
+          </p>
+        </div>
+        <button type="button" id="btn-jump-lockout" class="btn-danger-outline btn-interactive">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>已卡在激活界面？查看急救</span>
+        </button>
+      </div>
+
+      <div class="hero-enter-2 stack-md">
+        <!-- Step 1 -->
+        <div class="surface-card stack-md">
+          <div class="row-between">
+            <div class="row-wrap">
+              <span class="step-badge">1</span>
+              <h2 class="card-title step-title">确认待检用户名</h2>
+            </div>
+            <span id="step1-status-badge" class="pill-target font-mono">留空默认 $(whoami)</span>
+          </div>
+
+          <div class="step1-form">
+            <button type="button" id="btn-copy-whoami" class="btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>复制 whoami 命令</span>
+            </button>
+            <div class="input-group">
+              <input type="text" id="input-username" placeholder="输入或粘贴用户名（留空默认 $(whoami)）" class="text-input" />
+              <button type="button" id="btn-clear-user" class="sample-pill btn-interactive hidden" style="padding: 0.55rem 0.875rem; border-radius: 12px; font-weight: 600; flex-shrink: 0; white-space: nowrap;">清空</button>
+            </div>
+          </div>
+
+          <div>
+            <button type="button" data-target="drawer-step1" class="code-toggle-btn">
+              <span class="toggle-arrow">▸</span>
+              <span>查看命令</span>
+            </button>
+            <div id="drawer-step1" class="hidden" style="margin-top: 0.625rem;">
+              <pre class="pre-terminal">whoami</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="surface-card stack-md">
+          <div class="row-between">
+            <div class="row-wrap">
+              <span class="step-badge">2</span>
+              <h2 class="card-title step-title">检查 SecureToken 与 APFS 加密所有权</h2>
+            </div>
+            <span id="step2-target-badge" class="pill-target font-mono">目标：$(whoami)</span>
+          </div>
+
+          <div class="row-wrap">
+            <button type="button" id="btn-copy-check" class="btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>复制检查命令（终端粘贴回车）</span>
+            </button>
+            <span class="body-sm">提示 <code class="inline-code">Password:</code> 时请输入开机密码（盲打不显示）</span>
+          </div>
+
+          <div>
+            <button type="button" data-target="drawer-step2" class="code-toggle-btn">
+              <span class="toggle-arrow">▸</span>
+              <span>查看检查命令</span>
+            </button>
+            <div id="drawer-step2" class="hidden" style="margin-top: 0.625rem;">
+              <pre id="code-step2" class="pre-terminal"></pre>
+            </div>
+          </div>
+
+          <div class="stack-xs" style="padding-top: 0.25rem;">
+            <div class="row-between">
+              <label for="input-paste-result" style="font-size: 14px; font-weight: 600; color: var(--ink);">把终端完整输出粘贴到下方：</label>
+              <div class="row-gap-sm">
+                <button type="button" id="btn-fill-ok" class="sample-pill btn-interactive">正常示例</button>
+                <button type="button" id="btn-fill-fake" class="sample-pill btn-interactive">假阳性示例</button>
+                <button type="button" id="btn-fill-bad" class="sample-pill btn-interactive">无令牌示例</button>
+                <button type="button" id="btn-fill-desync" class="sample-pill btn-interactive">KEK 失步示例</button>
+                <button type="button" id="btn-clear-paste" class="sample-link" style="color: var(--ink-muted); font-weight: 400; padding-left: 0.25rem;">清空</button>
+              </div>
+            </div>
+            <textarea id="input-paste-result" rows="3" placeholder="粘贴终端输出，例如 Secure token is ENABLED / DISABLED、Cryptographic users 或 Authentication is disabled..." class="text-area"></textarea>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="step3-result-card" class="surface-card stack-md">
+          <div class="row-wrap">
+            <span class="step-badge step-badge-green">3</span>
+            <h2 class="card-title step-title">诊断结果与修复建议</h2>
+          </div>
+          <div id="diagnosis-output-area"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第二部分：深度溯源 -->
+    <section id="deep-mechanism" class="section-divider stack-2xl">
+      <div class="stack-xs">
+        <h2 class="section-title">为什么人工建号与 macOS 26 切换账户不再自动授权？</h2>
+        <p class="prose-width body-lead">
+          人工通过 <code class="inline-code">dscl</code>、脚本或 MDM PreStage 创建的管理员若未封装 Secure Enclave 密钥，仅具备传统 POSIX <code class="inline-code">sudo</code> 权限。在 macOS 14–26 的架构演进下，早期所有偏门补救路径均已封堵。
+        </p>
+      </div>
+
+      <!-- 1. 底层密码学绑定 -->
+      <div class="stack-md">
+        <h3 class="sub-title">1. SecureToken 与 Volume Owner 的底层密码学绑定</h3>
+        <div class="grid-12">
+          <div class="col-span-7 stack-sm body-lead">
+            <p class="prose-width">
+              在采用 APFS 的现代 Mac（搭载 T2 安全芯片或 Apple Silicon）上，Apple 官方部署指南将 <strong>SecureToken（安全令牌）</strong> 定义为由用户登录密码保护并封装的 <strong>密钥加密密钥（KEK, Key Encryption Key）</strong>。
+            </p>
+            <p class="prose-width">
+              在 Apple Silicon 架构下，SecureToken 与 <strong>Volume Ownership（卷宗所有权）</strong> 硬件级绑定在安全隔区（Secure Enclave）内：系统上<strong>第一个获得 SecureToken 的用户自动成为首个卷宗所有者（Volume Owner）</strong>。
+            </p>
+            <div class="callout-note prose-width">
+              <strong>关键边界：</strong>没有 SecureToken 的管理员仅具备传统 POSIX 意义上的 <code class="inline-code">sudo</code> 权限，在 macOS 安全子系统中属于“名义管理员”，<strong>不具备任何密码学授权能力</strong>。
+            </div>
+          </div>
+
+          <div class="col-span-5 surface-card stack-sm">
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink);">必须具备“管理员 + Volume Owner”的 5 项操作</div>
+            <ul class="list-plain">
+              <li><span class="font-mono" style="font-weight: 700; color: var(--brand);">01</span><span>启用或管理 <strong>FileVault</strong> 全盘加密</span></li>
+              <li><span class="font-mono" style="font-weight: 700; color: var(--brand);">02</span><span>批准 <strong>macOS 软件更新与大版本升级</strong></span></li>
+              <li><span class="font-mono" style="font-weight: 700; color: var(--brand);">03</span><span>修改 <strong>启动安全性策略（Startup Security Policy）</strong></span></li>
+              <li><span class="font-mono" style="font-weight: 700; color: var(--brand);">04</span><span>发起 <strong>抹掉所有内容和设置（EACS）</strong></span></li>
+              <li><span class="font-mono" style="font-weight: 700; color: var(--brand);">05</span><span>向其他本地账户 <strong>签发新的 SecureToken</strong></span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 人工创建缺失的三大原因 -->
+      <div class="stack-md">
+        <h3 class="sub-title">2. 人工或脚本创建用户导致 SecureToken 缺失的三大原因</h3>
+        <div class="grid-3">
+          <div class="surface-card stack-xs">
+            <div class="font-mono" style="font-size: 14px; font-weight: 700; color: var(--brand);">01 · 跳过设置助理</div>
+            <h4 class="card-title">未触发 OpenDirectory 验证钩子</h4>
+            <p class="body-sm">
+              跳过开机设置助理后，通过命令行新建的账户在完成首次交互式图形登录或 <code class="inline-code">dscl . -authonly</code> 密码校验前，不会生成令牌。
+            </p>
+          </div>
+          <div class="surface-card stack-xs">
+            <div class="font-mono" style="font-size: 14px; font-weight: 700; color: #92400E;">02 · 存在禁用标记</div>
+            <h4 class="card-title">写入了 SecureToken 禁用标签</h4>
+            <p class="body-sm">
+              Jamf 二进制账户、<code class="inline-code">aws/ec2-macos-init</code> 等工具常在 <code class="inline-code">AuthenticationAuthority</code> 追加 <code class="inline-code">;DisabledTags;SecureToken</code>；标签存在期间改密或登录均不会签发令牌。
+            </p>
+          </div>
+          <div class="surface-card stack-xs">
+            <div class="font-mono" style="font-size: 14px; font-weight: 700; color: var(--danger-dark);">03 · UID 阈值抑制</div>
+            <h4 class="card-title">UID 小于 500 不会获发令牌</h4>
+            <p class="body-sm">
+              据 <code class="inline-code">freegeek-pdx/mkuser</code> 文档，当用户 UID 被设为 <strong>500 以下</strong>（常用于隐藏管理账户）时，macOS 在验证其密码时默认不授予首个 SecureToken。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. macOS 26 四大机制变化 + SVG 图表 -->
+      <div class="stack-md">
+        <h3 class="sub-title">3. macOS 26 (Tahoe) 四项系统级阻断与机制对比</h3>
+        <div class="grid-12">
+          <div class="col-span-6 stack-sm">
+            <div class="grid-2-tight" id="tahoe-reason-tabs">
+              <button type="button" data-reason="0" class="reason-tab tab-btn btn-interactive is-active">1. UI 信任链校验</button>
+              <button type="button" data-reason="1" class="reason-tab tab-btn btn-interactive">2. 提前 Bootstrap Token</button>
+              <button type="button" data-reason="2" class="reason-tab tab-btn btn-interactive">3. 登录弹窗抑制</button>
+              <button type="button" data-reason="3" class="reason-tab tab-btn btn-interactive">4. .AppleSetupDone 失效</button>
+            </div>
+            <div id="tahoe-reason-content" class="surface-card" style="min-height: 210px;"></div>
+          </div>
+
+          <div class="col-span-6 surface-card stack-sm">
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink);">macOS 11–15 vs macOS 26 (Tahoe) 机制可用性对比</div>
+            <div id="compatChartBox" class="chart-shell"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第三部分：四阶段死锁剖析与分级紧急救援 -->
+    <section id="deadlock-rescue" class="section-divider stack-2xl">
+      <div class="stack-xs">
+        <h2 class="section-title">四阶段“失活死锁”链条与分级紧急救援</h2>
+        <p class="prose-width body-lead">
+          当整机没有任何账户持有 SecureToken 时，在恢复模式运行 <code class="inline-code">resetpassword</code> 并触发“停用 Mac”，会吊销 LocalPolicy 并将设备拖入“无法进系统、常规恢复模式也被激活向导拦截”的双向封锁。
+        </p>
+      </div>
+
+      <!-- 四阶段推演 -->
+      <div class="stack-md">
+        <div class="row-between">
+          <h3 class="sub-title">四阶段死锁推演</h3>
+          <span class="text-muted">阶段 01 → 04</span>
+        </div>
+
+        <div class="grid-4" id="deadlock-stages">
+          <button type="button" data-stage="1" class="stage-card btn-interactive is-active">
+            <div class="font-mono" style="font-size: 14px; font-weight: 700; color: var(--brand);">STAGE 01</div>
+            <div class="card-title" style="margin-top: 2px;">resetpassword 失败</div>
+            <div class="body-sm" style="margin-top: 4px;">Option A 找不到 Volume Owner</div>
+          </button>
+          <button type="button" data-stage="2" class="stage-card btn-interactive">
+            <div class="font-mono" style="font-size: 14px; font-weight: 700; color: #92400E;">STAGE 02</div>
+            <div class="card-title" style="margin-top: 2px;">被迫“停用 Mac”</div>
+            <div class="body-sm" style="margin-top: 4px;">安全隔区强制轮换 OIK / KEK</div>
+          </button>
+          <button type="button" data-stage="3" class="stage-card btn-interactive">
+            <div class="font-mono" style="font-size: 14px; font-weight: 700; color: var(--danger-dark);">STAGE 03</div>
+            <div class="card-title" style="margin-top: 2px;">LocalPolicy 吊销</div>
+            <div class="body-sm" style="margin-top: 4px;">联网重签失败或漏改账户密码</div>
+          </button>
+          <button type="button" data-stage="4" class="stage-card btn-interactive">
+            <div class="font-mono" style="font-size: 14px; font-weight: 700; color: var(--ink);">STAGE 04</div>
+            <div class="card-title" style="margin-top: 2px;">系统与恢复双向锁死</div>
+            <div class="body-sm" style="margin-top: 4px;">Recovery Assistant 前置强制拦截</div>
+          </button>
+        </div>
+
+        <div id="deadlock-detail-box" class="surface-card"></div>
+      </div>
+
+      <!-- 紧急救援三大方案 -->
+      <div class="stack-lg">
+        <h3 class="sub-title">解救陷入 Activate Mac 死锁的三种方案（由轻到重）</h3>
+
+        <div class="grid-2">
+          <div class="surface-card stack-sm">
+            <div class="row-between">
+              <span style="font-size: 14px; font-weight: 700; color: var(--brand);">方案一 · 保留数据首选</span>
+              <span class="text-muted">不抹除内部 SSD</span>
+            </div>
+            <h4 class="card-title">突破 Activate Mac 网络与 iCloud 条款拦截</h4>
+            <ol class="list-numbered">
+              <li><strong>改用手机个人热点或 USB-C 有线网卡：</strong>即使右上角显示 Wi-Fi 已连接，底层激活请求仍常因路由器/DNS/ISP 握手失败；改连 iPhone USB 共享热点或有线网卡并重启后常可通过。</li>
+              <li><strong>在另一台设备提前接受新版 iCloud 条款：</strong>若曾绑定 Apple ID，用手机或他机浏览器登录 <code class="inline-code">icloud.com</code> 同意所有新条款后再重启故障机，避免条款框渲染卡死。</li>
+              <li><strong>全量重置全部本地用户密码：</strong>遵循 Addigy 规范，激活后进入 <code class="inline-code">resetpassword</code> 时务必为<strong>每一个本地账户</strong>重设密码（漏改任一账户会导致重启失效并再次锁死）。</li>
+            </ol>
+          </div>
+
+          <div class="surface-card stack-sm">
+            <div class="row-between">
+              <span style="font-size: 14px; font-weight: 700; color: #92400E;">方案二 · 单机抹除（清数据）</span>
+              <span class="text-muted">无需第二台 Mac</span>
+            </div>
+            <h4 class="card-title">通过屏幕左上角菜单栏调用“抹掉 Mac”</h4>
+            <ol class="list-numbered">
+              <li>无需进常规四宫格恢复模式，直接在卡住的 <code class="inline-code">Activate Mac</code> 或 <code class="inline-code">Activation Failed</code> 界面，将指针移到屏幕<strong>最左上角菜单栏</strong>。</li>
+              <li>点击 <strong>恢复助理 (Recovery Assistant) &gt; 抹掉 Mac... (Erase Mac...)</strong> 并确认抹除。</li>
+              <li>此操作会清除损坏的 APFS 宗卷组与无令牌残留；自动重启后连接 Wi-Fi 或手机热点等待数分钟完成激活，随后点击 <strong>退出到恢复实用工具 (Exit to Recovery Utilities)</strong> 重装 macOS。</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- 方案三 DFU + SVG 救援图表 -->
+        <div class="grid-12" style="align-items: stretch;">
+          <div class="col-span-7 surface-card stack-md">
+            <div class="row-between">
+              <span style="font-size: 14px; font-weight: 700; color: var(--danger-dark);">方案三 · 双机 Apple Configurator 2 硬件级 DFU</span>
+              <span class="text-muted">需宿主 Mac + 数据 USB-C 线</span>
+            </div>
+            <p class="body-sm prose-width">
+              若左上角菜单无响应或换热点仍报 <code class="inline-code">Failed to Activate Device</code>，请准备另一台运行 <strong>macOS 15.7+ Sequoia（Apple Configurator v2.19）</strong> 或 <strong>macOS 26.x Tahoe</strong> 的宿主 Mac，用支持数据传输的 USB-C 线连接故障机 DFU 端口进入 DFU 模式。
+            </p>
+            <div class="grid-2">
+              <div class="sub-box stack-xs">
+                <div style="font-size: 14px; font-weight: 700; color: var(--ink);">DFU Revive（唤醒）</div>
+                <p class="body-sm"><strong>保留用户数据：</strong>仅重刷安全隔区固件、iBoot 与 RecoveryOS。实测多数情况无法解除此激活报错，仅在有未备份关键数据时作抢救尝试。</p>
+              </div>
+              <div class="sub-box-danger stack-xs">
+                <div style="font-size: 14px; font-weight: 700; color: var(--danger-dark);">DFU Restore（恢复 · 终极解法）</div>
+                <p style="font-size: 14px; color: var(--danger-text); line-height: 1.65;"><strong>彻底抹除全部 APFS 容器并重刷 IPSW：</strong>将机器重置为出厂开箱状态，重启后不再出现 Activate this Mac 拦截界面。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-span-5 surface-card stack-sm" style="justify-content: space-between;">
+            <div class="stack-xs">
+              <div style="font-size: 14px; font-weight: 700; color: var(--ink);">四种死锁救援手段：成功率 vs 数据保留</div>
+              <div id="rescueChartBox" class="chart-shell"></div>
+            </div>
+            <p class="divider-top body-sm">
+              <strong>决策速查：</strong>保数据 → USB 热点 + <code class="inline-code">icloud.com</code> 同意条款 + 全量改密；不保数据 → 菜单栏抹掉 Mac 或双机 DFU Restore。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第四部分：GitHub 开源社区最佳实践 -->
+    <section id="github-practices" class="section-divider stack-xl">
+      <div class="stack-xs">
+        <h2 class="section-title">GitHub 开源社区最佳实践：主动获取与修复 SecureToken</h2>
+        <p class="prose-width body-lead">
+          汇总 <code class="inline-code">freegeek-pdx/mkuser</code>、<code class="inline-code">aws/ec2-macos-init</code>、<code class="inline-code">Fabien Conus</code>、<code class="inline-code">Yohan460</code> 与 <code class="inline-code">rtrouton/zoocoup</code> 的生产验证方法（已自动联动步骤 1 目标用户名）。
+        </p>
+      </div>
+
+      <!-- 1. sysadminctl 四种模式 -->
+      <div class="stack-md">
+        <h3 class="sub-title">1. <code class="inline-code">sysadminctl -secureTokenOn</code> 四种核心参数模式</h3>
+        <div class="surface-card surface-card-flush">
+          <div id="sysadminctl-modes-list"></div>
+        </div>
+        <div class="callout-note prose-width">
+          <strong>关键避坑 · 为什么模式 D（Self-Grant 自我赋权）在 macOS 26 失效？</strong>
+          Fabien Conus 于 2026 年 8 月 31 日确认：macOS 11–15 常用的“无令牌时把同一个管理员同时传入 <code class="inline-code">-adminUser</code> 和 <code class="inline-code">-secureTokenOn</code>”的技巧在 macOS 26 Tahoe 已失效。系统提前生成 Bootstrap Token 并准备了 FileVault 上下文，强行自签会直接报错：<code class="inline-code">Operation is not permitted without secure token unlock</code>。
+        </div>
+      </div>
+
+      <!-- 2. 三大工程场景 Tab -->
+      <div class="stack-md">
+        <div class="row-between">
+          <h3 class="sub-title">2. 三类工程场景标准化赋权 / 修复流程</h3>
+          <div class="row-gap-sm" id="adv-cmd-tabs">
+            <button type="button" data-adv="authonly" class="adv-btn tab-btn btn-interactive is-active">方案一 · 无令牌 dscl -authonly</button>
+            <button type="button" data-adv="bootstrap" class="adv-btn tab-btn btn-interactive">方案二 · Tahoe Bootstrap Token</button>
+            <button type="button" data-adv="desync" class="adv-btn tab-btn btn-interactive">方案三 · 修复 KEK 失步</button>
+          </div>
+        </div>
+
+        <div id="adv-cmd-display" class="surface-card"></div>
+      </div>
+    </section>
+
+    <!-- 第五部分：防呆审计清单 -->
+    <section id="audit-checklist" class="section-divider stack-lg">
+      <div class="stack-xs">
+        <h2 class="section-title">诊断与防呆清单：交付与改密前四项必检</h2>
+        <p class="prose-width body-lead">
+          在任何 macOS 26 设备交付、修改密码或进入恢复模式前，逐项核验以下四步，杜绝“名义管理员”引发激活死锁。
+        </p>
+      </div>
+
+      <div class="grid-2" id="checklist-cards"></div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="row-gap-sm">
+        <a href="/" style="font-weight: 700; color: var(--ink);">Skip MDM</a>
+        <span>·</span>
+        <span>macOS 26 (Tahoe) SecureToken 指南</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const appState = {
+      username: '',
+      pastedText: '',
+      fixScenario: 'no_admin',
+      repairPassword: '',
+      repairAdmin: '',
+      lockoutMode: false,
+      lockoutTab: 'keep_data',
+      advTab: 'authonly'
+    };
+
+    const COPY_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getTargetUser() {
+      return appState.username.trim() || '$(whoami)';
+    }
+
+    function getSafeShellUser() {
+      return appState.username.trim() || 'myadmin';
+    }
+
+    async function copyTextSafe(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          // Fallback below
+        }
+      }
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-1000px';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      let ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } catch {
+        ok = false;
+      }
+      area.remove();
+      return ok;
+    }
+
+    function flashCopyFeedback(btn, originalHtml) {
+      const isSnippet = btn.classList.contains('copy-snippet-btn');
+      btn.textContent = '已复制到剪贴板';
+      if (isSnippet) {
+        btn.classList.add('copied');
+      }
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        if (isSnippet) {
+          btn.classList.remove('copied');
+        }
+      }, 1500);
+    }
+
+    document.addEventListener('click', e => {
+      const toggleBtn = e.target.closest('.code-toggle-btn');
+      if (toggleBtn) {
+        const drawer = document.getElementById(toggleBtn.dataset.target);
+        if (!drawer) return;
+        const isHidden = drawer.classList.toggle('hidden');
+        if (!isHidden) {
+          drawer.classList.add('panel-animate');
+        }
+        const arrow = toggleBtn.querySelector('.toggle-arrow');
+        if (arrow) arrow.textContent = isHidden ? '▸' : '▾';
+        return;
+      }
+
+      const copyBtn = e.target.closest('.copy-snippet-btn');
+      if (copyBtn) {
+        const codeText = copyBtn.dataset.copy || '';
+        const originalHtml = copyBtn.dataset.origHtml || copyBtn.innerHTML;
+        copyBtn.dataset.origHtml = originalHtml;
+        copyTextSafe(codeText).then(ok => {
+          if (ok) flashCopyFeedback(copyBtn, originalHtml);
+        });
+      }
+    });
+
+    function renderCodeBox(title, code, copyLabel = '复制') {
+      const titleHtml = title ? `<span class="font-mono">${escapeHtml(title)}</span>` : '<span></span>';
+      return `
+        <div class="code-box">
+          <div class="code-box-head">
+            ${titleHtml}
+            <button type="button" class="copy-snippet-btn btn-interactive" data-copy="${escapeHtml(code)}">
+              ${COPY_ICON_SVG}<span>${escapeHtml(copyLabel)}</span>
+            </button>
+          </div>
+          <pre>${escapeHtml(code)}</pre>
+        </div>
+      `;
+    }
+
+    function updateStep2Command() {
+      const u = getTargetUser();
+      const cmd = `sysadminctl -secureTokenStatus ${u} && sudo diskutil apfs listCryptoUsers /`;
+      document.getElementById('code-step2').textContent = cmd;
+      document.getElementById('step2-target-badge').textContent = appState.username.trim()
+        ? `目标：${appState.username.trim()}`
+        : '目标：$(whoami)';
+    }
+
+    document.getElementById('btn-copy-whoami').addEventListener('click', function () {
+      const orig = this.innerHTML;
+      copyTextSafe('whoami').then(ok => {
+        if (ok) flashCopyFeedback(this, orig);
+      });
+    });
+
+    function refreshAllDynamicSections() {
+      updateStep2Command();
+      renderDiagnosis();
+      renderSysadminctlModes();
+      renderAdvCmd(appState.advTab);
+      renderChecklist();
+    }
+
+    function syncUsernameFromInput() {
+      const val = document.getElementById('input-username').value.trim();
+      appState.username = val;
+      const badge = document.getElementById('step1-status-badge');
+      const clearBtn = document.getElementById('btn-clear-user');
+      badge.textContent = '';
+      if (val) {
+        const span = document.createElement('span');
+        span.style.color = 'var(--brand)';
+        span.style.fontWeight = '600';
+        span.textContent = `当前目标：${val}`;
+        badge.appendChild(span);
+        if (clearBtn) clearBtn.classList.remove('hidden');
+      } else {
+        badge.textContent = '留空默认 $(whoami)';
+        if (clearBtn) clearBtn.classList.add('hidden');
+      }
+      refreshAllDynamicSections();
+    }
+
+    document.getElementById('input-username').addEventListener('input', syncUsernameFromInput);
+    document.getElementById('input-username').addEventListener('change', syncUsernameFromInput);
+    document.getElementById('btn-clear-user').addEventListener('click', () => {
+      const input = document.getElementById('input-username');
+      input.value = '';
+      syncUsernameFromInput();
+      input.focus();
+    });
+
+    document.getElementById('btn-copy-check').addEventListener('click', function () {
+      const orig = this.innerHTML;
+      const cmd = document.getElementById('code-step2').textContent;
+      copyTextSafe(cmd).then(ok => {
+        if (ok) flashCopyFeedback(this, orig);
+      });
+    });
+
+    function analyzeTerminalOutput(raw) {
+      const text = raw.trim();
+      if (!text) return { status: 'empty' };
+
+      const lower = text.toLowerCase();
+      if (
+        lower.includes('failed to create activation request') ||
+        lower.includes('failed to activate device') ||
+        lower.includes('activate mac') ||
+        lower.includes('no administrator found') ||
+        lower.includes('this volume has no admin users to authenticate')
+      ) {
+        return { status: 'locked_out' };
+      }
+
+      if (lower.includes('authentication is disabled') || lower.includes('unable to unlock')) {
+        return { status: 'desync' };
+      }
+
+      const hasEnabled = /secure\s*token\s*is\s*enabled/i.test(text);
+      const hasDisabled = /secure\s*token\s*is\s*disabled/i.test(text);
+      const hasCryptoSection = /cryptographic\s*users/i.test(text);
+      const hasZeroFound = /\(0\s*found\)/i.test(text) || /no\s*cryptographic\s*users/i.test(text);
+      const hasLocalOwner = /local\s*open\s*directory\s*user/i.test(text) && /volume\s*owner:\s*yes/i.test(text);
+
+      if (hasEnabled && !hasCryptoSection) {
+        return {
+          status: 'incomplete'
+        };
+      }
+
+      if (hasEnabled && hasCryptoSection && (hasZeroFound || !hasLocalOwner)) {
+        return {
+          status: 'abnormal',
+          hasOtherOwner: false,
+          reason: '检测到「假阳性」陷阱：表面显示 ENABLED，但底层 APFS 加密用户中缺少 Local Open Directory User（Volume Owner: Yes），说明可能被手动追加了字符串标记或仅有 MDM Bootstrap Token External Key，实际尚未封装安全隔区密钥。'
+        };
+      }
+
+      if (hasEnabled && hasLocalOwner) {
+        return {
+          status: 'normal',
+          hasFullApfsCheck: true
+        };
+      }
+
+      if (hasDisabled || hasZeroFound || (hasCryptoSection && !hasLocalOwner)) {
+        return {
+          status: 'abnormal',
+          hasOtherOwner: hasLocalOwner,
+          reason: hasDisabled
+            ? (hasLocalOwner
+              ? '检测到当前账户 SecureToken 为 DISABLED，但宗卷内已存在其他 Local Open Directory User (Volume Owner: Yes)，可直接由现有正常管理员为其授权。'
+              : '检测到 SecureToken 状态为 DISABLED，当前账户仅具 POSIX 权限，不具备 APFS 卷宗所有权（Volume Owner）。')
+            : '检测到底层缺少本地加密用户（Local Open Directory User），当前账户不具备安全隔区密钥。'
+        };
+      }
+
+      return {
+        status: 'abnormal',
+        hasOtherOwner: false,
+        reason: '未在粘贴内容中检测到有效的 ENABLED 令牌与本地卷宗所有者记录，建议按下方方案主动赋权，或重新完整粘贴步骤 2 的全部输出。'
+      };
+    }
+
+    function shellSingleQuote(str) {
+      return `'${String(str).replace(/'/g, "'\\''")}'`;
+    }
+
+    function getRepairCommand() {
+      const u = getTargetUser();
+      if (appState.fixScenario === 'no_admin') {
+        const pwd = appState.repairPassword.trim();
+        const quotedPwd = pwd ? shellSingleQuote(pwd) : "'<请先在上方填写新密码>'";
+        return `sudo dscl . -delete /Users/${u} AuthenticationAuthority ";DisabledTags;SecureToken"\nsudo dscl . -passwd /Users/${u} ${quotedPwd}\ndscl . -authonly ${u} ${quotedPwd}\nsysadminctl -secureTokenStatus ${u}\nsudo diskutil apfs listCryptoUsers /`;
+      }
+      const adminName = appState.repairAdmin.trim() || '<请先填写现有正常管理员用户名>';
+      return `sudo sysadminctl -adminUser ${adminName} -adminPassword - -secureTokenOn ${u} -password -\nsysadminctl -secureTokenStatus ${u}\nsudo diskutil apfs listCryptoUsers /`;
+    }
+
+    function hasValidRepairParam() {
+      if (appState.fixScenario === 'no_admin') {
+        return appState.repairPassword.trim().length > 0;
+      }
+      return appState.repairAdmin.trim().length > 0;
+    }
+
+    function renderDiagnosis() {
+      const area = document.getElementById('diagnosis-output-area');
+      const u = escapeHtml(getTargetUser());
+
+      if (appState.lockoutMode) {
+        const keepActive = appState.lockoutTab === 'keep_data';
+        area.innerHTML = `
+          <div class="panel-animate callout-danger stack-md">
+            <div class="row-between">
+              <div class="card-title" style="color: var(--danger-dark);">激活锁死 / 无法进恢复模式急救方案</div>
+              <button type="button" id="btn-exit-lockout" class="sample-link" style="color: var(--ink);">返回正常自检</button>
+            </div>
+            <div class="row-gap-sm">
+              <button type="button" data-ltab="keep_data" class="lockout-tab-btn tab-btn btn-interactive" style="${keepActive ? 'background-color: #92400E; color: #FFFFFF; border-color: #92400E;' : ''}">1. 需要保留数据</button>
+              <button type="button" data-ltab="erase_data" class="lockout-tab-btn tab-btn btn-interactive" style="${!keepActive ? 'background-color: var(--danger-dark); color: #FFFFFF; border-color: var(--danger-dark);' : ''}">2. 无需保留数据（单机抹除 / DFU）</button>
+            </div>
+            <div class="stack-xs prose-width" style="padding-top: 0.75rem; border-top: 1px solid var(--danger-line); font-size: 14px; color: var(--ink); line-height: 1.65;">
+              ${keepActive
+                ? `<p><strong>① 改用手机个人热点或 USB-C 有线网卡：</strong>用 iPhone 开启个人热点（通过 <strong>USB 线缆共享</strong>或 Wi-Fi 移动数据），或插 USB-C 转以太网有线连接路由器并重启再试激活。</p>
+                   <p><strong>② 在他机同意新版 iCloud 服务条款：</strong>用手机浏览器登录 <code class="inline-code">icloud.com</code> 接受所有新条款，消除恢复环境条款框渲染卡死。</p>
+                   <p><strong>③ 全量重置所有本地用户密码：</strong>激活通过进入重置列表后，务必为<strong>每一个本地账户</strong>重设密码（漏掉任意一个会导致重启失效并再次锁死）。</p>`
+                : `<p><strong>方法 A（单机操作）：</strong>在卡死的 <code class="inline-code">Activate Mac</code> 界面，将指针移至屏幕<strong>最左上角菜单栏</strong>，点击 <strong>“恢复助理 (Recovery Assistant) &gt; 抹掉 Mac... (Erase Mac...)”</strong>，抹除后重启联网激活并点击“退出到恢复实用工具”重装系统。</p>
+                   <p><strong>方法 B（双机 DFU 恢复）：</strong>用另一台运行 macOS 15.7+ (Configurator v2.19) 或 macOS 26.x 的宿主 Mac，USB-C 数据线连故障机，长按（电源 + 左 Ctrl + 左 Opt + 右 Shift 10 秒，松开组合键继续按电源 10 秒）进 DFU 后右键选择 <strong>“恢复 (Restore)”</strong>。</p>`
+              }
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const result = analyzeTerminalOutput(appState.pastedText);
+
+      if (result.status === 'empty') {
+        area.innerHTML = `
+          <div class="surface-tint body-sm">
+            <p class="prose-width">粘贴步骤 2 终端输出后，此处自动生成诊断结论与修复命令。</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (result.status === 'locked_out') {
+        appState.lockoutMode = true;
+        renderDiagnosis();
+        return;
+      }
+
+      if (result.status === 'desync') {
+        const rawUser = getTargetUser();
+        const fixCmd = `sudo sysadminctl -secureTokenOff ${rawUser} -password - -adminUser existingadmin -adminPassword -\nsudo sysadminctl -secureTokenOn ${rawUser} -password - -adminUser existingadmin -adminPassword -\nsudo diskutil apfs updatePreboot /`;
+        area.innerHTML = `
+          <div class="panel-animate callout-info stack-sm">
+            <div class="card-title" style="color: var(--info-text);">检测到 KEK 密钥与登录密码失步（Authentication is disabled）</div>
+            <p class="prose-width" style="font-size: 14px; color: var(--info-text); line-height: 1.65;">
+              该账户原有令牌，但因使用 <code class="inline-code">passwd</code> 或 <code class="inline-code">dscl . -passwd</code> 强改密导致与安全隔区 KEK 失步。请登录另一位持有正常令牌的管理员，执行以下三步刷新：
+            </p>
+            ${renderCodeBox('将 existingadmin 替换为正常管理员', fixCmd, '复制修复命令')}
+          </div>
+        `;
+        return;
+      }
+
+      if (result.status === 'incomplete') {
+        area.innerHTML = `
+          <div class="panel-animate callout-warn stack-xs">
+            <div class="card-title" style="color: var(--warn-text);">检测不完整：仅见 ENABLED，尚无法排除假阳性</div>
+            <p class="prose-width" style="font-size: 14px; color: var(--warn-text); line-height: 1.65;">
+              仅凭 <code class="inline-code">Secure token is ENABLED</code> 无法区分真实安全隔区密钥与仅含外部 Bootstrap 密钥或伪造标记的假阳性。请补全执行并粘贴步骤 2 中的 <code class="inline-code">sudo diskutil apfs listCryptoUsers /</code> 输出，确认至少存在一个 <code class="inline-code">Local Open Directory User</code> 且 <code class="inline-code">Volume Owner: Yes</code> 后再进入恢复模式。
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      if (result.status === 'normal') {
+        area.innerHTML = `
+          <div class="panel-animate callout-ok stack-xs">
+            <div class="card-title" style="color: var(--ok-text);">诊断通过：当前账户权限正常</div>
+            <p class="prose-width" style="font-size: 14px; color: var(--ok-deep); line-height: 1.65;">
+              目标账户（<code class="inline-code" style="font-weight: 600;">${u}</code>）已正常持有 <strong>SecureToken</strong>，且底层已确认具备 <strong>Local Open Directory User (Volume Owner: Yes)</strong> 加密所有权。你可以安全进行 macOS 系统更新或进入恢复模式。
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      const noAdminActive = appState.fixScenario === 'no_admin';
+      const repairCmd = getRepairCommand();
+      const paramValue = noAdminActive ? appState.repairPassword : appState.repairAdmin;
+      const paramLabel = noAdminActive ? `为 ${u} 设置新密码（需 UID ≥ 500）：` : '现有正常管理员用户名：';
+      const paramPlaceholder = noAdminActive ? '输入要设置的新密码后再复制命令' : '例如 existingadmin';
+
+      area.innerHTML = `
+        <div class="panel-animate callout-danger stack-md">
+          <div class="stack-xs">
+            <div class="card-title" style="color: var(--danger-dark);">诊断异常：需要主动赋权</div>
+            <p class="prose-width" style="font-size: 14px; color: var(--danger-text); line-height: 1.65;">${escapeHtml(result.reason)}</p>
+            <p class="prose-width" style="font-size: 14px; color: var(--danger-dark); font-weight: 600; line-height: 1.65;">重要警告：修复完成并确认 Local Open Directory User 落盘前，切勿重启进入恢复模式运行 resetpassword，否则将触发激活死锁。</p>
+          </div>
+
+          <div class="stack-sm" style="padding-top: 0.875rem; border-top: 1px solid var(--danger-line);">
+            <div class="row-between">
+              <span style="font-size: 14px; font-weight: 700; color: var(--ink);">选择设备现状：</span>
+              <div class="row-gap-sm">
+                <button type="button" data-fscen="no_admin" class="fix-scen-btn btn-interactive" style="padding: 0.4rem 0.875rem; border-radius: 8px; font-size: 14px; font-weight: 600; border: 1px solid var(--line); ${noAdminActive ? 'background-color: var(--ink); color: #FFFFFF; border-color: var(--ink);' : 'background-color: var(--surface); color: var(--ink);'}">
+                  情况 1：整机无任何正常管理员
+                </button>
+                <button type="button" data-fscen="has_admin" class="fix-scen-btn btn-interactive" style="padding: 0.4rem 0.875rem; border-radius: 8px; font-size: 14px; font-weight: 600; border: 1px solid var(--line); ${!noAdminActive ? 'background-color: var(--ink); color: #FFFFFF; border-color: var(--ink);' : 'background-color: var(--surface); color: var(--ink);'}">
+                  情况 2：还有另一个正常管理员
+                </button>
+              </div>
+            </div>
+
+            <div class="stack-xs">
+              <label for="input-repair-param" style="font-size: 14px; font-weight: 600; color: var(--ink);">${paramLabel}</label>
+              <div class="step1-form">
+                <input type="text" id="input-repair-param" value="${escapeHtml(paramValue)}" placeholder="${paramPlaceholder}" class="text-input" style="background-color: var(--surface);" />
+                <button type="button" id="btn-copy-repair" class="btn-danger-solid btn-interactive">
+                  ${COPY_ICON_SVG}<span>复制修复命令</span>
+                </button>
+              </div>
+              <p id="repair-param-hint" class="body-sm hidden" style="color: var(--danger-dark); font-weight: 600;"></p>
+            </div>
+
+            <div class="code-box">
+              <pre id="code-step3">${escapeHtml(repairCmd)}</pre>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById('step3-result-card').addEventListener('input', e => {
+      if (e.target.id !== 'input-repair-param') return;
+      if (appState.fixScenario === 'no_admin') {
+        appState.repairPassword = e.target.value;
+      } else {
+        appState.repairAdmin = e.target.value;
+      }
+      const pre = document.getElementById('code-step3');
+      if (pre) pre.textContent = getRepairCommand();
+      const hint = document.getElementById('repair-param-hint');
+      if (hint) hint.classList.add('hidden');
+    });
+
+    document.getElementById('step3-result-card').addEventListener('click', e => {
+      const fBtn = e.target.closest('.fix-scen-btn');
+      if (fBtn) {
+        appState.fixScenario = fBtn.dataset.fscen;
+        renderDiagnosis();
+        return;
+      }
+      const lBtn = e.target.closest('.lockout-tab-btn');
+      if (lBtn) {
+        appState.lockoutTab = lBtn.dataset.ltab;
+        renderDiagnosis();
+        return;
+      }
+      if (e.target.id === 'btn-exit-lockout') {
+        appState.lockoutMode = false;
+        renderDiagnosis();
+        return;
+      }
+      const repairBtn = e.target.closest('#btn-copy-repair');
+      if (repairBtn) {
+        if (!hasValidRepairParam()) {
+          const hint = document.getElementById('repair-param-hint');
+          const paramInput = document.getElementById('input-repair-param');
+          if (hint) {
+            hint.textContent = appState.fixScenario === 'no_admin'
+              ? '请先在上方填写要设置的实际密码，避免把占位符当作密码写入系统。'
+              : '请先在上方填写现有的正常管理员用户名。';
+            hint.classList.remove('hidden');
+          }
+          if (paramInput) paramInput.focus();
+          return;
+        }
+        const orig = repairBtn.innerHTML;
+        copyTextSafe(getRepairCommand()).then(ok => {
+          if (ok) flashCopyFeedback(repairBtn, orig);
+        });
+      }
+    });
+
+    document.getElementById('btn-jump-lockout').addEventListener('click', () => {
+      appState.lockoutMode = true;
+      renderDiagnosis();
+      document.getElementById('step3-result-card').scrollIntoView({ behavior: 'auto', block: 'center' });
+    });
+
+    function applyPastedDiagnosis(text) {
+      appState.lockoutMode = false;
+      appState.pastedText = text;
+      const res = analyzeTerminalOutput(text);
+      if (res.status === 'abnormal') {
+        appState.fixScenario = res.hasOtherOwner ? 'has_admin' : 'no_admin';
+      }
+      renderDiagnosis();
+    }
+
+    const pasteTextarea = document.getElementById('input-paste-result');
+    pasteTextarea.addEventListener('input', () => {
+      applyPastedDiagnosis(pasteTextarea.value);
+    });
+
+    document.getElementById('btn-fill-ok').addEventListener('click', () => {
+      const u = getTargetUser();
+      pasteTextarea.value = `Secure token is ENABLED for user ${u}\nCryptographic users for disk3s5 (1 found)\n|\n+-- 7A8F12B4-9C3D-4E1A-8B2F-1D4E5F6A7B8C\n    Type: Local Open Directory User\n    Volume Owner: Yes`;
+      applyPastedDiagnosis(pasteTextarea.value);
+    });
+
+    document.getElementById('btn-fill-fake').addEventListener('click', () => {
+      const u = getTargetUser();
+      pasteTextarea.value = `Secure token is ENABLED for user ${u}\nCryptographic users for disk3s5 (1 found)\n|\n+-- B00757A9-1111-2222-3333-444455556666\n    Type: MDM Bootstrap Token External Key\n    Volume Owner: Yes`;
+      applyPastedDiagnosis(pasteTextarea.value);
+    });
+
+    document.getElementById('btn-fill-bad').addEventListener('click', () => {
+      const u = getTargetUser();
+      pasteTextarea.value = `Secure token is DISABLED for user ${u}\nCryptographic users for disk3s5 (0 found)`;
+      applyPastedDiagnosis(pasteTextarea.value);
+    });
+
+    document.getElementById('btn-fill-desync').addEventListener('click', () => {
+      pasteTextarea.value = `Authentication is disabled (SecureToken / KEK mismatch)`;
+      appState.lockoutMode = false;
+      appState.pastedText = pasteTextarea.value;
+      renderDiagnosis();
+    });
+
+    document.getElementById('btn-clear-paste').addEventListener('click', () => {
+      pasteTextarea.value = '';
+      appState.lockoutMode = false;
+      appState.pastedText = '';
+      renderDiagnosis();
+    });
+
+    function attachChartTooltips(container) {
+      const tip = container.querySelector('.chart-tooltip');
+      if (!tip) return;
+      container.querySelectorAll('.chart-bar').forEach(bar => {
+        bar.addEventListener('mouseenter', e => {
+          tip.textContent = bar.dataset.tip || '';
+          tip.style.opacity = '1';
+          const rect = container.getBoundingClientRect();
+          tip.style.left = Math.max(8, Math.min(rect.width - 190, e.clientX - rect.left + 10)) + 'px';
+          tip.style.top = Math.max(8, e.clientY - rect.top - 34) + 'px';
+        });
+        bar.addEventListener('mousemove', e => {
+          const rect = container.getBoundingClientRect();
+          tip.style.left = Math.max(8, Math.min(rect.width - 190, e.clientX - rect.left + 10)) + 'px';
+          tip.style.top = Math.max(8, e.clientY - rect.top - 34) + 'px';
+        });
+        bar.addEventListener('mouseleave', () => {
+          tip.style.opacity = '0';
+        });
+      });
+    }
+
+    function renderCompatSvgChart() {
+      const container = document.getElementById('compatChartBox');
+      const items = [
+        { lines: ['UI 建号授权', '(无令牌源)'], a: 15, b: 0 },
+        { lines: ['删 SetupDone', '重进向导'], a: 30, b: 0 },
+        { lines: ['Self-Grant', '自我赋权'], a: 95, b: 0 },
+        { lines: ['dscl 校验', '-authonly'], a: 100, b: 100 },
+        { lines: ['Bootstrap', '预阶段托管'], a: 85, b: 100 }
+      ];
+      const W = 520, H = 264, padL = 44, padR = 12, padT = 22, padB = 46;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const groupW = plotW / items.length;
+      const barW = 22;
+
+      let grid = '';
+      for (let v = 0; v <= 100; v += 20) {
+        const y = padT + plotH * (1 - v / 100);
+        grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="rgba(16,40,33,0.1)" stroke-width="1"/>`;
+        grid += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="11.5" fill="#3A4D46">${v}%</text>`;
+      }
+
+      let bars = '';
+      items.forEach((it, i) => {
+        const cx = padL + groupW * (i + 0.5);
+        const hA = Math.max(it.a > 0 ? 3 : 0, (it.a / 100) * plotH);
+        const yA = padT + plotH - hA;
+        const hB = Math.max(it.b > 0 ? 3 : 0, (it.b / 100) * plotH);
+        const yB = padT + plotH - hB;
+        const xA = cx - barW - 3;
+        const xB = cx + 3;
+
+        bars += `<rect class="chart-bar" x="${xA.toFixed(1)}" y="${yA.toFixed(1)}" width="${barW}" height="${hA.toFixed(1)}" rx="4" fill="#94A3B8" data-tip="${it.lines.join('')} · macOS 11-15: ${it.a}%"/>`;
+        bars += `<text x="${(xA + barW / 2).toFixed(1)}" y="${(yA - 5).toFixed(1)}" text-anchor="middle" font-size="11" fill="#3A4D46" font-weight="600">${it.a}%</text>`;
+
+        if (it.b > 0) {
+          bars += `<rect class="chart-bar" x="${xB.toFixed(1)}" y="${yB.toFixed(1)}" width="${barW}" height="${hB.toFixed(1)}" rx="4" fill="#0D6F52" data-tip="${it.lines.join('')} · macOS 26: ${it.b}%"/>`;
+          bars += `<text x="${(xB + barW / 2).toFixed(1)}" y="${(yB - 5).toFixed(1)}" text-anchor="middle" font-size="11" fill="#0D6F52" font-weight="700">${it.b}%</text>`;
+        } else {
+          bars += `<rect class="chart-bar" x="${xB.toFixed(1)}" y="${(padT + plotH - 2).toFixed(1)}" width="${barW}" height="2" rx="1" fill="#991B1B" data-tip="${it.lines.join('')} · macOS 26: 0% (已封堵)"/>`;
+          bars += `<text x="${(xB + barW / 2).toFixed(1)}" y="${(padT + plotH - 6).toFixed(1)}" text-anchor="middle" font-size="11" fill="#991B1B" font-weight="700">0%</text>`;
+        }
+
+        bars += `<text x="${cx.toFixed(1)}" y="${H - 24}" text-anchor="middle" font-size="11.5" fill="#102821" font-weight="600">${escapeHtml(it.lines[0])}</text>`;
+        bars += `<text x="${cx.toFixed(1)}" y="${H - 9}" text-anchor="middle" font-size="11" fill="#3A4D46">${escapeHtml(it.lines[1])}</text>`;
+      });
+
+      container.innerHTML = `
+        <div class="chart-tooltip"></div>
+        <svg viewBox="0 0 ${W} ${H}" class="chart-svg" role="img" aria-label="macOS 11-15 与 macOS 26 机制可用性柱状图">
+          ${grid}
+          ${bars}
+        </svg>
+        <div class="chart-legend">
+          <span class="chart-legend-item"><span class="chart-swatch" style="background:#94A3B8;"></span>macOS 11–15 可用度</span>
+          <span class="chart-legend-item"><span class="chart-swatch" style="background:#0D6F52;"></span>macOS 26 (Tahoe) 可用度</span>
+        </div>
+      `;
+      attachChartTooltips(container);
+    }
+
+    function renderRescueSvgChart() {
+      const container = document.getElementById('rescueChartBox');
+      const items = [
+        { label: '热点/有线激活', rate: 65, keep: 100 },
+        { label: '菜单栏抹掉 Mac', rate: 92, keep: 0 },
+        { label: 'DFU Revive', rate: 25, keep: 100 },
+        { label: 'DFU Restore', rate: 100, keep: 0 }
+      ];
+      const W = 420, H = 225, padL = 108, padR = 38, padT = 10, padB = 26;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const rowH = plotH / items.length;
+      const barH = 13;
+
+      let grid = '';
+      for (let v = 0; v <= 100; v += 25) {
+        const x = padL + (v / 100) * plotW;
+        grid += `<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${H - padB}" stroke="rgba(16,40,33,0.1)" stroke-width="1"/>`;
+        grid += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11.5" fill="#3A4D46">${v}%</text>`;
+      }
+
+      let bars = '';
+      items.forEach((it, i) => {
+        const yTop = padT + i * rowH + (rowH - barH * 2 - 4) / 2;
+        const w1 = Math.max(it.rate > 0 ? 3 : 0, (it.rate / 100) * plotW);
+        const w2 = Math.max(it.keep > 0 ? 3 : 0, (it.keep / 100) * plotW);
+
+        bars += `<text x="${padL - 8}" y="${(yTop + barH + 3).toFixed(1)}" text-anchor="end" font-size="12" fill="#102821" font-weight="600">${escapeHtml(it.label)}</text>`;
+        bars += `<rect class="chart-bar" x="${padL}" y="${yTop.toFixed(1)}" width="${w1.toFixed(1)}" height="${barH}" rx="3" fill="#0D6F52" data-tip="${it.label} · 解除成功率: ${it.rate}%"/>`;
+        bars += `<text x="${(padL + w1 + 5).toFixed(1)}" y="${(yTop + 10.5).toFixed(1)}" font-size="11" fill="#0D6F52" font-weight="700">${it.rate}%</text>`;
+
+        bars += `<rect class="chart-bar" x="${padL}" y="${(yTop + barH + 4).toFixed(1)}" width="${w2.toFixed(1)}" height="${barH}" rx="3" fill="#4A5D56" data-tip="${it.label} · 数据保留度: ${it.keep}%"/>`;
+        bars += `<text x="${(padL + w2 + 5).toFixed(1)}" y="${(yTop + barH + 14.5).toFixed(1)}" font-size="11" fill="#3A4D46" font-weight="600">${it.keep}%</text>`;
+      });
+
+      container.innerHTML = `
+        <div class="chart-tooltip"></div>
+        <svg viewBox="0 0 ${W} ${H}" class="chart-svg" role="img" aria-label="四种死锁救援手段成功率与数据保留度对比图">
+          ${grid}
+          ${bars}
+        </svg>
+        <div class="chart-legend">
+          <span class="chart-legend-item"><span class="chart-swatch" style="background:#0D6F52;"></span>死锁解除成功率</span>
+          <span class="chart-legend-item"><span class="chart-swatch" style="background:#4A5D56;"></span>用户数据保留度</span>
+        </div>
+      `;
+      attachChartTooltips(container);
+    }
+
+    const tahoeReasons = [
+      {
+        title: '信任链前置校验',
+        desc: '根据 <code class="inline-code">freegeek-pdx/mkuser</code> 与设备管理规范，通过“系统设置 &gt; 用户与群组”创建管理员时，<strong>只有当解锁面板的现有管理员自身已持有 SecureToken 时，新建账户才会继承令牌</strong>。由于人工创建的首个用户无令牌，用它解锁 UI 创建第二个管理员时，新账户同样生来就是 <code class="inline-code">Secure token is DISABLED</code>。'
+      },
+      {
+        title: 'macOS 26 (Tahoe) 提前生成 Bootstrap Token 与默认 FileVault',
+        desc: '据 Apple 官方部署文档（2026 年 11 月更新版）与 MacAdmins Tahoe 架构报告，macOS 26+ 将 <strong>Bootstrap Token 生成时机提前至设备管理注册阶段、任何本地用户创建之前</strong>，且自 <strong>macOS 26.4+</strong> 起在设置助理阶段默认开启 FileVault。底层已存在 MDM 密码学实体，不再视其为“零密钥空白盘”，从而阻断了传统自举授权。'
+      },
+      {
+        title: '登录窗口授权弹窗的抑制机制',
+        desc: 'Apple 部署参考文档明确指出：当系统上没有任何已启用 SecureToken 的账户可用时，用户在首次登录时<strong>不会收到</strong>要求输入现有管理员凭证以启用 SecureToken 的弹窗提示——因为系统内根本不存在可作为信任根（Root of Trust）的现有令牌持有者来进行担保。'
+      },
+      {
+        title: '删除 .AppleSetupDone 重入设置助理在 macOS 14–26 已彻底封堵',
+        desc: '据 Apple 官方支持文档（HT214030 / 109030）与社区实测，自 macOS 14 Sonoma 起（涵盖 15 Sequoia 与 26 Tahoe），只要存在任何本地用户，删除 <code class="inline-code">/private/var/db/.AppleSetupDone</code> 便不再启动 Setup Assistant。GitHub <code class="inline-code">Inetum-Poland/add2abm</code> Issue #24 在开启 FileVault 的 <strong>macOS 26.5.1 (Build 25F80)</strong> 实测甚至表明：即使在恢复模式删掉 <code class="inline-code">.AppleSetupDone</code> 并把 <code class="inline-code">/var/db/dslocal/nodes/Default/users/</code> 下 UID &gt; 500 的 <code class="inline-code">.plist</code> 全改名为 <code class="inline-code">.bak</code> 隐藏，重启仍只会进入灰色登录窗口。'
+      }
+    ];
+
+    function renderTahoeReason(idx) {
+      const r = tahoeReasons[idx];
+      document.getElementById('tahoe-reason-content').innerHTML = `
+        <div class="panel-animate stack-xs">
+          <h4 class="card-title">${r.title}</h4>
+          <p class="body-lead">${r.desc}</p>
+        </div>
+      `;
+    }
+
+    document.querySelectorAll('.reason-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.reason-tab').forEach(t => {
+          t.classList.toggle('is-active', t === tab);
+        });
+        renderTahoeReason(tab.dataset.reason);
+      });
+    });
+    renderTahoeReason(0);
+
+    const deadlockStagesData = {
+      1: {
+        title: '阶段 01：恢复模式 resetpassword 常规路径（Option A）拒绝执行',
+        seState: 'OIK 有效 · LocalPolicy 有效 · Local Volume Owner = 0',
+        errorLog: 'This volume has no admin users to authenticate / No administrator found',
+        explanation: '在恢复模式运行 resetpassword 时，向导首先需要读取 APFS 宗卷的加密用户列表（即 diskutil apfs listCryptoUsers / 中的 Local Open Directory User）。由于人工创建的用户从未完成安全隔区密钥封装，容器内不存在任何有效本地所有者，常规路径直接报错拒绝。'
+      },
+      2: {
+        title: '阶段 02：被迫点击“忘记所有密码？（Forgot all passwords?）”并触发“停用 Mac”',
+        seState: '安全隔区强制轮换 OIK（所有者身份密钥）与 KEK',
+        errorLog: 'Deactivating Mac... Rotating Owner Identity Key (OIK) & KEK in Secure Enclave',
+        explanation: '在无任何现有 Volume Owner 授权修改密码时，若要在不抹除整个磁盘的情况下重建宗卷所有权，向导只剩下备用路径（Option B）——“停用 Mac（Deactivate Mac）”。该操作会强制销毁并轮换安全隔区内的 OIK 与 KEK。'
+      },
+      3: {
+        title: '阶段 03：LocalPolicy 被吊销，联网重签（Activate Mac）中断',
+        seState: '旧 LocalPolicy 已吊销（Deactivated） · 等待 Apple 服务器签名',
+        errorLog: 'Failed to create activation request / Failed to Activate Device / server with the specified hostname could not be found',
+        explanation: 'OIK/KEK 轮换立即使本地启动策略失效，设备进入已停用状态并生成新 LocalPolicy 密钥对请求 Apple 激活服务器签名。两大常见原因会导致激活中断：① Addigy 文档警告：未为每一个本地用户全量重设密码，漏改任一账户都会导致重启后失效锁死；② 恢复环境 Wi-Fi 无法自动重连或受企业/校园网/ISP DNS 握手异常阻断。'
+      },
+      4: {
+        title: '阶段 04：系统引导与常规恢复模式工具双向封锁',
+        seState: '无有效 LocalPolicy 签名 · Recovery Assistant 前置拦截',
+        errorLog: 'Unable to set startup disk: Authentication failed (No administrator found)',
+        explanation: '新 LocalPolicy 尚未获得签名，macOS 无法引导；在启动磁盘工具中指定 Macintosh HD 会报鉴权失败；同时每次长按电源键进入 Options（恢复模式）时，Recovery Assistant 都会在加载常规四宫格恢复工具（磁盘工具、终端、重装系统）之前强制跳转到 Activate Mac 界面，形成三重死锁。'
+      }
+    };
+
+    function renderDeadlockStage(stageNum) {
+      const d = deadlockStagesData[stageNum];
+      document.getElementById('deadlock-detail-box').innerHTML = `
+        <div class="panel-animate stack-sm">
+          <div class="row-between">
+            <h4 class="card-title">${d.title}</h4>
+            <span class="badge-dark font-mono">${d.seState}</span>
+          </div>
+          <pre class="pre-terminal" style="color: #FCA5A5;">典型报错：${d.errorLog}</pre>
+          <p class="body-lead prose-width">${d.explanation}</p>
+        </div>
+      `;
+    }
+
+    document.querySelectorAll('.stage-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.stage-card').forEach(c => {
+          c.classList.toggle('is-active', c === card);
+        });
+        renderDeadlockStage(card.dataset.stage);
+      });
+    });
+    renderDeadlockStage(1);
+
+    function renderSysadminctlModes() {
+      const u = getTargetUser();
+      const rows = [
+        {
+          name: '模式 A · 全参数非交互式',
+          cmd: `sudo sysadminctl -adminUser existingadmin -adminPassword 'AdminPassword' -secureTokenOn ${u} -password 'UserPassword'`,
+          note: '适用于 MDM 策略或自动化脚本静默赋权；缺点是明文密码会暴露在命令行历史与 ps 进程列表中。',
+          compat: '完全支持（Tahoe 26.2 实测通过）',
+          badgeClass: 'badge-ok'
+        },
+        {
+          name: '模式 B · 连字符 - 安全输入（推荐）',
+          cmd: `sudo sysadminctl -adminUser existingadmin -adminPassword - -secureTokenOn ${u} -password -`,
+          note: '使用 - 代替密码参数，终端依次隐藏提示输入密码，防止写入 Shell 历史（注意：stdin 密码上限 1022 字节）。',
+          compat: '完全支持',
+          badgeClass: 'badge-ok'
+        },
+        {
+          name: '模式 C · interactive 图形弹窗',
+          cmd: `sudo sysadminctl interactive -secureTokenOn ${u} -password -`,
+          note: '必须在本地 GUI 登录会话运行（不可通过纯 SSH 或远程屏幕共享触发），唤起原生认证窗（支持 Touch ID）。',
+          compat: '完全支持（适合本地支持人员操作）',
+          badgeClass: 'badge-ok'
+        },
+        {
+          name: '模式 D · Self-Grant 自我赋权',
+          cmd: `sudo sysadminctl -adminUser ${u} -adminPassword 'Password' -secureTokenOn ${u} -password 'Password'`,
+          note: '早期无令牌机器上由同一管理员自签的技巧；macOS 26 下报 Operation is not permitted without secure token unlock。',
+          compat: '已失效（macOS 26 Tahoe 起封堵）',
+          badgeClass: 'badge-danger'
+        }
+      ];
+
+      document.getElementById('sysadminctl-modes-list').innerHTML = rows.map(row => `
+        <div class="mode-row stack-sm">
+          <div class="row-between">
+            <h4 class="card-title">${escapeHtml(row.name)}</h4>
+            <span class="${row.badgeClass}">${escapeHtml(row.compat)}</span>
+          </div>
+          <p class="body-sm prose-width">${escapeHtml(row.note)}</p>
+          ${renderCodeBox('', row.cmd, '复制')}
+        </div>
+      `).join('');
+    }
+
+    function renderAdvCmd(key) {
+      appState.advTab = key;
+      const u = getTargetUser();
+      const safeU = getSafeShellUser();
+      const container = document.getElementById('adv-cmd-display');
+
+      if (key === 'authonly') {
+        const stepCmd = `# 1. 查看并清除 ;DisabledTags;SecureToken（参考 aws/ec2-macos-init usermanagement.go）
+dscl . -read /Users/${u} AuthenticationAuthority
+sudo dscl . -delete /Users/${u} AuthenticationAuthority ";DisabledTags;SecureToken"
+
+# 2. 通过 dscl 重设密码以触发密钥生成逻辑
+sudo dscl . -passwd /Users/${u} 'YourStrongPassword123!'
+
+# 3. 主动执行 OpenDirectory 密码校验，立即签发首个 SecureToken（参考 freegeek-pdx/mkuser）
+dscl . -authonly ${u} 'YourStrongPassword123!'
+
+# 4. 核验 SecureToken 与 APFS Volume Owner 状态
+sysadminctl -secureTokenStatus ${u}
+sudo diskutil apfs listCryptoUsers /`;
+        const mkuserCmd = `sh <(curl -sL run.mkuser.sh) --admin --password-prompt ${safeU}\ndscl . -authonly ${safeU}`;
+        container.innerHTML = `
+          <div class="panel-animate stack-md">
+            <div class="stack-xs">
+              <h4 class="card-title">无任何令牌用户时，用 <code class="inline-code">dscl . -authonly</code> 主动触发首个令牌</h4>
+              <p class="body-lead prose-width">
+                依据 <code class="inline-code">freegeek-pdx/mkuser</code>（2026 年 9 月 v2026.9.11-1，支持至 macOS 27）与 <code class="inline-code">aws/ec2-macos-init</code> 源码逻辑：只要系统尚无任何令牌持有者且账户 UID ≥ 500，移除禁用标签后执行一次 <code class="inline-code">dscl . -authonly</code> 即可无需登录 GUI 立即签发首个令牌。
+              </p>
+            </div>
+            ${renderCodeBox('四步主动触发首个 SecureToken（替换密码后执行）', stepCmd, '复制四步脚本')}
+            ${renderCodeBox('或调用 mkuser 从零合规建号（规避 244 字节账号名与点号前缀 UID Bug）', mkuserCmd, '复制 mkuser 命令')}
+          </div>
+        `;
+      } else if (key === 'bootstrap') {
+        const checkCmd = `sudo profiles status -type bootstraptoken`;
+        const expectCmd = `sudo expect -c "spawn /usr/bin/profiles install -type bootstraptoken; expect \\"Enter the admin user name:\\"; send -- \\"existingadmin\\r\\"; expect \\"Enter the password for user*\\"; send -- \\"AdminPassword\\r\\"; expect eof"`;
+        container.innerHTML = `
+          <div class="panel-animate stack-md">
+            <div class="stack-xs">
+              <h4 class="card-title">macOS 26 (Tahoe) 下利用 MDM Bootstrap Token 主动赋权</h4>
+              <p class="body-lead prose-width">
+                在 Jamf Pro、Intune、Workspace ONE、Addigy 等 MDM 纳管环境中，macOS 26 已在注册阶段提前生成 Bootstrap Token。
+              </p>
+            </div>
+            <div class="grid-2">
+              <div class="sub-box stack-xs">
+                <div style="font-size: 14px; font-weight: 700; color: var(--ink);">① 图形登录窗口（Login Window）自动签发</div>
+                <p class="body-sm">若 <code class="inline-code">escrowed to server: YES</code>，无令牌管理员只需在 Mac <strong>图形登录窗口</strong>手动输入密码登录一次即可自动获牌（SSH、后台脚本、<code class="inline-code">su</code> 或 <code class="inline-code">sudo</code> 登录均不会触发）。</p>
+              </div>
+              <div class="sub-box stack-xs">
+                <div style="font-size: 14px; font-weight: 700; color: var(--ink);">② macOS 26.4+ 无人值守零接触赋权</div>
+                <p class="body-sm">据 Apple 2026 年 9 月更新指南：在 MDM 下发的 <strong>FileVault 配置描述文件</strong>中填入现有账户账密并关闭延迟启用（Turn off deferred enablement），系统会调用 Bootstrap Token 直接授权并开启 FileVault。</p>
+              </div>
+            </div>
+            ${renderCodeBox('1. 检查服务器是否已托管 Bootstrap Token', checkCmd, '复制检查命令')}
+            ${renderCodeBox('2. 已有令牌用户但未托管时，用 Fabien Conus expect 脚本补交至 MDM', expectCmd, '复制补交脚本')}
+          </div>
+        `;
+      } else {
+        const desyncCmd = `# 1. 先关闭目标账户的旧令牌（清除与登录密码失步的 KEK 绑定）
+sudo sysadminctl -secureTokenOff ${u} -password - -adminUser existingadmin -adminPassword -
+
+# 2. 重新开启令牌（用当前新密码重新封装安全隔区 KEK）
+sudo sysadminctl -secureTokenOn ${u} -password - -adminUser existingadmin -adminPassword -
+
+# 3. 强制同步更新 APFS Preboot 预启动宗卷中的加密用户记录
+sudo diskutil apfs updatePreboot /`;
+        container.innerHTML = `
+          <div class="panel-animate stack-md">
+            <div class="stack-xs">
+              <h4 class="card-title">修复令牌损坏或 KEK 密码失步（<code class="inline-code">-secureTokenOff</code> / <code class="inline-code">-secureTokenOn</code>）</h4>
+              <p class="body-lead prose-width">
+                若管理员原本持有 SecureToken，但因在终端直接运行 <code class="inline-code">passwd</code> 或 <code class="inline-code">dscl . -passwd</code> 强行改密，导致本地密码哈希与安全隔区 KEK 失步（表现为安装更新报错 <code class="inline-code">Authentication is disabled</code>，或系统设置拒绝正确密码），可登录另一位正常令牌管理员执行以下三步刷新：
+              </p>
+            </div>
+            ${renderCodeBox('先关后开 + 刷新 APFS Preboot 宗卷', desyncCmd, '复制刷新命令')}
+          </div>
+        `;
+      }
+    }
+
+    document.querySelectorAll('.adv-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.adv-btn').forEach(b => {
+          b.classList.toggle('is-active', b === btn);
+        });
+        renderAdvCmd(btn.dataset.adv);
+      });
+    });
+
+    function renderChecklist() {
+      const u = getTargetUser();
+      const items = [
+        {
+          num: '01',
+          title: '核查 SecureToken 状态（严禁伪造标记）',
+          desc: '确认输出为 Secure token is ENABLED。绝不可手动执行 sudo dscl . -append /Users/<user> AuthenticationAuthority ";SecureToken;" —— Jamf 社区实测指出这只会制造假阳性标记，并不会真正生成安全隔区密钥。',
+          cmd: `sysadminctl -secureTokenStatus ${u}`
+        },
+        {
+          num: '02',
+          title: '核查底层 APFS 宗卷加密用户与所有者',
+          desc: '健康的系统除了 Personal Recovery User（恢复密钥）和 MDM Bootstrap Token External Key 外，必须至少存在一个 Type: Local Open Directory User 且显示 Volume Owner: Yes。否则进入恢复模式运行 resetpassword 必然失败。',
+          cmd: `sudo diskutil apfs listCryptoUsers /`
+        },
+        {
+          num: '03',
+          title: 'UUID 反查具体用户名与全量审计',
+          desc: '将 listCryptoUsers 输出的 UUID 映射回本地账户名（把下方占位符替换为查到的 UUID），或直接使用 fdesetup 一并列出所有加密用户名、UUID 与权限类型。',
+          cmd: `dscl . -search /Users GeneratedUID <填入UUID> | awk '{print $1}' | head -n 1\nsudo fdesetup list -extended`
+        },
+        {
+          num: '04',
+          title: '严守最后一个令牌持有者的改密与删除底线',
+          desc: 'CyberArk 与 Addigy 均明确警告：sysadminctl 无法阻止管理员通过命令行 passwd 或 MDM 强改最后一个 SecureToken 用户的密码。切勿在无第二个令牌管理员且未托管 Bootstrap Token 时强改唯一令牌持有者密码。',
+          cmd: `sudo profiles status -type bootstraptoken`
+        }
+      ];
+
+      document.getElementById('checklist-cards').innerHTML = items.map(item => `
+        <div class="surface-card stack-md" style="justify-content: space-between;">
+          <div class="stack-xs">
+            <div class="row-gap-sm">
+              <span class="font-mono" style="font-size: 14px; font-weight: 700; color: var(--brand);">${item.num}</span>
+              <h3 class="card-title">${escapeHtml(item.title)}</h3>
+            </div>
+            <p class="body-sm">${escapeHtml(item.desc)}</p>
+          </div>
+          ${renderCodeBox('', item.cmd, '复制')}
+        </div>
+      `).join('');
+    }
+
+    renderCompatSvgChart();
+    renderRescueSvgChart();
+    refreshAllDynamicSections();
+  </script>
+</body>
+</html>

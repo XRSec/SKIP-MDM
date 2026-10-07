@@ -183,6 +183,7 @@ function createRequestHandler(options = {}) {
   const languagePackFile = path.join(contentRoot, 'shell', 'lang', 'zh-CN.lang');
   const legalNoticeFile = path.join(contentRoot, 'html', 'legal-notice.html');
   const englishLegalNoticeFile = path.join(contentRoot, 'html', 'legal-notice.en.html');
+  const secureTokenFile = path.join(contentRoot, 'html', 'macos_26_securetoken.html');
   const getObfuscatedCli = createShellObfuscator(cliFile);
   const getObfuscatedCollege = createShellObfuscator(collegeScriptFile);
   const pingStore = options.pingStore || createPingStore();
@@ -226,6 +227,11 @@ function createRequestHandler(options = {}) {
 
     if (url.pathname === '/legal-notice.en.html' && (req.method === 'GET' || req.method === 'HEAD')) {
       serveFile(req, res, englishLegalNoticeFile, 'text/html; charset=utf-8', true);
+      return;
+    }
+
+    if ((url.pathname === '/securetoken' || url.pathname === '/macos_26_securetoken.html') && (req.method === 'GET' || req.method === 'HEAD')) {
+      serveFile(req, res, secureTokenFile, 'text/html; charset=utf-8', true);
       return;
     }
 
