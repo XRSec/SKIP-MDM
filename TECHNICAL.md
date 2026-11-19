@@ -184,7 +184,7 @@ Recovery 对已经校验且属于目标卷的路径直接执行删除，因为�
 7. 按 `MDM_KEYWORDS` 清理系统级 LaunchDaemons、LaunchAgents、Application Support、Preferences、Managed Preferences 和 Applications；再通过目标系统 dscl 数据库遍历所有 UID 501–60000 的普通用户，清理各用户的 LaunchAgents、Application Support、Preferences、Managed Preferences 和 Applications。部署方可通过 `MDM_EXTRA_KEYWORDS` 追加足够精确的关键词。
 8. 正常模式下对匹配的 launchd label 按旧客户端顺序尽力执行六条命令：先对 `system`、`gui/<uid>` 和 `user/<uid>` 三个 domain 分别执行 `launchctl disable`，再对同三个 domain 分别执行 `launchctl bootout`。UID 优先从目标登录用户的 dscl 记录读取，失败时使用 `id -u`；仍无法取得 UID 时只处理两条 system domain 命令，不构造空 UID domain。
 9. 正常模式下处理 FileVault。
-10. Recovery 的目标系统为 macOS 13 或更高版本且没有普通用户时，进入管理员创建流程。
+10. Recovery 的目标系统为 macOS 13 或更高版本且没有普通用户时，提示用户选择是否创建新管理员用户；选择“否”时跳过创建，选择“是”时进入管理员创建流程。
 11. 正常模式完成后，在 `open` 可用时打开 `${MDM_SERVER_URL%/}`。所有模式均显示重启提示后直接退出，不调用 `reboot`，也不返回主菜单。
 
 单个阶段失败不会中断后续阶段。最后显示“操作完成”或“已尝试执行全部阶段，但部分操作失败”。

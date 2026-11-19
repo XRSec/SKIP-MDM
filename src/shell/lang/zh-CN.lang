@@ -84,7 +84,11 @@ USER_HOME_EXISTS	用户主目录已经存在，已拒绝覆盖
 USER_CREATED	管理员用户已创建
 USER_CREATE_FAILED	创建用户失败；可能需要先解锁或装载 Data/数据卷
 USER_AUTH_FAILED	无法准备用户认证记录
-AUTO_CREATE_ADMIN	未找到普通用户；请先创建管理员再继续设置助理
+AUTO_CREATE_ADMIN	未找到普通用户
+CREATE_ADMIN_PROMPT	是否创建新用户？
+CREATE_ADMIN_SKIPPED	已跳过创建新用户
+OPTION_YES	是
+OPTION_NO	否
 SELECT_USER	请选择用户
 NO_USER	未找到普通用户
 PASSWORD_TOOL_MISSING	未找到 resetpassword 工具
